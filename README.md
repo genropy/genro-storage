@@ -1,11 +1,11 @@
 # genro-storage
 
+> **⚠️ WORK IN PROGRESS**: This library is currently under active development. The API is being designed and implemented. Not yet ready for production use.
+
 [![Python versions](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation Status](https://readthedocs.org/projects/genro-storage/badge/?version=latest)](https://genro-storage.readthedocs.io/en/latest/?badge=latest)
-[![Tests](https://github.com/genropy/genro-storage/workflows/tests/badge.svg)](https://github.com/genropy/genro-storage/actions)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![PyPI version](https://badge.fury.io/py/genro-storage.svg)](https://badge.fury.io/py/genro-storage)
 
 **Universal storage abstraction for Python with pluggable backends**
 
@@ -69,24 +69,20 @@ if node.exists:
 
 ## Installation
 
-```bash
-# Basic installation (local storage only)
-pip install genro-storage
+> **Note:** Not yet published on PyPI. Installation instructions will be available after first release.
 
-# With cloud storage support
-pip install genro-storage[s3]      # Amazon S3
-pip install genro-storage[gcs]     # Google Cloud Storage
-pip install genro-storage[azure]   # Azure Blob Storage
-pip install genro-storage[full]    # All backends
+```bash
+# Future installation (not yet available)
+pip install genro-storage
 ```
 
 ## Documentation
 
 - [API Design Specification](API_DESIGN.md) - Complete API reference
-- [ReadTheDocs](https://genro-storage.readthedocs.io/) - Full documentation
-- Quick Start Guide
-- Configuration Guide
-- Backend Implementations
+- [ReadTheDocs](https://genro-storage.readthedocs.io/) - Full documentation (in progress)
+- Quick Start Guide (coming soon)
+- Configuration Guide (coming soon)
+- Backend Implementations (coming soon)
 
 ## Built With
 
@@ -100,22 +96,30 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 
 ## Development Status
 
-**Current Status:** Design & Testing Phase
+**Current Phase:** Design & Testing
 
 - [x] API Design Document
 - [x] ReadTheDocs Setup
-- [x] Test Suite (200+ tests)
-- [ ] Core Implementation
+- [x] Comprehensive Test Suite (200+ tests)
+- [ ] Core Implementation (in progress)
 - [ ] Documentation Completion
-- [ ] First Release
+- [ ] First Public Release
+
+**Timeline:** Aiming for v0.1.0 release in Q1 2025
+
+## Contributing
+
+We welcome contributions! However, please note the library is still in early development. 
+
+For now:
+- Review the [API Design Document](API_DESIGN.md)
+- Check the [test suite](tests/) to understand expected behavior
+- Wait for core implementation before submitting code PRs
+- Bug reports and suggestions are welcome via GitHub Issues
 
 ## License
 
 MIT License - See [LICENSE](LICENSE) for details
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
