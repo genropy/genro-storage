@@ -1,7 +1,7 @@
 # genro-storage - API Design Document
 
 **Version:** 1.0  
-**Date:** 2025-01-07  
+**Date:** 2025-10-26  
 **Status:** Draft for Approval
 
 ---
