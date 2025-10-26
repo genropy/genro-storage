@@ -42,9 +42,9 @@ class LocalStorage(StorageBackend):
             ValueError: If base_path is not absolute
             FileNotFoundError: If base_path doesn't exist
         """
-        self.base_path = Path(base_path)
+        self.base_path = Path(base_path).resolve()  # Resolve to handle symlinks
         
-        if not self.base_path.is_absolute():
+        if not Path(base_path).is_absolute():
             raise ValueError(f"base_path must be absolute, got: {base_path}")
         
         if not self.base_path.exists():

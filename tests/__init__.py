@@ -1,1 +1,1 @@
-"""Test suite for genro-storage."""
+# Tests for genro-storage

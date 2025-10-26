@@ -17,6 +17,7 @@ except ImportError:
 
 from .node import StorageNode
 from .exceptions import StorageConfigError, StorageNotFoundError
+from .backends import StorageBackend, LocalStorage
 
 
 class StorageManager:
@@ -267,9 +268,40 @@ class StorageManager:
         mount_name = config['name']
         backend_type = config['type']
         
-        # TODO: Create appropriate backend based on type
-        # For now, just store the config
-        self._mounts[mount_name] = config
+        # Create appropriate backend based on type
+        if backend_type == 'local':
+            if 'path' not in config:
+                raise StorageConfigError(
+                    f"Local storage '{mount_name}' missing required field: 'path'"
+                )
+            backend = LocalStorage(config['path'])
+        elif backend_type == 'memory':
+            raise StorageConfigError(
+                f"Memory storage not yet implemented for mount '{mount_name}'"
+            )
+        elif backend_type == 's3':
+            raise StorageConfigError(
+                f"S3 storage not yet implemented for mount '{mount_name}'"
+            )
+        elif backend_type == 'gcs':
+            raise StorageConfigError(
+                f"GCS storage not yet implemented for mount '{mount_name}'"
+            )
+        elif backend_type == 'azure':
+            raise StorageConfigError(
+                f"Azure storage not yet implemented for mount '{mount_name}'"
+            )
+        elif backend_type == 'http':
+            raise StorageConfigError(
+                f"HTTP storage not yet implemented for mount '{mount_name}'"
+            )
+        else:
+            raise StorageConfigError(
+                f"Unknown storage type '{backend_type}' for mount '{mount_name}'. "
+                f"Supported types: local, s3, gcs, azure, http, memory"
+            )
+        
+        self._mounts[mount_name] = backend
     
     def node(self, mount_or_path: str, *path_parts: str) -> StorageNode:
         """Create a StorageNode pointing to a file or directory.

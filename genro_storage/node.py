@@ -67,6 +67,8 @@ class StorageNode:
         self._mount_name = mount_name
         self._path = path
         self._posix_path = PurePosixPath(path) if path else PurePosixPath('.')
+        # Get backend from manager
+        self._backend = manager._mounts[mount_name]
     
     # ==================== Properties ====================
     
@@ -99,8 +101,7 @@ class StorageNode:
             ... else:
             ...     print("File not found")
         """
-        # TODO: Implement via backend
-        pass
+        return self._backend.exists(self._path)
     
     @property
     def isfile(self) -> bool:
@@ -113,8 +114,7 @@ class StorageNode:
             >>> if node.isfile:
             ...     data = node.read_bytes()
         """
-        # TODO: Implement via backend
-        pass
+        return self._backend.is_file(self._path)
     
     @property
     def isdir(self) -> bool:
@@ -128,8 +128,7 @@ class StorageNode:
             ...     for child in node.children():
             ...         print(child.basename)
         """
-        # TODO: Implement via backend
-        pass
+        return self._backend.is_dir(self._path)
     
     @property
     def size(self) -> int:
@@ -146,8 +145,7 @@ class StorageNode:
             >>> print(f"File size: {node.size} bytes")
             >>> print(f"File size: {node.size / 1024:.1f} KB")
         """
-        # TODO: Implement via backend
-        pass
+        return self._backend.size(self._path)
     
     @property
     def mtime(self) -> float:
@@ -161,8 +159,7 @@ class StorageNode:
             >>> mod_time = datetime.fromtimestamp(node.mtime)
             >>> print(f"Modified: {mod_time}")
         """
-        # TODO: Implement via backend
-        pass
+        return self._backend.mtime(self._path)
     
     @property
     def basename(self) -> str:
@@ -230,292 +227,83 @@ class StorageNode:
         """Open file and return file-like object.
         
         Args:
-            mode: File mode. Supported modes:
-                - 'r': Read text
-                - 'rb': Read binary (default)
-                - 'w': Write text
-                - 'wb': Write binary
-                - 'a': Append text
-                - 'ab': Append binary
+            mode: File mode ('r', 'rb', 'w', 'wb', 'a', 'ab')
         
         Returns:
-            BinaryIO | TextIO: File-like object supporting context manager protocol
-        
-        Raises:
-            FileNotFoundError: If file doesn't exist (in read mode)
-            StoragePermissionError: If insufficient permissions
+            BinaryIO | TextIO: File-like object (context manager)
         
         Examples:
-            >>> # Read binary
             >>> with node.open('rb') as f:
             ...     data = f.read()
-            >>> 
-            >>> # Write text
-            >>> with node.open('w') as f:
-            ...     f.write("Hello World")
-            >>> 
-            >>> # Append
-            >>> with node.open('a') as f:
-            ...     f.write("\\nAppended line")
         """
-        # TODO: Implement via backend
-        pass
+        return self._backend.open(self._path, mode)
     
     def read_bytes(self) -> bytes:
-        """Read entire file as bytes.
-        
-        This is a convenience method that reads the entire file content
-        into memory. For large files, consider using ``open()`` and reading
-        in chunks.
-        
-        Returns:
-            bytes: Complete file contents as bytes
-        
-        Raises:
-            FileNotFoundError: If file doesn't exist
-            StoragePermissionError: If insufficient permissions
-        
-        Examples:
-            >>> data = node.read_bytes()
-            >>> print(f"Read {len(data)} bytes")
-        """
-        # TODO: Implement via backend
-        pass
+        """Read entire file as bytes."""
+        return self._backend.read_bytes(self._path)
     
     def read_text(self, encoding: str = 'utf-8') -> str:
-        """Read entire file as string.
-        
-        This is a convenience method that reads the entire file content
-        into memory as a string. For large files, consider using ``open()``
-        in text mode and reading in chunks.
-        
-        Args:
-            encoding: Text encoding to use (default: 'utf-8')
-        
-        Returns:
-            str: Complete file contents as string
-        
-        Raises:
-            FileNotFoundError: If file doesn't exist
-            StoragePermissionError: If insufficient permissions
-            UnicodeDecodeError: If file content is not valid for the specified encoding
-        
-        Examples:
-            >>> content = node.read_text()
-            >>> content = node.read_text('latin-1')
-            >>> 
-            >>> # Process line by line
-            >>> for line in content.splitlines():
-            ...     print(line)
-        """
-        # TODO: Implement via backend
-        pass
+        """Read entire file as string."""
+        return self._backend.read_text(self._path, encoding)
     
     def write_bytes(self, data: bytes) -> None:
-        """Write bytes to file.
-        
-        This will create the file if it doesn't exist, or overwrite it
-        if it does exist. Parent directories must exist.
-        
-        Args:
-            data: Bytes to write to the file
-        
-        Raises:
-            StoragePermissionError: If insufficient permissions
-            FileNotFoundError: If parent directory doesn't exist
-        
-        Examples:
-            >>> node.write_bytes(b'Hello World')
-            >>> node.write_bytes(image_data)
-        """
-        # TODO: Implement via backend
-        pass
+        """Write bytes to file."""
+        self._backend.write_bytes(self._path, data)
     
     def write_text(self, text: str, encoding: str = 'utf-8') -> None:
-        """Write string to file.
-        
-        This will create the file if it doesn't exist, or overwrite it
-        if it does exist. Parent directories must exist.
-        
-        Args:
-            text: String to write to the file
-            encoding: Text encoding to use (default: 'utf-8')
-        
-        Raises:
-            StoragePermissionError: If insufficient permissions
-            FileNotFoundError: If parent directory doesn't exist
-        
-        Examples:
-            >>> node.write_text("Hello World")
-            >>> node.write_text("Café", encoding='utf-8')
-            >>> 
-            >>> # Write multiple lines
-            >>> lines = ["Line 1", "Line 2", "Line 3"]
-            >>> node.write_text("\\n".join(lines))
-        """
-        # TODO: Implement via backend
-        pass
+        """Write string to file."""
+        self._backend.write_text(self._path, text, encoding)
     
     # ==================== File Operations ====================
     
     def delete(self) -> None:
-        """Delete file or directory.
-        
-        This operation is idempotent - if the file/directory doesn't exist,
-        no error is raised.
-        
-        For directories, this performs a recursive delete (like ``rm -rf``).
-        
-        Raises:
-            StoragePermissionError: If insufficient permissions
-        
-        Examples:
-            >>> # Delete a file
-            >>> node.delete()
-            >>> 
-            >>> # Delete a directory recursively
-            >>> dir_node = storage.node('home:temp_data')
-            >>> dir_node.delete()  # Removes directory and all contents
-        """
-        # TODO: Implement via backend
-        pass
+        """Delete file or directory."""
+        self._backend.delete(self._path, recursive=True)
     
     def copy(self, dest: StorageNode | str) -> StorageNode:
-        """Copy file or directory to destination.
+        """Copy file/directory to destination."""
+        # Convert string to StorageNode if needed
+        if isinstance(dest, str):
+            dest = self._manager.node(dest)
         
-        This works seamlessly across different storage backends. Large files
-        are streamed to avoid loading everything in memory.
+        # Copy via backends
+        self._backend.copy(self._path, dest._backend, dest._path)
         
-        Args:
-            dest: Destination as StorageNode or path string.
-                If destination is a directory, the file will be copied
-                inside with the same basename.
-        
-        Returns:
-            StorageNode: The destination node
-        
-        Raises:
-            FileNotFoundError: If source doesn't exist
-            StoragePermissionError: If insufficient permissions
-        
-        Examples:
-            >>> # Copy within same storage
-            >>> node.copy(storage.node('home:backup/file.txt'))
-            >>> 
-            >>> # Copy across different storage backends
-            >>> node.copy(storage.node('s3:uploads/file.txt'))
-            >>> 
-            >>> # Copy with string destination
-            >>> node.copy('home:backup/file.txt')
-            >>> 
-            >>> # Copy directory recursively
-            >>> dir_node.copy(storage.node('home:backup/my_folder'))
-        """
-        # TODO: Implement via backend
-        pass
+        return dest
     
     def move(self, dest: StorageNode | str) -> StorageNode:
-        """Move file or directory to destination.
+        """Move file/directory to destination."""
+        # Convert string to StorageNode if needed
+        if isinstance(dest, str):
+            dest = self._manager.node(dest)
         
-        If source and destination are on the same backend, this will use
-        an efficient rename operation. Otherwise, it will copy then delete.
+        # Copy then delete
+        self.copy(dest)
+        self.delete()
         
-        After this operation, the current node will point to the new location.
+        # Update self to point to new location
+        self._mount_name = dest._mount_name
+        self._path = dest._path
+        self._posix_path = dest._posix_path
+        self._backend = dest._backend
         
-        Args:
-            dest: Destination as StorageNode or path string
-        
-        Returns:
-            StorageNode: The destination node (also updates self)
-        
-        Raises:
-            FileNotFoundError: If source doesn't exist
-            StoragePermissionError: If insufficient permissions
-        
-        Examples:
-            >>> # Move within same storage (efficient rename)
-            >>> node.move(storage.node('home:archive/file.txt'))
-            >>> print(node.fullpath)  # Now points to home:archive/file.txt
-            >>> 
-            >>> # Move across storage backends (copy + delete)
-            >>> node.move(storage.node('s3:uploads/file.txt'))
-        """
-        # TODO: Implement via backend
-        pass
+        return self
     
     # ==================== Directory Operations ====================
     
     def children(self) -> list[StorageNode]:
-        """List child nodes (if directory).
-        
-        Returns:
-            list[StorageNode]: List of StorageNode objects for each child
-        
-        Raises:
-            ValueError: If node is not a directory
-        
-        Examples:
-            >>> if node.isdir:
-            ...     for child in node.children():
-            ...         if child.isfile:
-            ...             print(f"{child.basename}: {child.size} bytes")
-            ...         else:
-            ...             print(f"{child.basename}/")
-        """
-        # TODO: Implement via backend
-        pass
+        """List child nodes (if directory)."""
+        names = self._backend.list_dir(self._path)
+        return [self.child(name) for name in names]
     
     def child(self, name: str) -> StorageNode:
-        """Get a child node by name.
-        
-        This doesn't check if the child exists - it just creates a StorageNode
-        pointing to the path. Use ``.exists`` on the result to check existence.
-        
-        Args:
-            name: Child name (filename or subdirectory name)
-        
-        Returns:
-            StorageNode: A node pointing to the child (may not exist)
-        
-        Examples:
-            >>> docs = storage.node('home:documents')
-            >>> report = docs.child('report.pdf')
-            >>> 
-            >>> if report.exists:
-            ...     content = report.read_text()
-            >>> 
-            >>> # Navigate multiple levels
-            >>> subdir = docs.child('reports').child('2024')
-        """
+        """Get a child node by name."""
         child_path = str(self._posix_path / name)
         return StorageNode(self._manager, self._mount_name, child_path)
     
     def mkdir(self, parents: bool = False, exist_ok: bool = False) -> None:
-        """Create directory.
-        
-        Args:
-            parents: If True, create parent directories as needed (like ``mkdir -p``)
-            exist_ok: If True, don't raise error if directory already exists
-        
-        Raises:
-            FileExistsError: If directory exists and exist_ok=False
-            FileNotFoundError: If parent doesn't exist and parents=False
-            StoragePermissionError: If insufficient permissions
-        
-        Examples:
-            >>> # Create single directory (parent must exist)
-            >>> node = storage.node('home:new_folder')
-            >>> node.mkdir()
-            >>> 
-            >>> # Create directory and all parents
-            >>> node = storage.node('home:a/b/c/d')
-            >>> node.mkdir(parents=True)
-            >>> 
-            >>> # Idempotent creation
-            >>> node.mkdir(parents=True, exist_ok=True)
-        """
-        # TODO: Implement via backend
-        pass
+        """Create directory."""
+        self._backend.mkdir(self._path, parents=parents, exist_ok=exist_ok)
     
     # ==================== Special Methods ====================
     
