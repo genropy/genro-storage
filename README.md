@@ -1,21 +1,28 @@
 # genro-storage
 
+[![Python versions](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Documentation Status](https://readthedocs.org/projects/genro-storage/badge/?version=latest)](https://genro-storage.readthedocs.io/en/latest/?badge=latest)
+[![Tests](https://github.com/genropy/genro-storage/workflows/tests/badge.svg)](https://github.com/genropy/genro-storage/actions)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![PyPI version](https://badge.fury.io/py/genro-storage.svg)](https://badge.fury.io/py/genro-storage)
+
 **Universal storage abstraction for Python with pluggable backends**
 
 A modern, elegant Python library that provides a unified interface for accessing files across local filesystems, cloud storage (S3, GCS, Azure), and remote protocols (HTTP, SFTP). Built on top of **fsspec**, genro-storage adds an intuitive mount-point system and user-friendly API inspired by Unix filesystems.
 
-## ✨ Key Features
+## Key Features
 
-- 🔌 **Powered by fsspec** - Leverage 20+ battle-tested storage backends
-- 🗂️ **Mount point system** - Organize storage with logical names like `home:`, `uploads:`, `s3:`
-- 🎯 **Intuitive API** - Pathlib-inspired interface that feels natural and Pythonic
-- ⚙️ **Flexible configuration** - Load mounts from YAML, JSON, databases, or code
-- 🧪 **Test-friendly** - In-memory backend for fast, isolated testing
-- 🚀 **Production-ready** - Built on 6+ years of Genropy production experience
-- 📦 **Lightweight core** - Optional backends installed only when needed
-- 🔄 **Cross-storage operations** - Copy/move files between different storage types seamlessly
+- **Powered by fsspec** - Leverage 20+ battle-tested storage backends
+- **Mount point system** - Organize storage with logical names like `home:`, `uploads:`, `s3:`
+- **Intuitive API** - Pathlib-inspired interface that feels natural and Pythonic
+- **Flexible configuration** - Load mounts from YAML, JSON, databases, or code
+- **Test-friendly** - In-memory backend for fast, isolated testing
+- **Production-ready** - Built on 6+ years of Genropy production experience
+- **Lightweight core** - Optional backends installed only when needed
+- **Cross-storage operations** - Copy/move files between different storage types seamlessly
 
-## 🤔 Why genro-storage vs raw fsspec?
+## Why genro-storage vs raw fsspec?
 
 While **fsspec** is powerful, genro-storage provides:
 
@@ -26,7 +33,7 @@ While **fsspec** is powerful, genro-storage provides:
 
 Think of it as **"requests" is to "urllib"** - a friendlier interface to an excellent foundation.
 
-## 🎯 Perfect For
+## Perfect For
 
 - **Multi-cloud applications** that need storage abstraction
 - **Data pipelines** processing files from various sources
@@ -34,7 +41,7 @@ Think of it as **"requests" is to "urllib"** - a friendlier interface to an exce
 - **CLI tools** that work with local and remote files
 - **Testing scenarios** requiring storage mocking
 
-## 🚀 Quick Example
+## Quick Example
 
 ```python
 from genro_storage import StorageManager
@@ -60,7 +67,7 @@ if node.exists:
     node.copy(storage.node('backups:avatars/user_123.jpg'))
 ```
 
-## 📦 Installation
+## Installation
 
 ```bash
 # Basic installation (local storage only)
@@ -73,38 +80,40 @@ pip install genro-storage[azure]   # Azure Blob Storage
 pip install genro-storage[full]    # All backends
 ```
 
-## 📚 Documentation
+## Documentation
 
 - [API Design Specification](API_DESIGN.md) - Complete API reference
-- Quick Start Guide *(coming soon)*
-- Configuration Guide *(coming soon)*
-- Backend Implementations *(coming soon)*
+- [ReadTheDocs](https://genro-storage.readthedocs.io/) - Full documentation
+- Quick Start Guide
+- Configuration Guide
+- Backend Implementations
 
-## 🏗️ Built With
+## Built With
 
-- **[fsspec](https://filesystem-spec.readthedocs.io/)** - Pythonic filesystem abstraction (20+ backends)
+- [fsspec](https://filesystem-spec.readthedocs.io/) - Pythonic filesystem abstraction (20+ backends)
 - Modern Python (3.9+) with full type hints
 - Zero dependencies for core functionality (fsspec installed on demand)
 
-## 🤝 Origins
+## Origins
 
 genro-storage is extracted and modernized from [Genropy](https://github.com/genropy/genropy), a Python web framework with 6+ years of production battle-testing. We're making this powerful storage abstraction available as a standalone library for the wider Python community.
 
-## 🔧 Development Status
+## Development Status
 
-**Current Status:** 🚧 Design Phase
+**Current Status:** Design & Testing Phase
 
 - [x] API Design Document
-- [ ] Test Suite
+- [x] ReadTheDocs Setup
+- [x] Test Suite (200+ tests)
 - [ ] Core Implementation
-- [ ] Documentation
+- [ ] Documentation Completion
 - [ ] First Release
 
-## 📄 License
+## License
 
 MIT License - See [LICENSE](LICENSE) for details
 
-## 🙏 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
