@@ -1,0 +1,7 @@
+include README.md
+include LICENSE
+include pyproject.toml
+include requirements-docs.txt
+recursive-include genro_storage *.py py.typed
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]

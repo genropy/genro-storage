@@ -7,8 +7,13 @@ for configuring storage backends and creating StorageNode instances.
 from __future__ import annotations
 from typing import Any
 import json
-import yaml
 from pathlib import Path
+
+try:
+    import yaml
+    HAS_YAML = True
+except ImportError:
+    HAS_YAML = False
 
 from .node import StorageNode
 from .exceptions import StorageConfigError, StorageNotFoundError
@@ -214,6 +219,10 @@ class StorageManager:
         try:
             with open(path, 'r') as f:
                 if suffix in ('.yaml', '.yml'):
+                    if not HAS_YAML:
+                        raise StorageConfigError(
+                            "YAML support not available. Install PyYAML: pip install PyYAML"
+                        )
                     config = yaml.safe_load(f)
                 elif suffix == '.json':
                     config = json.load(f)
@@ -222,8 +231,13 @@ class StorageManager:
                         f"Unsupported configuration file format: {suffix}. "
                         f"Use .yaml, .yml, or .json"
                     )
-        except (yaml.YAMLError, json.JSONDecodeError) as e:
-            raise StorageConfigError(f"Failed to parse configuration file: {e}")
+        except Exception as e:
+            if HAS_YAML and isinstance(e, yaml.YAMLError):
+                raise StorageConfigError(f"Failed to parse YAML file: {e}")
+            elif isinstance(e, json.JSONDecodeError):
+                raise StorageConfigError(f"Failed to parse JSON file: {e}")
+            else:
+                raise
         
         if not isinstance(config, list):
             raise StorageConfigError(

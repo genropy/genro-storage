@@ -85,3 +85,12 @@ myst_enable_extensions = [
     "colon_fence",
     "deflist",
 ]
+
+# Mock imports for modules that may not be available during build
+autodoc_mock_imports = [
+    'fsspec',
+    's3fs',
+    'gcsfs',
+    'adlfs',
+    'aiohttp',
+]
