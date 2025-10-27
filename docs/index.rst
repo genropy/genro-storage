@@ -69,12 +69,19 @@ Documentation Contents
 
 .. toctree::
    :maxdepth: 2
+   :caption: Getting Started
+
+   overview
+   quickstart
+
+.. toctree::
+   :maxdepth: 2
    :caption: User Guide
 
-   quickstart
    configuration
    backends
    examples
+   advanced
 
 .. toctree::
    :maxdepth: 2

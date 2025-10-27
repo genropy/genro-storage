@@ -47,3 +47,21 @@ Local Storage
    :undoc-members:
    :show-inheritance:
    :special-members: __init__, __repr__
+
+Base64 Backend
+~~~~~~~~~~~~~~
+
+.. autoclass:: genro_storage.backends.Base64Backend
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__, __repr__
+
+Fsspec Backend
+~~~~~~~~~~~~~~
+
+.. autoclass:: genro_storage.backends.FsspecBackend
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__, __repr__

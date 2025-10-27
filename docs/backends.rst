@@ -138,3 +138,58 @@ Read-only access to files via HTTP.
     }
 
 **Note:** HTTP storage is read-only.
+
+Base64 Storage
+--------------
+
+Store data inline as base64-encoded strings, similar to data URIs.
+
+**Configuration:**
+
+.. code-block:: python
+
+    {
+        'name': 'data',
+        'type': 'base64'
+    }
+
+**Usage:**
+
+.. code-block:: python
+
+    # Read inline base64 data
+    node = storage.node('data:SGVsbG8gV29ybGQ=')  # "Hello World" encoded
+    content = node.read_text()  # Returns "Hello World"
+
+    # Write creates/updates the base64 path (writable with mutable paths)
+    node = storage.node('data:')
+    node.write_text("New content")
+    print(node.path)  # TmV3IGNvbnRlbnQ= (base64 encoded)
+
+    # Copy from other storage to base64 for inline use
+    s3_image = storage.node('uploads:photo.jpg')
+    b64_image = storage.node('data:')
+    s3_image.copy(b64_image)
+    data_uri = f"data:image/jpeg;base64,{b64_image.path}"
+
+**Use cases:**
+
+- Embed small files directly in configuration or databases
+- Create data URIs for inline images in HTML/CSS
+- Store secrets or tokens as encoded strings
+- Testing with inline test data
+
+**Features:**
+
+- Read from base64-encoded paths
+- Write to create/update base64 content (path updates automatically)
+- Supports both text and binary data
+- Automatic encoding/decoding
+- Compatible with standard base64 encoding
+- Handles multiline base64 strings
+
+**Limitations:**
+
+- Not suitable for large files (base64 increases size by ~33%)
+- Path changes after every write (mutable path behavior)
+- No directory operations (delete, mkdir, list_dir raise errors)
