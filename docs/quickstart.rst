@@ -124,11 +124,11 @@ Here's a complete working example:
     # Create and write a file
     report = storage.node('data:reports/2024-q4.txt')
     report.write_text(\"\"\"
-    Q4 2024 Sales Report
-    ====================
-    Total Sales: $1,234,567
-    Growth: +15%
-    \"\"\")
+Q4 2024 Sales Report
+====================
+Total Sales: 1234567
+Growth: +15%
+\"\"\")
 
     # Read and process
     content = report.read_text()

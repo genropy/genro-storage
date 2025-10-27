@@ -94,3 +94,13 @@ autodoc_mock_imports = [
     'adlfs',
     'aiohttp',
 ]
+
+# Suppress warnings
+suppress_warnings = [
+    'app.add_directive',  # Suppress directive warnings
+    'ref.python',  # Suppress Python object reference warnings
+]
+
+# Autodoc type hints
+autodoc_typehints = 'description'
+autodoc_typehints_description_target = 'documented'

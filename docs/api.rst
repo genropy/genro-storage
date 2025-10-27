@@ -17,7 +17,6 @@ StorageNode
 
 .. autoclass:: genro_storage.StorageNode
    :members:
-   :undoc-members:
    :show-inheritance:
    :special-members: __init__, __repr__, __str__, __truediv__
 
