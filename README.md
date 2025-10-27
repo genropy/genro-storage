@@ -10,15 +10,16 @@
 
 A modern, elegant Python library that provides a unified interface for accessing files across local filesystems, cloud storage (S3, GCS, Azure), and remote protocols (HTTP). Built on top of **fsspec**, genro-storage adds an intuitive mount-point system and user-friendly API inspired by Unix filesystems.
 
-## Status: Alpha - Ready for Testing
+## Status: Beta - Ready for Production Testing
 
-**Current Version:** 0.1.0-alpha  
+**Current Version:** 0.1.0-beta
 **Last Updated:** October 2025
 
 ✅ Core implementation complete
 ✅ All backends working (local, S3, GCS, Azure, HTTP, Memory, Base64)
-✅ 195 tests passing (including advanced copy skip strategies, call(), serve())
+✅ 195 tests passing on Python 3.9-3.12
 ✅ Full documentation on ReadTheDocs
+✅ Battle-tested code from 6+ years of Genropy production use
 ⚠️ Not yet on PyPI - install from source
 
 ## Key Features
@@ -273,12 +274,13 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 
 ## Development Status
 
-**Phase:** Alpha Testing
+**Phase:** Beta - Production Testing
 
-- ✅ API Design Complete
+- ✅ API Design Complete and Stable
 - ✅ Core Implementation Complete
 - ✅ FsspecBackend (all 7 storage types working: local, S3, GCS, Azure, HTTP, Memory, Base64)
 - ✅ Comprehensive Test Suite (195 tests, 79% coverage)
+- ✅ CI/CD with Python 3.9, 3.10, 3.11, 3.12
 - ✅ MD5 hashing and content-based equality
 - ✅ Base64 backend with writable mutable paths
 - ✅ Intelligent copy skip strategies (exists, size, hash, custom)
@@ -292,18 +294,18 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 - ✅ S3 versioning support
 - ✅ Full Documentation on ReadTheDocs
 - ✅ MinIO Integration Testing
-- ⏳ Additional backends (GCS, Azure) - ready but needs testing
-- ⏳ Performance optimization
+- 🎯 Ready for early adopters and production testing
 - ⏳ First PyPI release (v0.1.0)
+- ⏳ Extended GCS/Azure integration testing
 
 **Roadmap:**
-- v0.1.0 (Q4 2025) - First public release
-- v0.2.0 - Async support, additional utilities
-- v1.0.0 - Production-ready, stable API
+- v0.1.0 (Q4 2025) - First PyPI release (Beta)
+- v0.2.0 (Q1 2026) - Async support, performance optimizations
+- v1.0.0 (2026) - Production-ready, stable API guarantee
 
 ## Contributing
 
-Contributions welcome! The library is in alpha but the API is stabilizing.
+Contributions welcome! The library is in beta with a stable API.
 
 **How to contribute:**
 1. Review the [API Design Document](API_DESIGN.md)

@@ -11,8 +11,8 @@ sys.path.insert(0, os.path.abspath('..'))
 project = 'genro-storage'
 copyright = f'{datetime.now().year}, Genropy Team'
 author = 'Genropy Team'
-release = '0.1.0'
-version = '0.1.0'
+release = '0.1.0-beta'
+version = '0.1.0-beta'
 
 # General configuration
 extensions = [
