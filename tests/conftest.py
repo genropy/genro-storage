@@ -9,6 +9,16 @@ import boto3
 from botocore.exceptions import ClientError
 import time
 import os
+import tempfile
+import shutil
+
+
+@pytest.fixture
+def temp_dir():
+    """Create a temporary directory for tests."""
+    tmpdir = tempfile.mkdtemp()
+    yield tmpdir
+    shutil.rmtree(tmpdir)
 
 
 @pytest.fixture(scope="session")

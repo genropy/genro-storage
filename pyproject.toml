@@ -95,3 +95,7 @@ disallow_untyped_defs = true
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v --cov=genro_storage --cov-report=term-missing"
+markers = [
+    "integration: Integration tests that require external services (MinIO, etc.)",
+    "unit: Fast unit tests with no external dependencies",
+]
