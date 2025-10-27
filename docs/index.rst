@@ -13,6 +13,11 @@ Features
 * **Powered by fsspec** - Leverage 20+ battle-tested storage backends
 * **Mount point system** - Organize storage with logical names like ``home:``, ``uploads:``, ``s3:``
 * **Intuitive API** - Pathlib-inspired interface that feels natural and Pythonic
+* **Dynamic paths** - Callable paths that resolve at runtime for user-specific directories
+* **External tool integration** - ``local_path()`` for seamless ffmpeg, imagemagick integration
+* **Cloud metadata** - Get/set custom metadata on S3, GCS, Azure files
+* **URL generation** - Generate presigned URLs, data URIs for sharing
+* **S3 versioning** - Access historical file versions when versioning enabled
 * **Flexible configuration** - Load mounts from YAML, JSON, databases, or code
 * **Test-friendly** - In-memory backend for fast, isolated testing
 * **Production-ready** - Built on 6+ years of Genropy production experience

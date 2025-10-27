@@ -87,5 +87,131 @@ Load and use:
 
     storage = StorageManager()
     storage.configure('config.yaml')
-    
+
     node = storage.node('uploads:users/123/avatar.jpg')
+
+Working with External Tools
+----------------------------
+
+Use ``local_path()`` to integrate with external tools that require local filesystem access:
+
+.. code-block:: python
+
+    # Process video with ffmpeg
+    video = storage.node('s3:videos/input.mp4')
+    output = storage.node('s3:videos/output.mp4')
+
+    with video.local_path(mode='r') as input_path:
+        with output.local_path(mode='w') as output_path:
+            import subprocess
+            subprocess.run([
+                'ffmpeg', '-i', input_path,
+                '-vcodec', 'h264', '-crf', '28',
+                output_path
+            ])
+    # Changes automatically uploaded to S3
+
+    # Modify image in place
+    image = storage.node('uploads:photo.jpg')
+    with image.local_path(mode='rw') as path:
+        subprocess.run(['convert', path, '-resize', '800x600', path])
+
+Dynamic Paths for Multi-User Apps
+----------------------------------
+
+Use callable paths that resolve at runtime:
+
+.. code-block:: python
+
+    def get_user_directory():
+        from flask import g  # or your framework's context
+        return f'/data/users/{g.user_id}'
+
+    storage.configure([
+        {'name': 'user', 'type': 'local', 'path': get_user_directory}
+    ])
+
+    # Different user, different directory!
+    # User 123: /data/users/123/
+    # User 456: /data/users/456/
+    user_prefs = storage.node('user:preferences.json')
+
+Cloud Metadata Management
+--------------------------
+
+Set and retrieve custom metadata on cloud files:
+
+.. code-block:: python
+
+    # Set metadata
+    doc = storage.node('s3:documents/report.pdf')
+    doc.set_metadata({
+        'Author': 'John Doe',
+        'Department': 'Engineering',
+        'Version': '1.0',
+        'Classification': 'Internal'
+    })
+
+    # Get metadata
+    metadata = doc.get_metadata()
+    print(f"Author: {metadata.get('Author')}")
+    print(f"Version: {metadata.get('Version')}")
+
+URL Generation
+--------------
+
+Generate shareable URLs for files:
+
+.. code-block:: python
+
+    # Generate S3 presigned URL (expires in 1 hour)
+    file = storage.node('s3:documents/report.pdf')
+    url = file.url(expires_in=3600)
+    print(f"Share this: {url}")
+
+    # Custom expiration (24 hours)
+    long_url = file.url(expires_in=86400)
+
+    # Convert file to data URI
+    logo = storage.node('local:assets/logo.png')
+    data_uri = logo.to_base64()
+    # Use in HTML: <img src="data:image/png;base64,...">
+
+Download from URLs
+------------------
+
+Download files from the internet directly to storage:
+
+.. code-block:: python
+
+    # Download to local storage
+    local_file = storage.node('data:downloads/dataset.csv')
+    local_file.fill_from_url('https://example.com/data.csv')
+
+    # Download to S3
+    s3_file = storage.node('s3:archives/backup.zip')
+    s3_file.fill_from_url('https://backups.example.com/latest.zip', timeout=300)
+
+S3 Versioning
+-------------
+
+Access historical versions when S3 versioning is enabled:
+
+.. code-block:: python
+
+    # Get list of versions
+    doc = storage.node('s3:documents/contract.pdf')
+    versions = doc.versions
+
+    for v in versions:
+        print(f"Version {v['version_id']}")
+        print(f"  Modified: {v['last_modified']}")
+        print(f"  Size: {v['size']} bytes")
+        print(f"  Latest: {v['is_latest']}")
+
+    # Open specific version
+    if versions:
+        old_version_id = versions[1]['version_id']
+        with doc.open_version(old_version_id) as f:
+            old_content = f.read()
+            print("Previous version:", old_content)

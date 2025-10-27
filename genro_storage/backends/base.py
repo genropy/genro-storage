@@ -263,25 +263,29 @@ class StorageBackend(ABC):
         pass
     
     @abstractmethod
-    def copy(self, src_path: str, dest_backend: 'StorageBackend', dest_path: str) -> None:
+    def copy(self, src_path: str, dest_backend: 'StorageBackend', dest_path: str) -> str | None:
         """Copy file/directory to another backend.
-        
+
         This method handles cross-backend copying efficiently, streaming
         data when possible to avoid loading large files in memory.
-        
+
         Args:
             src_path: Source path in this backend
             dest_backend: Destination backend (may be different type)
             dest_path: Destination path in dest_backend
-        
+
+        Returns:
+            str | None: New destination path if destination backend changes it
+                       (e.g., base64 backend), or None if path unchanged
+
         Raises:
             FileNotFoundError: If source doesn't exist
             PermissionError: If insufficient permissions
-        
+
         Examples:
             >>> # Copy within same backend
             >>> backend.copy('file.txt', backend, 'backup/file.txt')
-            >>> 
+            >>>
             >>> # Copy to different backend
             >>> backend.copy('file.txt', other_backend, 'file.txt')
         """

@@ -17,7 +17,7 @@ A modern, elegant Python library that provides a unified interface for accessing
 
 ✅ Core implementation complete
 ✅ All backends working (local, S3, GCS, Azure, HTTP, Memory, Base64)
-✅ 102+ tests passing
+✅ 106 tests passing
 ✅ Full documentation on ReadTheDocs
 ⚠️ Not yet on PyPI - install from source
 
@@ -29,8 +29,14 @@ A modern, elegant Python library that provides a unified interface for accessing
 - **Content-based comparison** - Compare files by MD5 hash across different backends
 - **Efficient hashing** - Uses cloud metadata (S3 ETag) when available, avoiding downloads
 - **Flexible configuration** - Load mounts from YAML, JSON, or code
+- **Dynamic paths** - Support for callable paths that resolve at runtime (perfect for user-specific directories)
+- **External tool integration** - `local_path()` context manager for seamless integration with ffmpeg, imagemagick, etc.
+- **Cloud metadata** - Get/set custom metadata on S3, GCS, Azure files
+- **URL generation** - Generate presigned URLs for S3, public URLs for sharing
+- **Base64 utilities** - Encode files to data URIs, download from URLs
+- **S3 versioning** - Access historical file versions (when S3 versioning enabled)
 - **Test-friendly** - In-memory backend for fast, isolated testing
-- **Base64 data URIs** - Embed small data directly in URIs (no storage needed)
+- **Base64 data URIs** - Embed data inline with automatic encoding (writable with mutable paths)
 - **Production-ready backends** - Built on 6+ years of Genropy production experience
 - **Lightweight core** - Optional backends installed only when needed
 - **Cross-storage operations** - Copy/move files between different storage types seamlessly
@@ -81,11 +87,59 @@ if node.exists:
     node.copy(storage.node('backups:avatars/user_123.jpg'))
 
 # Base64 backend: embed data directly in URIs (data URI style)
+# Read inline data
 import base64
 text = "Configuration data"
 b64_data = base64.b64encode(text.encode()).decode()
 node = storage.node(f'data:{b64_data}')
 print(node.read_text())  # "Configuration data"
+
+# Or write to create base64 (path updates automatically)
+node = storage.node('data:')
+node.write_text("New content")
+print(node.path)  # "TmV3IGNvbnRlbnQ=" (base64 of "New content")
+
+# Copy from S3 to base64 for inline use
+s3_image = storage.node('uploads:photo.jpg')
+b64_image = storage.node('data:')
+s3_image.copy(b64_image)
+data_uri = f"data:image/jpeg;base64,{b64_image.path}"
+
+# Advanced features
+# 1. Work with external tools (ffmpeg, imagemagick, etc.)
+video = storage.node('uploads:video.mp4')
+with video.local_path(mode='r') as local_path:
+    # Tool works with local file, auto-uploaded after
+    import subprocess
+    subprocess.run(['ffmpeg', '-i', local_path, 'output.mp4'])
+
+# 2. Dynamic paths for multi-user apps
+def get_user_storage():
+    user_id = get_current_user()
+    return f'/data/users/{user_id}'
+
+storage.configure([
+    {'name': 'user', 'type': 'local', 'path': get_user_storage}
+])
+# Path resolves differently per user!
+
+# 3. Cloud metadata
+file = storage.node('uploads:document.pdf')
+file.set_metadata({
+    'Author': 'John Doe',
+    'Department': 'Engineering'
+})
+
+# 4. Generate shareable URLs
+url = file.url(expires_in=3600)  # S3 presigned URL
+
+# 5. Encode to data URI
+img = storage.node('home:logo.png')
+data_uri = img.to_base64()  # data:image/png;base64,...
+
+# 6. Download from internet
+remote = storage.node('uploads:downloaded.pdf')
+remote.fill_from_url('https://example.com/file.pdf')
 ```
 
 ## Installation
@@ -180,9 +234,15 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 
 - ✅ API Design Complete
 - ✅ Core Implementation Complete
-- ✅ FsspecBackend (all 6 storage types working)
-- ✅ Comprehensive Test Suite (74+ tests, 66% coverage)
+- ✅ FsspecBackend (all 7 storage types working: local, S3, GCS, Azure, HTTP, Memory, Base64)
+- ✅ Comprehensive Test Suite (106 tests, 63% coverage)
 - ✅ MD5 hashing and content-based equality
+- ✅ Base64 backend with writable mutable paths
+- ✅ local_path() context manager for external tools
+- ✅ Callable path support for dynamic directories
+- ✅ Cloud metadata get/set (S3, GCS, Azure)
+- ✅ URL generation (presigned URLs, data URIs)
+- ✅ S3 versioning support
 - ✅ Full Documentation on ReadTheDocs
 - ✅ MinIO Integration Testing
 - ⏳ Additional backends (GCS, Azure) - ready but needs testing
