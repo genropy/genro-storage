@@ -12,7 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core StorageManager and StorageNode implementation
 - FsspecBackend generic wrapper for all storage backends
 - Support for 6 storage backends: local, S3, GCS, Azure, HTTP, Memory
-- Comprehensive test suite (54+ tests)
+- MD5 hash property (`StorageNode.md5hash`) with efficient cloud metadata retrieval
+- Content-based equality operators (`==` and `!=`) for StorageNode
+- Comprehensive test suite (74+ tests, 66% coverage)
 - MinIO integration for S3 testing
 - Full documentation on ReadTheDocs
 - GitHub Actions CI/CD pipelines
@@ -41,7 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Local filesystem backend (via fsspec)
 - S3 backend (tested with MinIO)
 - Memory backend for testing
-- 54+ tests with 81% coverage
+- MD5 hashing and content-based equality
+- 74+ tests with 66% coverage
 - Complete documentation
 - CI/CD with GitHub Actions
 

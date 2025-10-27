@@ -15,10 +15,10 @@ A modern, elegant Python library that provides a unified interface for accessing
 **Current Version:** 0.1.0-alpha  
 **Last Updated:** October 2025
 
-✅ Core implementation complete  
-✅ All backends working (local, S3, GCS, Azure, HTTP, Memory)  
-✅ 54+ tests passing  
-✅ Full documentation on ReadTheDocs  
+✅ Core implementation complete
+✅ All backends working (local, S3, GCS, Azure, HTTP, Memory)
+✅ 74+ tests passing
+✅ Full documentation on ReadTheDocs
 ⚠️ Not yet on PyPI - install from source
 
 ## Key Features
@@ -26,6 +26,8 @@ A modern, elegant Python library that provides a unified interface for accessing
 - **Powered by fsspec** - Leverage 20+ battle-tested storage backends
 - **Mount point system** - Organize storage with logical names like `home:`, `uploads:`, `s3:`
 - **Intuitive API** - Pathlib-inspired interface that feels natural and Pythonic
+- **Content-based comparison** - Compare files by MD5 hash across different backends
+- **Efficient hashing** - Uses cloud metadata (S3 ETag) when available, avoiding downloads
 - **Flexible configuration** - Load mounts from YAML, JSON, or code
 - **Test-friendly** - In-memory backend for fast, isolated testing
 - **Production-ready backends** - Built on 6+ years of Genropy production experience
@@ -153,7 +155,8 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 - ✅ API Design Complete
 - ✅ Core Implementation Complete
 - ✅ FsspecBackend (all 6 storage types working)
-- ✅ Comprehensive Test Suite (54+ tests, 81% coverage)
+- ✅ Comprehensive Test Suite (74+ tests, 66% coverage)
+- ✅ MD5 hashing and content-based equality
 - ✅ Full Documentation on ReadTheDocs
 - ✅ MinIO Integration Testing
 - ⏳ Additional backends (GCS, Azure) - ready but needs testing

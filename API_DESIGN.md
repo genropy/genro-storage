@@ -331,6 +331,31 @@ parent = node.parent
 print(parent.fullpath)  # "home:documents/reports"
 ```
 
+##### `md5hash: str`
+MD5 hash of file content (efficient for cloud storage).
+
+For cloud storage (S3, GCS, Azure), retrieves hash from backend metadata (fast, no download).
+For local storage, computes hash by reading file in 64KB blocks.
+
+```python
+# Get MD5 hash
+hash1 = node1.md5hash
+hash2 = node2.md5hash
+
+# Compare file contents
+if hash1 == hash2:
+    print("Files have identical content")
+```
+
+**Raises:**
+- `FileNotFoundError`: If file doesn't exist
+- `ValueError`: If node is a directory
+
+**Performance Notes:**
+- S3/MinIO/GCS: Uses ETag metadata (instant, no download)
+- Azure: Uses content_md5 metadata
+- Local/memory: Computes by reading file (slower for large files)
+
 ---
 
 #### Methods
@@ -586,6 +611,55 @@ def mkdir(self, parents: bool = False, exist_ok: bool = False) -> None
 ```python
 node.mkdir()
 node.mkdir(parents=True, exist_ok=True)
+```
+
+---
+
+#### Operators
+
+##### `__eq__` and `__ne__`
+Content-based equality comparison using MD5 hash.
+
+Two nodes are considered equal if they have the same file content (MD5 hash), regardless of their path or storage backend.
+
+**Signature:**
+```python
+def __eq__(self, other: object) -> bool
+def __ne__(self, other: object) -> bool
+```
+
+**Parameters:**
+- `other`: Another StorageNode or object to compare
+
+**Returns:** `bool`
+- `True` if both nodes have identical content (same MD5 hash)
+- `False` otherwise
+- Returns `NotImplemented` when comparing with non-StorageNode objects
+
+**Notes:**
+- Only files can be compared (directories return `False`)
+- Non-existent files return `False`
+- Comparison works across different backends and paths
+
+**Examples:**
+```python
+# Compare files on same backend
+file1 = storage.node('home:original.txt')
+file2 = storage.node('home:copy.txt')
+if file1 == file2:
+    print("Files have identical content")
+
+# Compare across backends (S3 vs local)
+s3_file = storage.node('uploads:data.json')
+local_file = storage.node('home:backup/data.json')
+if s3_file == local_file:
+    print("Backup is up to date")
+else:
+    print("Files differ, update needed")
+
+# Check inequality
+if file1 != file2:
+    print("Files have different content")
 ```
 
 ---
