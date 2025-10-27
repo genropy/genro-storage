@@ -19,6 +19,7 @@ from .node import StorageNode
 from .exceptions import StorageConfigError, StorageNotFoundError
 from .backends import StorageBackend
 from .backends.fsspec import FsspecBackend
+from .backends.base64 import Base64Backend
 
 
 class StorageManager:
@@ -349,11 +350,15 @@ class StorageManager:
                     f"HTTP storage '{mount_name}' missing required field: 'base_url'"
                 )
             backend = FsspecBackend('http', base_path=config['base_url'])
-        
+
+        elif backend_type == 'base64':
+            # Base64 backend has no configuration parameters
+            backend = Base64Backend()
+
         else:
             raise StorageConfigError(
                 f"Unknown storage type '{backend_type}' for mount '{mount_name}'. "
-                f"Supported types: local, s3, gcs, azure, http, memory"
+                f"Supported types: local, s3, gcs, azure, http, memory, base64"
             )
         
         self._mounts[mount_name] = backend

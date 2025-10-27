@@ -16,8 +16,8 @@ A modern, elegant Python library that provides a unified interface for accessing
 **Last Updated:** October 2025
 
 ✅ Core implementation complete
-✅ All backends working (local, S3, GCS, Azure, HTTP, Memory)
-✅ 74+ tests passing
+✅ All backends working (local, S3, GCS, Azure, HTTP, Memory, Base64)
+✅ 102+ tests passing
 ✅ Full documentation on ReadTheDocs
 ⚠️ Not yet on PyPI - install from source
 
@@ -30,6 +30,7 @@ A modern, elegant Python library that provides a unified interface for accessing
 - **Efficient hashing** - Uses cloud metadata (S3 ETag) when available, avoiding downloads
 - **Flexible configuration** - Load mounts from YAML, JSON, or code
 - **Test-friendly** - In-memory backend for fast, isolated testing
+- **Base64 data URIs** - Embed small data directly in URIs (no storage needed)
 - **Production-ready backends** - Built on 6+ years of Genropy production experience
 - **Lightweight core** - Optional backends installed only when needed
 - **Cross-storage operations** - Copy/move files between different storage types seamlessly
@@ -63,7 +64,8 @@ storage = StorageManager()
 storage.configure([
     {'name': 'home', 'type': 'local', 'path': '/home/user'},
     {'name': 'uploads', 'type': 's3', 'bucket': 'my-app-uploads'},
-    {'name': 'backups', 'type': 'gcs', 'bucket': 'my-backups'}
+    {'name': 'backups', 'type': 'gcs', 'bucket': 'my-backups'},
+    {'name': 'data', 'type': 'base64'}  # Inline base64 data
 ])
 
 # Work with files using a unified API
@@ -71,12 +73,19 @@ node = storage.node('uploads:users/123/avatar.jpg')
 if node.exists:
     # Copy from S3 to local
     node.copy(storage.node('home:cache/avatar.jpg'))
-    
+
     # Read and process
     data = node.read_bytes()
-    
+
     # Backup to GCS
     node.copy(storage.node('backups:avatars/user_123.jpg'))
+
+# Base64 backend: embed data directly in URIs (data URI style)
+import base64
+text = "Configuration data"
+b64_data = base64.b64encode(text.encode()).decode()
+node = storage.node(f'data:{b64_data}')
+print(node.read_text())  # "Configuration data"
 ```
 
 ## Installation
