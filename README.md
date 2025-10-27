@@ -3,6 +3,8 @@
 [![Python versions](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation Status](https://readthedocs.org/projects/genro-storage/badge/?version=latest)](https://genro-storage.readthedocs.io/en/latest/?badge=latest)
+[![Tests](https://github.com/genropy/genro-storage/workflows/Tests/badge.svg)](https://github.com/genropy/genro-storage/actions)
+[![codecov](https://codecov.io/gh/genropy/genro-storage/branch/main/graph/badge.svg)](https://codecov.io/gh/genropy/genro-storage)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 **Universal storage abstraction for Python with pluggable backends**
