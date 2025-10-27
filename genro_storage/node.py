@@ -445,6 +445,228 @@ class StorageNode:
         """
         return self._backend.set_metadata(self._path, metadata)
 
+    def url(self, expires_in: int = 3600, **kwargs) -> str | None:
+        """Generate public URL for accessing this file.
+
+        Returns a URL that can be used to access the file directly.
+        For cloud storage (S3, GCS), generates a presigned/signed URL.
+        For HTTP storage, returns the direct URL.
+        For local storage, returns None.
+
+        Args:
+            expires_in: URL expiration time in seconds (default: 3600 = 1 hour)
+            **kwargs: Backend-specific options
+
+        Returns:
+            str | None: Public URL or None if not supported
+
+        Examples:
+            >>> # S3 presigned URL
+            >>> file = storage.node('s3:documents/report.pdf')
+            >>> url = file.url()
+            >>> print(url)
+            'https://bucket.s3.amazonaws.com/documents/report.pdf?X-Amz-...'
+            >>>
+            >>> # Custom expiration (24 hours)
+            >>> url = file.url(expires_in=86400)
+
+        Notes:
+            - Cloud storage URLs are temporary and expire
+            - Use this for sharing files externally
+            - HTTP URLs are direct (no expiration)
+        """
+        return self._backend.url(self._path, expires_in=expires_in, **kwargs)
+
+    def internal_url(self, nocache: bool = False) -> str | None:
+        """Generate internal/relative URL for this file.
+
+        Returns a URL suitable for internal application use.
+        Optionally includes cache busting parameters.
+
+        Args:
+            nocache: If True, append mtime for cache busting
+
+        Returns:
+            str | None: Internal URL or None if not supported
+
+        Examples:
+            >>> file = storage.node('home:static/app.js')
+            >>> url = file.internal_url(nocache=True)
+            >>> print(url)
+            '/storage/home/static/app.js?mtime=1234567890'
+
+        Notes:
+            - Useful for web applications
+            - Cache busting helps with CDN/browser caching
+        """
+        return self._backend.internal_url(self._path, nocache=nocache)
+
+    @property
+    def versions(self) -> list[dict]:
+        """Get list of available versions for this file.
+
+        Returns version history for versioned storage (S3 with versioning enabled).
+        For non-versioned storage, returns empty list.
+
+        Returns:
+            list[dict]: List of version info dicts
+
+        Examples:
+            >>> file = storage.node('s3:documents/report.pdf')
+            >>> for v in file.versions:
+            ...     print(f"Version {v['version_id']}: {v['last_modified']}")
+
+        Notes:
+            - Only S3 with versioning enabled returns versions
+            - Empty list if versioning not supported
+        """
+        return self._backend.get_versions(self._path)
+
+    def open_version(self, version_id: str, mode: str = 'rb'):
+        """Open a specific version of this file.
+
+        Opens a historical version from versioned storage (S3).
+        Only read modes are supported for historical versions.
+
+        Args:
+            version_id: Version identifier to open
+            mode: Open mode (read modes only, default: 'rb')
+
+        Returns:
+            File-like object
+
+        Raises:
+            ValueError: If mode is not read-only
+            PermissionError: If versioning not supported
+            FileNotFoundError: If version doesn't exist
+
+        Examples:
+            >>> file = storage.node('s3:documents/report.pdf')
+            >>> versions = file.versions
+            >>> if versions:
+            ...     # Open previous version
+            ...     with file.open_version(versions[1]['version_id']) as f:
+            ...         old_content = f.read()
+
+        Notes:
+            - Only works with S3 versioning enabled
+            - Historical versions are read-only
+        """
+        return self._backend.open_version(self._path, version_id, mode)
+
+    def fill_from_url(self, url: str, timeout: int = 30) -> None:
+        """Download content from URL and write to this file.
+
+        Fetches content from the specified URL and writes it to this storage node.
+        Useful for downloading files from the internet into storage.
+
+        Args:
+            url: URL to download from (http:// or https://)
+            timeout: Request timeout in seconds (default: 30)
+
+        Raises:
+            ValueError: If URL is invalid
+            IOError: If download fails
+            PermissionError: If storage is read-only
+
+        Examples:
+            >>> # Download image from internet
+            >>> img = storage.node('s3:downloads/logo.png')
+            >>> img.fill_from_url('https://example.com/logo.png')
+            >>>
+            >>> # Download with custom timeout
+            >>> file = storage.node('local:data.json')
+            >>> file.fill_from_url('https://api.example.com/data', timeout=60)
+
+        Notes:
+            - Uses urllib for HTTP requests (no external dependencies)
+            - Overwrites existing file if present
+            - Parent directory must exist or backend must support auto-creation
+        """
+        import urllib.request
+        import urllib.error
+
+        # Validate URL
+        if not url or not url.startswith(('http://', 'https://')):
+            raise ValueError(f"Invalid URL: {url}. Must start with http:// or https://")
+
+        # Download content
+        try:
+            with urllib.request.urlopen(url, timeout=timeout) as response:
+                data = response.read()
+        except urllib.error.URLError as e:
+            raise IOError(f"Failed to download from {url}: {e}") from e
+        except Exception as e:
+            raise IOError(f"Error downloading from {url}: {e}") from e
+
+        # Write to storage
+        self.write_bytes(data)
+
+    def to_base64(self, mime: str | None = None, include_uri: bool = True) -> str:
+        """Encode file content as base64 string.
+
+        Converts the file content to a base64-encoded string, optionally
+        formatted as a data URI for direct embedding in HTML/CSS.
+
+        Args:
+            mime: MIME type to include in data URI (auto-detected if None)
+            include_uri: If True, format as data URI; if False, return raw base64
+
+        Returns:
+            str: Base64-encoded string or data URI
+
+        Raises:
+            FileNotFoundError: If file doesn't exist
+            ValueError: If node is a directory
+
+        Examples:
+            >>> # Data URI with auto-detected MIME type
+            >>> img = storage.node('images:logo.png')
+            >>> data_uri = img.to_base64()
+            >>> print(data_uri)
+            'data:image/png;base64,iVBORw0KGgo...'
+            >>>
+            >>> # Raw base64 without URI wrapper
+            >>> b64 = img.to_base64(include_uri=False)
+            >>> print(b64)
+            'iVBORw0KGgo...'
+            >>>
+            >>> # Custom MIME type
+            >>> data_uri = img.to_base64(mime='image/x-icon')
+
+        Notes:
+            - Useful for embedding small images/files in HTML
+            - MIME type auto-detection based on file extension
+            - Large files will result in very long strings
+        """
+        import base64
+        import mimetypes
+
+        # Check exists and is file
+        if not self.exists:
+            raise FileNotFoundError(f"File not found: {self.fullpath}")
+
+        if not self.isfile:
+            raise ValueError(f"Cannot encode directory as base64: {self.fullpath}")
+
+        # Read file content
+        data = self.read_bytes()
+
+        # Encode to base64
+        b64_data = base64.b64encode(data).decode('ascii')
+
+        # Return based on format
+        if include_uri:
+            # Auto-detect MIME type if not provided
+            if mime is None:
+                mime, _ = mimetypes.guess_type(self.basename)
+                if mime is None:
+                    mime = 'application/octet-stream'
+
+            return f'data:{mime};base64,{b64_data}'
+        else:
+            return b64_data
+
     # ==================== Special Methods ====================
     
     def __repr__(self) -> str:

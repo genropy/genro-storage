@@ -253,6 +253,99 @@ class FsspecBackend(StorageBackend):
                     dest_item = f"{dest_path}/{item_name}" if dest_path else item_name
                     self.copy(src_item, dest_backend, dest_item)
     
+    def get_versions(self, path: str) -> list[dict]:
+        """Get list of available versions for a file.
+
+        Returns version history for versioned storage (S3 with versioning enabled).
+        For non-versioned storage, returns empty list.
+
+        Args:
+            path: Relative path to file
+
+        Returns:
+            list[dict]: List of version info dicts with keys:
+                - version_id: Version identifier
+                - is_latest: True if this is the current version
+                - last_modified: Modification timestamp
+                - size: File size in bytes
+
+        Examples:
+            >>> versions = backend.get_versions('document.pdf')
+            >>> for v in versions:
+            ...     print(f"Version {v['version_id']}: {v['last_modified']}")
+
+        Notes:
+            - Only S3 with versioning enabled returns versions
+            - GCS and Azure have different versioning models
+            - Empty list if versioning not enabled or not supported
+        """
+        full_path = self._full_path(path)
+
+        # S3: Get version history
+        if self.protocol == 's3':
+            if hasattr(self.fs, 'object_version_info'):
+                try:
+                    versions_info = self.fs.object_version_info(full_path)
+                    # Convert to normalized format
+                    return [
+                        {
+                            'version_id': v.get('VersionId'),
+                            'is_latest': v.get('IsLatest', False),
+                            'last_modified': v.get('LastModified'),
+                            'size': v.get('Size', 0)
+                        }
+                        for v in versions_info
+                    ]
+                except Exception:
+                    # Versioning not enabled or error
+                    return []
+            else:
+                return []
+
+        # Other protocols: no versioning
+        return []
+
+    def open_version(self, path: str, version_id: str, mode: str = 'rb'):
+        """Open a specific version of a file.
+
+        Opens a historical version of a file from versioned storage.
+        Only works with S3 when versioning is enabled.
+
+        Args:
+            path: Relative path to file
+            version_id: Version identifier to open
+            mode: Open mode (read modes only)
+
+        Returns:
+            File-like object
+
+        Raises:
+            ValueError: If mode is not read-only
+            PermissionError: If versioning not supported
+            FileNotFoundError: If version doesn't exist
+
+        Examples:
+            >>> # Open specific version
+            >>> with backend.open_version('file.txt', 'xyz123') as f:
+            ...     old_content = f.read()
+        """
+        if 'w' in mode or 'a' in mode or '+' in mode:
+            raise ValueError("Cannot write to historical versions (read-only)")
+
+        full_path = self._full_path(path)
+
+        # S3: Open specific version
+        if self.protocol == 's3':
+            if hasattr(self.fs, 'open'):
+                return self.fs.open(full_path, mode, version_id=version_id)
+            else:
+                raise PermissionError("S3 versioning not available")
+
+        # Other protocols: not supported
+        raise PermissionError(
+            f"{self.protocol} backend does not support versioning"
+        )
+
     def get_hash(self, path: str) -> str | None:
         """Get MD5 hash from filesystem metadata if available.
 
@@ -390,6 +483,67 @@ class FsspecBackend(StorageBackend):
             raise PermissionError(
                 f"{self.protocol} backend does not support metadata operations"
             )
+
+    def url(self, path: str, expires_in: int = 3600, **kwargs) -> str | None:
+        """Generate public URL for file access.
+
+        For S3: Generates presigned URL
+        For GCS: Generates signed URL
+        For HTTP: Returns direct URL
+        For others: Returns None
+
+        Args:
+            path: Relative path to file
+            expires_in: URL expiration time in seconds
+            **kwargs: Backend-specific options
+
+        Returns:
+            str | None: Public URL or None if not supported
+        """
+        full_path = self._full_path(path)
+
+        # S3: Generate presigned URL
+        if self.protocol == 's3':
+            if hasattr(self.fs, 'sign'):
+                # s3fs supports signing
+                return self.fs.sign(full_path, expiration=expires_in)
+            else:
+                # Fallback: no presigned URL support
+                return None
+
+        # HTTP: Return direct URL
+        elif self.protocol in ('http', 'https'):
+            # For HTTP, the path IS the URL
+            return full_path
+
+        # GCS: Generate signed URL
+        elif self.protocol in ('gcs', 'gs'):
+            if hasattr(self.fs, 'sign'):
+                return self.fs.sign(full_path, expiration=expires_in)
+            else:
+                return None
+
+        # Other protocols: no URL support
+        else:
+            return None
+
+    def internal_url(self, path: str, nocache: bool = False) -> str | None:
+        """Generate internal/relative URL for file access.
+
+        This is a simplified version that returns a path-based URL.
+        Applications should override this with their own URL generation logic.
+
+        Args:
+            path: Relative path to file
+            nocache: If True, append mtime as query parameter
+
+        Returns:
+            str | None: Internal URL or None
+        """
+        # For cloud storage, we don't have an "internal" URL concept
+        # Applications would typically use their own URL routing
+        # Return None by default
+        return None
 
     def local_path(self, path: str, mode: str = 'r'):
         """Get local filesystem path for remote file.

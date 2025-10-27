@@ -366,6 +366,105 @@ class StorageBackend(ABC):
             f"{self.__class__.__name__} does not support metadata operations"
         )
     
+    def get_versions(self, path: str) -> list[dict]:
+        """Get list of available versions for a file.
+
+        Returns version history for versioned storage. Default implementation
+        returns empty list (no versioning support).
+
+        Args:
+            path: Relative path to file
+
+        Returns:
+            list[dict]: List of version info dicts
+
+        Notes:
+            - Override in subclasses that support versioning
+            - S3 with versioning enabled can implement this
+        """
+        return []  # Default: no versioning
+
+    def open_version(self, path: str, version_id: str, mode: str = 'rb'):
+        """Open a specific version of a file.
+
+        Default implementation raises PermissionError. Override in subclasses
+        that support versioning (e.g., S3).
+
+        Args:
+            path: Relative path to file
+            version_id: Version identifier
+            mode: Open mode (read-only)
+
+        Raises:
+            PermissionError: Always (base implementation)
+        """
+        raise PermissionError(
+            f"{self.__class__.__name__} does not support versioning"
+        )
+
+    def url(self, path: str, expires_in: int = 3600, **kwargs) -> str | None:
+        """Generate public URL for file access.
+
+        Returns a URL that can be used to access the file directly.
+        For cloud storage (S3, GCS, Azure), this generates a presigned URL.
+        For local storage, this returns None or a local file path URL.
+
+        Args:
+            path: Relative path to file
+            expires_in: URL expiration time in seconds (default: 3600 = 1 hour)
+            **kwargs: Backend-specific options
+
+        Returns:
+            str | None: Public URL or None if not supported
+
+        Examples:
+            >>> # S3 presigned URL (expires in 1 hour)
+            >>> url = backend.url('documents/report.pdf')
+            >>> print(url)
+            'https://bucket.s3.amazonaws.com/documents/report.pdf?X-Amz-...'
+            >>>
+            >>> # Custom expiration (24 hours)
+            >>> url = backend.url('video.mp4', expires_in=86400)
+
+        Notes:
+            - Cloud storage URLs are temporary and expire
+            - Local storage typically returns None
+            - HTTP storage returns the direct URL
+        """
+        return None  # Default: no URL generation
+
+    def internal_url(self, path: str, nocache: bool = False) -> str | None:
+        """Generate internal/relative URL for file access.
+
+        Returns a URL suitable for internal application use, typically
+        relative to the application's base URL. Optionally includes
+        cache busting parameters.
+
+        Args:
+            path: Relative path to file
+            nocache: If True, append mtime as query parameter for cache busting
+
+        Returns:
+            str | None: Internal URL or None if not supported
+
+        Examples:
+            >>> # Simple internal URL
+            >>> url = backend.internal_url('images/logo.png')
+            >>> print(url)
+            '/storage/home/images/logo.png'
+            >>>
+            >>> # With cache busting
+            >>> url = backend.internal_url('app.js', nocache=True)
+            >>> print(url)
+            '/storage/home/app.js?mtime=1234567890'
+
+        Notes:
+            - Useful for web applications
+            - Cache busting helps with CDN/browser caching
+            - Format depends on application configuration
+        """
+        return None  # Default: no internal URL
+
     def local_path(self, path: str, mode: str = 'r'):
         """Get a local filesystem path for the file.
 
