@@ -90,7 +90,24 @@ print(node.read_text())  # "Configuration data"
 
 ## Installation
 
-### From Source (Current)
+### From GitHub (Recommended)
+
+Install directly from GitHub without cloning:
+
+```bash
+# Base package
+pip install git+https://github.com/genropy/genro-storage.git
+
+# With S3 support
+pip install "genro-storage[s3] @ git+https://github.com/genropy/genro-storage.git"
+
+# With all backends
+pip install "genro-storage[all] @ git+https://github.com/genropy/genro-storage.git"
+```
+
+### From Source (Development)
+
+Clone and install in editable mode:
 
 ```bash
 # Clone repository
