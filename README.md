@@ -19,8 +19,8 @@ A modern, elegant Python library that provides a unified interface for accessing
 ✅ All backends working (local, S3, GCS, Azure, HTTP, Memory, Base64)
 ✅ 195 tests passing on Python 3.9-3.12
 ✅ Full documentation on ReadTheDocs
-✅ Battle-tested code from 6+ years of Genropy production use
-⚠️ Not yet on PyPI - install from source
+✅ Battle-tested code from Genropy (19+ years in production, storage abstraction since 2018)
+✅ Available on PyPI
 
 ## Key Features
 
@@ -270,7 +270,7 @@ See [TESTING.md](TESTING.md) for detailed testing instructions with MinIO.
 
 ## Origins
 
-genro-storage is extracted and modernized from [Genropy](https://github.com/genropy/genropy), a Python web framework with 6+ years of production battle-testing. We're making this powerful storage abstraction available as a standalone library for the wider Python community.
+genro-storage is extracted and modernized from [Genropy](https://github.com/genropy/genropy), a Python web framework in production since 2006 (19+ years). The storage abstraction layer was introduced in 2018 and has been battle-tested in production for 6+ years. We're making this powerful storage abstraction available as a standalone library for the wider Python community.
 
 ## Development Status
 

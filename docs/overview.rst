@@ -209,7 +209,7 @@ Performance Characteristics
 Production Usage
 ----------------
 
-genro-storage originates from **Genropy** (https://github.com/genropy/genropy), a Python web framework in production since 2018.
+genro-storage originates from **Genropy** (https://github.com/genropy/genropy), a Python web framework in production since 2006. The storage abstraction layer was introduced in 2018 and has been refined over 6+ years of production use.
 
 **Real-world usage patterns:**
 

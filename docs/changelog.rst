@@ -45,6 +45,7 @@ Added
 Technical
 ~~~~~~~~~
 
-- Battle-tested code extracted from 6+ years of Genropy production use
+- Battle-tested code extracted from Genropy (Python web framework since 2006)
+- Storage abstraction layer refined over 6+ years of production use (since 2018)
 - Full type hints with Python 3.9+ compatibility
 - Powered by fsspec for backend abstraction
