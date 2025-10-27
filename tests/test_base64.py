@@ -113,16 +113,35 @@ class TestBase64Backend:
         content = node.read_text(encoding='utf-8')
         assert content == text
 
-    def test_write_operations_raise_permission_error(self, storage):
-        """Test that write operations raise PermissionError."""
-        b64_data = base64.b64encode(b"test").decode()
-        node = storage.node(f'b64:{b64_data}')
+    def test_write_text_updates_path(self, storage):
+        """Test that write_text updates the node's path."""
+        # Start with empty or any base64
+        node = storage.node('b64:')
 
-        with pytest.raises(PermissionError, match="read-only"):
-            node.write_text("new content")
+        # Write new content
+        node.write_text("Hello World")
 
-        with pytest.raises(PermissionError, match="read-only"):
-            node.write_bytes(b"new data")
+        # Path should be updated to new base64
+        expected_b64 = base64.b64encode(b"Hello World").decode()
+        assert node.path == expected_b64
+
+        # Reading should return the new content
+        assert node.read_text() == "Hello World"
+
+    def test_write_bytes_updates_path(self, storage):
+        """Test that write_bytes updates the node's path."""
+        # Start with empty or any base64
+        node = storage.node('b64:')
+
+        data = b"\x00\x01\x02\xff"
+        node.write_bytes(data)
+
+        # Path should be updated to new base64
+        expected_b64 = base64.b64encode(data).decode()
+        assert node.path == expected_b64
+
+        # Reading should return the new content
+        assert node.read_bytes() == data
 
     def test_delete_raises_permission_error(self, storage):
         """Test that delete raises PermissionError."""
@@ -251,13 +270,18 @@ class TestBase64Backend:
 
         assert content == text
 
-    def test_open_write_raises_error(self, storage):
-        """Test that opening for write raises PermissionError."""
+    def test_open_write_mode(self, storage):
+        """Test that opening for write returns empty buffer."""
         b64_data = base64.b64encode(b"test").decode()
         node = storage.node(f'b64:{b64_data}')
 
-        with pytest.raises(PermissionError, match="read-only"):
-            node.open('w')
+        # Write mode should return empty buffer
+        with node.open('wb') as f:
+            assert f.read() == b""
+
+        # Text write mode
+        with node.open('w') as f:
+            assert f.read() == ""
 
     def test_unicode_text(self, storage):
         """Test reading Unicode text from base64."""
@@ -293,3 +317,53 @@ class TestBase64Backend:
 
         assert data == png_header
         assert len(data) == 8
+
+    def test_path_changes_after_write(self, storage):
+        """Test that path changes after each write operation."""
+        node = storage.node('b64:')
+
+        # First write
+        node.write_text("First")
+        first_path = node.path
+        assert first_path == base64.b64encode(b"First").decode()
+        assert node.read_text() == "First"
+
+        # Second write - path should change
+        node.write_text("Second")
+        second_path = node.path
+        assert second_path == base64.b64encode(b"Second").decode()
+        assert second_path != first_path
+        assert node.read_text() == "Second"
+
+    def test_copy_from_memory_to_base64(self, storage):
+        """Test copying from memory backend to base64 (the main use case)."""
+        # Setup memory backend with source data
+        storage.configure([{'name': 'mem', 'type': 'memory'}])
+
+        # Create source file in memory
+        src = storage.node('mem:test.txt')
+        src.write_text("Test data for base64")
+
+        # Create empty base64 destination
+        dest = storage.node('b64:')
+
+        # Copy to base64
+        src.copy(dest)
+
+        # Destination should now have base64-encoded content in its path
+        expected_b64 = base64.b64encode(b"Test data for base64").decode()
+        assert dest.path == expected_b64
+        assert dest.read_text() == "Test data for base64"
+
+    def test_multiple_writes_maintain_reference(self, storage):
+        """Test that node reference remains valid after multiple writes."""
+        node = storage.node('b64:')
+
+        # Multiple writes
+        for i in range(5):
+            node.write_text(f"Content {i}")
+            assert node.read_text() == f"Content {i}"
+            assert node.exists
+
+        # Final check
+        assert node.read_text() == "Content 4"

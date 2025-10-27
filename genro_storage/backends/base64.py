@@ -153,19 +153,28 @@ class Base64Backend(StorageBackend):
         """Open base64 data as file-like object.
 
         Args:
-            path: Base64-encoded string
-            mode: Open mode ('rb' or 'r')
+            path: Base64-encoded string (ignored for write modes)
+            mode: Open mode ('rb', 'r', 'wb', 'w', 'ab', 'a')
 
         Returns:
             File-like object (BytesIO or StringIO)
 
         Raises:
-            FileNotFoundError: If invalid base64
-            PermissionError: If mode is for writing
-        """
-        if 'w' in mode or 'a' in mode or '+' in mode:
-            raise PermissionError("Base64 backend is read-only")
+            FileNotFoundError: If invalid base64 (read modes only)
 
+        Note:
+            Write modes return empty BytesIO/StringIO. The caller must handle
+            retrieving the content and calling write_bytes/write_text to get
+            the new base64 path.
+        """
+        # Write modes: return empty buffer
+        if 'w' in mode or 'a' in mode or '+' in mode:
+            if 'b' in mode:
+                return io.BytesIO()
+            else:
+                return io.StringIO()
+
+        # Read modes: decode existing data
         data = self._decode(path)
 
         if 'b' in mode:
@@ -207,36 +216,53 @@ class Base64Backend(StorageBackend):
         data = self._decode(path)
         return data.decode(encoding)
 
-    def write_bytes(self, path: str, data: bytes) -> None:
-        """Write operation not supported.
+    def write_bytes(self, path: str, data: bytes) -> str:
+        """Write bytes to base64 node.
+
+        Creates a new base64-encoded string from the data. The path parameter
+        is ignored as the base64 content itself becomes the new path.
 
         Args:
-            path: Unused
-            data: Unused
+            path: Ignored (base64 backend is pathless)
+            data: Bytes to encode
 
-        Raises:
-            PermissionError: Always (read-only backend)
+        Returns:
+            str: New base64-encoded path
+
+        Note:
+            This operation changes the node's path to the new base64 string.
+            The old path becomes invalid.
+
+        Examples:
+            >>> new_path = backend.write_bytes("old", b"Hello")
+            >>> # new_path is now "SGVsbG8=" (base64 of "Hello")
         """
-        raise PermissionError(
-            "Base64 backend is read-only. To create base64 data, "
-            "use: import base64; path = base64.b64encode(data).decode()"
-        )
+        return base64.b64encode(data).decode()
 
-    def write_text(self, path: str, text: str, encoding: str = 'utf-8') -> None:
-        """Write operation not supported.
+    def write_text(self, path: str, text: str, encoding: str = 'utf-8') -> str:
+        """Write text to base64 node.
+
+        Creates a new base64-encoded string from the text. The path parameter
+        is ignored as the base64 content itself becomes the new path.
 
         Args:
-            path: Unused
-            text: Unused
-            encoding: Unused
+            path: Ignored (base64 backend is pathless)
+            text: String to encode
+            encoding: Text encoding (default: utf-8)
 
-        Raises:
-            PermissionError: Always (read-only backend)
+        Returns:
+            str: New base64-encoded path
+
+        Note:
+            This operation changes the node's path to the new base64 string.
+            The old path becomes invalid.
+
+        Examples:
+            >>> new_path = backend.write_text("old", "Hello World")
+            >>> # new_path is now "SGVsbG8gV29ybGQ=" (base64 of "Hello World")
         """
-        raise PermissionError(
-            "Base64 backend is read-only. To create base64 data, "
-            "use: import base64; path = base64.b64encode(text.encode()).decode()"
-        )
+        data = text.encode(encoding)
+        return base64.b64encode(data).decode()
 
     def delete(self, path: str, recursive: bool = False) -> None:
         """Delete operation not supported.
@@ -277,7 +303,7 @@ class Base64Backend(StorageBackend):
         """
         raise PermissionError("Base64 backend is read-only")
 
-    def copy(self, src_path: str, dest_backend: 'StorageBackend', dest_path: str) -> None:
+    def copy(self, src_path: str, dest_backend: 'StorageBackend', dest_path: str) -> str | None:
         """Copy base64 data to another backend.
 
         This decodes the base64 data and writes it to the destination backend.
@@ -287,11 +313,18 @@ class Base64Backend(StorageBackend):
             dest_backend: Destination backend
             dest_path: Destination path
 
+        Returns:
+            str | None: New destination path if destination backend changes it,
+                       or None if path unchanged
+
         Raises:
             FileNotFoundError: If invalid base64
         """
         data = self._decode(src_path)
-        dest_backend.write_bytes(dest_path, data)
+        result = dest_backend.write_bytes(dest_path, data)
+        # Return the result from destination backend's write
+        # (base64 returns new path, others return None)
+        return result
 
     def get_hash(self, path: str) -> str | None:
         """Get MD5 hash of decoded data.

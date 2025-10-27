@@ -216,26 +216,27 @@ class FsspecBackend(StorageBackend):
             
             self.fs.mkdir(full_path)
     
-    def copy(self, src_path: str, dest_backend: StorageBackend, dest_path: str) -> None:
+    def copy(self, src_path: str, dest_backend: StorageBackend, dest_path: str) -> str | None:
         """Copy file/directory to another backend."""
         src_full = self._full_path(src_path)
-        
+
         # Check if both are fsspec backends
         if isinstance(dest_backend, FsspecBackend):
             dest_full = dest_backend._full_path(dest_path)
-            
+
             # Use fsspec's copy if same filesystem
             if self.fs == dest_backend.fs:
                 self.fs.copy(src_full, dest_full, recursive=True)
-                return
-        
+                return None
+
         # Fallback: copy via read/write
         info = self.fs.info(src_full)
-        
+
         if info['type'] == 'file':
             # Copy single file
             data = self.read_bytes(src_path)
-            dest_backend.write_bytes(dest_path, data)
+            result = dest_backend.write_bytes(dest_path, data)
+            return result  # Return new path if dest backend changed it
         
         elif info['type'] == 'directory':
             # Copy directory recursively

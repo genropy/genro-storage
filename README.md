@@ -17,7 +17,7 @@ A modern, elegant Python library that provides a unified interface for accessing
 
 ✅ Core implementation complete
 ✅ All backends working (local, S3, GCS, Azure, HTTP, Memory, Base64)
-✅ 102+ tests passing
+✅ 106 tests passing
 ✅ Full documentation on ReadTheDocs
 ⚠️ Not yet on PyPI - install from source
 
@@ -30,7 +30,7 @@ A modern, elegant Python library that provides a unified interface for accessing
 - **Efficient hashing** - Uses cloud metadata (S3 ETag) when available, avoiding downloads
 - **Flexible configuration** - Load mounts from YAML, JSON, or code
 - **Test-friendly** - In-memory backend for fast, isolated testing
-- **Base64 data URIs** - Embed small data directly in URIs (no storage needed)
+- **Base64 data URIs** - Embed data inline with automatic encoding (writable with mutable paths)
 - **Production-ready backends** - Built on 6+ years of Genropy production experience
 - **Lightweight core** - Optional backends installed only when needed
 - **Cross-storage operations** - Copy/move files between different storage types seamlessly
@@ -81,11 +81,23 @@ if node.exists:
     node.copy(storage.node('backups:avatars/user_123.jpg'))
 
 # Base64 backend: embed data directly in URIs (data URI style)
+# Read inline data
 import base64
 text = "Configuration data"
 b64_data = base64.b64encode(text.encode()).decode()
 node = storage.node(f'data:{b64_data}')
 print(node.read_text())  # "Configuration data"
+
+# Or write to create base64 (path updates automatically)
+node = storage.node('data:')
+node.write_text("New content")
+print(node.path)  # "TmV3IGNvbnRlbnQ=" (base64 of "New content")
+
+# Copy from S3 to base64 for inline use
+s3_image = storage.node('uploads:photo.jpg')
+b64_image = storage.node('data:')
+s3_image.copy(b64_image)
+data_uri = f"data:image/jpeg;base64,{b64_image.path}"
 ```
 
 ## Installation
@@ -180,9 +192,10 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 
 - ✅ API Design Complete
 - ✅ Core Implementation Complete
-- ✅ FsspecBackend (all 6 storage types working)
-- ✅ Comprehensive Test Suite (74+ tests, 66% coverage)
+- ✅ FsspecBackend (all 7 storage types working: local, S3, GCS, Azure, HTTP, Memory, Base64)
+- ✅ Comprehensive Test Suite (106 tests, 71% coverage)
 - ✅ MD5 hashing and content-based equality
+- ✅ Base64 backend with writable mutable paths
 - ✅ Full Documentation on ReadTheDocs
 - ✅ MinIO Integration Testing
 - ⏳ Additional backends (GCS, Azure) - ready but needs testing

@@ -75,10 +75,10 @@ class StorageNode:
     @property
     def fullpath(self) -> str:
         """Full path including mount point.
-        
+
         Returns:
             str: Full path in format "mount:path/to/file"
-        
+
         Examples:
             >>> node = storage.node('home:documents/report.pdf')
             >>> print(node.fullpath)
@@ -87,7 +87,26 @@ class StorageNode:
         if self._path:
             return f"{self._mount_name}:{self._path}"
         return f"{self._mount_name}:"
-    
+
+    @property
+    def path(self) -> str:
+        """Relative path within the mount.
+
+        Returns:
+            str: Path relative to mount point (without mount prefix)
+
+        Examples:
+            >>> node = storage.node('home:documents/report.pdf')
+            >>> print(node.path)
+            'documents/report.pdf'
+
+            >>> # For base64 backend, this is the base64-encoded content
+            >>> node = storage.node('b64:SGVsbG8=')
+            >>> print(node.path)
+            'SGVsbG8='
+        """
+        return self._path
+
     @property
     def exists(self) -> bool:
         """True if file or directory exists.
@@ -296,12 +315,28 @@ class StorageNode:
         return self._backend.read_text(self._path, encoding)
     
     def write_bytes(self, data: bytes) -> None:
-        """Write bytes to file."""
-        self._backend.write_bytes(self._path, data)
+        """Write bytes to file.
+
+        Note:
+            For base64 backend, this updates the node's path to the new base64-encoded content.
+        """
+        result = self._backend.write_bytes(self._path, data)
+        # If backend returns a new path (e.g., base64), update it
+        if result is not None:
+            self._path = result
+            self._posix_path = PurePosixPath(result) if result else PurePosixPath('.')
     
     def write_text(self, text: str, encoding: str = 'utf-8') -> None:
-        """Write string to file."""
-        self._backend.write_text(self._path, text, encoding)
+        """Write string to file.
+
+        Note:
+            For base64 backend, this updates the node's path to the new base64-encoded content.
+        """
+        result = self._backend.write_text(self._path, text, encoding)
+        # If backend returns a new path (e.g., base64), update it
+        if result is not None:
+            self._path = result
+            self._posix_path = PurePosixPath(result) if result else PurePosixPath('.')
     
     # ==================== File Operations ====================
     
@@ -310,14 +345,24 @@ class StorageNode:
         self._backend.delete(self._path, recursive=True)
     
     def copy(self, dest: StorageNode | str) -> StorageNode:
-        """Copy file/directory to destination."""
+        """Copy file/directory to destination.
+
+        Note:
+            If copying to base64 backend, the destination node's path will be
+            updated to the new base64-encoded content.
+        """
         # Convert string to StorageNode if needed
         if isinstance(dest, str):
             dest = self._manager.node(dest)
-        
+
         # Copy via backends
-        self._backend.copy(self._path, dest._backend, dest._path)
-        
+        new_path = self._backend.copy(self._path, dest._backend, dest._path)
+
+        # If destination backend returned a new path, update dest
+        if new_path is not None:
+            dest._path = new_path
+            dest._posix_path = PurePosixPath(new_path) if new_path else PurePosixPath('.')
+
         return dest
     
     def move(self, dest: StorageNode | str) -> StorageNode:
