@@ -33,7 +33,7 @@ https://genro-storage.readthedocs.io
 __version__ = '0.1.0'
 
 from .manager import StorageManager
-from .node import StorageNode
+from .node import StorageNode, SkipStrategy
 from .exceptions import (
     StorageError,
     StorageNotFoundError,
@@ -44,11 +44,12 @@ from .exceptions import (
 __all__ = [
     # Version
     '__version__',
-    
+
     # Main classes
     'StorageManager',
     'StorageNode',
-    
+    'SkipStrategy',
+
     # Exceptions
     'StorageError',
     'StorageNotFoundError',

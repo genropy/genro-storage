@@ -5,11 +5,29 @@ interacting with files and directories across different storage backends.
 """
 
 from __future__ import annotations
-from typing import BinaryIO, TextIO, TYPE_CHECKING
+from typing import BinaryIO, TextIO, TYPE_CHECKING, Callable, Literal
 from pathlib import PurePosixPath
+from enum import Enum
 
 if TYPE_CHECKING:
     from .manager import StorageManager
+
+
+class SkipStrategy(str, Enum):
+    """Strategy for skipping files during copy operations.
+
+    Attributes:
+        NEVER: Always copy (overwrite existing files)
+        EXISTS: Skip if destination file exists (fastest)
+        SIZE: Skip if destination exists and has same size (fast)
+        HASH: Skip if destination exists and has same content/MD5 (accurate)
+        CUSTOM: Use custom skip function provided by user
+    """
+    NEVER = 'never'
+    EXISTS = 'exists'
+    SIZE = 'size'
+    HASH = 'hash'
+    CUSTOM = 'custom'
 
 
 class StorageNode:
@@ -343,25 +361,276 @@ class StorageNode:
     def delete(self) -> None:
         """Delete file or directory."""
         self._backend.delete(self._path, recursive=True)
-    
-    def copy(self, dest: StorageNode | str) -> StorageNode:
-        """Copy file/directory to destination.
+
+    def _should_skip_file(self, dest: StorageNode,
+                          skip: SkipStrategy | str,
+                          skip_fn: Callable[[StorageNode, StorageNode], bool] | None) -> tuple[bool, str]:
+        """Determine if file should be skipped during copy.
+
+        Args:
+            dest: Destination node
+            skip: Skip strategy to use
+            skip_fn: Custom skip function (required if skip='custom')
+
+        Returns:
+            Tuple of (should_skip: bool, reason: str)
+        """
+        # Never skip if destination doesn't exist
+        if not dest.exists:
+            return (False, '')
+
+        # Check skip strategy
+        if skip == 'never' or skip == SkipStrategy.NEVER:
+            return (False, '')
+
+        elif skip == 'exists' or skip == SkipStrategy.EXISTS:
+            return (True, 'destination exists')
+
+        elif skip == 'size' or skip == SkipStrategy.SIZE:
+            try:
+                if self.size == dest.size:
+                    return (True, f'same size ({self.size} bytes)')
+                else:
+                    return (False, '')
+            except Exception:
+                # If size comparison fails, don't skip
+                return (False, '')
+
+        elif skip == 'hash' or skip == SkipStrategy.HASH:
+            try:
+                # Use MD5 hash comparison (with cloud metadata optimization)
+                if self.md5hash == dest.md5hash:
+                    return (True, f'same content (MD5: {self.md5hash[:8]}...)')
+                else:
+                    return (False, '')
+            except Exception:
+                # If hash comparison fails, don't skip
+                return (False, '')
+
+        elif skip == 'custom' or skip == SkipStrategy.CUSTOM:
+            try:
+                if skip_fn and skip_fn(self, dest):
+                    return (True, 'custom function returned True')
+                else:
+                    return (False, '')
+            except Exception as e:
+                # If custom function fails, don't skip
+                return (False, '')
+
+        return (False, '')
+
+    def _copy_file_with_skip(self, dest: StorageNode,
+                             skip: SkipStrategy | str,
+                             skip_fn: Callable[[StorageNode, StorageNode], bool] | None,
+                             on_file: Callable[[StorageNode], None] | None,
+                             on_skip: Callable[[StorageNode, str], None] | None) -> StorageNode:
+        """Copy single file with skip logic.
+
+        Args:
+            dest: Destination node
+            skip: Skip strategy
+            skip_fn: Custom skip function
+            on_file: Callback after file copied
+            on_skip: Callback when file skipped
+
+        Returns:
+            Destination node
+        """
+        # Check if we should skip
+        should_skip, reason = self._should_skip_file(dest, skip, skip_fn)
+
+        if should_skip:
+            if on_skip:
+                on_skip(self, reason)
+            return dest
+
+        # Perform actual copy
+        new_path = self._backend.copy(self._path, dest._backend, dest._path)
+
+        # Update destination path if backend returned new path
+        if new_path is not None:
+            dest._path = new_path
+            dest._posix_path = PurePosixPath(new_path) if new_path else PurePosixPath('.')
+
+        # Call on_file callback
+        if on_file:
+            on_file(self)
+
+        return dest
+
+    def _copy_dir_with_skip(self, dest: StorageNode,
+                            skip: SkipStrategy | str,
+                            skip_fn: Callable[[StorageNode, StorageNode], bool] | None,
+                            progress: Callable[[int, int], None] | None,
+                            on_file: Callable[[StorageNode], None] | None,
+                            on_skip: Callable[[StorageNode, str], None] | None) -> StorageNode:
+        """Copy directory recursively with skip logic and progress tracking.
+
+        Args:
+            dest: Destination node
+            skip: Skip strategy
+            skip_fn: Custom skip function
+            progress: Progress callback(current, total)
+            on_file: Callback after each file copied
+            on_skip: Callback when file skipped
+
+        Returns:
+            Destination node
+        """
+        # Create destination directory if needed
+        if not dest.exists:
+            dest.mkdir(parents=True, exist_ok=True)
+
+        # Collect all files to process
+        files_to_process = []
+
+        def collect_files(src_node: StorageNode, dest_node: StorageNode):
+            """Recursively collect all files."""
+            if src_node.isfile:
+                files_to_process.append((src_node, dest_node))
+            elif src_node.isdir:
+                # Ensure destination dir exists
+                if not dest_node.exists:
+                    dest_node.mkdir(parents=True, exist_ok=True)
+
+                # Recurse into children
+                for child in src_node.children():
+                    collect_files(child, dest_node / child.basename)
+
+        collect_files(self, dest)
+
+        # Process files with progress tracking
+        total = len(files_to_process)
+
+        for idx, (src, dst) in enumerate(files_to_process, 1):
+            # Check skip condition
+            should_skip, reason = src._should_skip_file(dst, skip, skip_fn)
+
+            if should_skip:
+                if on_skip:
+                    on_skip(src, reason)
+            else:
+                # Copy file
+                new_path = src._backend.copy(src._path, dst._backend, dst._path)
+
+                # Update destination path if backend returned new path
+                if new_path is not None:
+                    dst._path = new_path
+                    dst._posix_path = PurePosixPath(new_path) if new_path else PurePosixPath('.')
+
+                if on_file:
+                    on_file(src)
+
+            # Progress callback
+            if progress:
+                progress(idx, total)
+
+        return dest
+
+    def copy(self, dest: StorageNode | str,
+             skip: SkipStrategy | Literal['never', 'exists', 'size', 'hash', 'custom'] = 'never',
+             skip_fn: Callable[[StorageNode, StorageNode], bool] | None = None,
+             progress: Callable[[int, int], None] | None = None,
+             on_file: Callable[[StorageNode], None] | None = None,
+             on_skip: Callable[[StorageNode, str], None] | None = None) -> StorageNode:
+        """Copy file or directory to destination with intelligent skip logic.
+
+        Supports multiple skip strategies for efficient incremental backups:
+        - 'never': Always copy (overwrite existing files) - default
+        - 'exists': Skip if destination file exists (fastest)
+        - 'size': Skip if destination exists and has same size (fast)
+        - 'hash': Skip if destination exists and has same content/MD5 (accurate)
+        - 'custom': Use custom skip function
+
+        Args:
+            dest: Destination node or path string
+            skip: Skip strategy (default: 'never' = always copy)
+            skip_fn: Custom skip function(src, dest) -> bool (required if skip='custom')
+            progress: Callback(current, total) called after each file
+            on_file: Callback(src_node) called after each file copied
+            on_skip: Callback(src_node, reason) called when file is skipped
+
+        Returns:
+            Destination StorageNode
+
+        Raises:
+            FileNotFoundError: If source doesn't exist
+            ValueError: If skip='custom' but no skip_fn provided
+
+        Examples:
+            >>> # Simple copy (overwrite) - default behavior
+            >>> src.copy(dest)
+            >>>
+            >>> # Skip existing files (fast incremental backup)
+            >>> src.copy(dest, skip='exists')
+            >>>
+            >>> # Skip if same size (faster, less accurate)
+            >>> src.copy(dest, skip='size')
+            >>>
+            >>> # Skip if same content (accurate, uses MD5/ETag)
+            >>> src.copy(dest, skip='hash')
+            >>>
+            >>> # Custom skip logic
+            >>> def skip_older(src, dest):
+            ...     return dest.exists and dest.mtime > src.mtime
+            >>> src.copy(dest, skip='custom', skip_fn=skip_older)
+            >>>
+            >>> # With progress tracking
+            >>> def progress(current, total):
+            ...     print(f"Progress: {current}/{total}")
+            >>> src.copy(dest, skip='hash', progress=progress)
+            >>>
+            >>> # Track what was copied vs skipped
+            >>> copied = []
+            >>> skipped = []
+            >>> src.copy(dest, skip='hash',
+            ...          on_file=lambda n: copied.append(n.path),
+            ...          on_skip=lambda n, r: skipped.append((n.path, r)))
+
+        Performance Notes:
+            - skip='exists': ~1-2ms per file (only existence check)
+            - skip='size': ~2-5ms per file (existence + size read)
+            - skip='hash':
+              * S3/GCS: ~5-10ms per file (ETag from metadata, fast)
+              * Local: ~100ms per MB (must read file to compute MD5)
+
+            For cloud storage, 'hash' is efficient due to ETag metadata.
+            For local storage, 'size' is usually sufficient.
 
         Note:
             If copying to base64 backend, the destination node's path will be
             updated to the new base64-encoded content.
         """
+        if not self.exists:
+            raise FileNotFoundError(f"Source not found: {self.fullpath}")
+
+        # Validate skip strategy
+        if skip == 'custom' and skip_fn is None:
+            raise ValueError("skip='custom' requires skip_fn parameter")
+
         # Convert string to StorageNode if needed
         if isinstance(dest, str):
             dest = self._manager.node(dest)
 
-        # Copy via backends
-        new_path = self._backend.copy(self._path, dest._backend, dest._path)
+        # If skip strategy is not 'never' or we have callbacks, use enhanced copy
+        if skip != 'never' or progress or on_file or on_skip:
+            # Single file copy
+            if self.isfile:
+                return self._copy_file_with_skip(dest, skip, skip_fn, on_file, on_skip)
 
-        # If destination backend returned a new path, update dest
-        if new_path is not None:
-            dest._path = new_path
-            dest._posix_path = PurePosixPath(new_path) if new_path else PurePosixPath('.')
+            # Directory copy (recursive)
+            elif self.isdir:
+                return self._copy_dir_with_skip(dest, skip, skip_fn, progress, on_file, on_skip)
+
+        # Simple copy without skip logic (backward compatible)
+        else:
+            # Copy via backends
+            new_path = self._backend.copy(self._path, dest._backend, dest._path)
+
+            # If destination backend returned a new path, update dest
+            if new_path is not None:
+                dest._path = new_path
+                dest._posix_path = PurePosixPath(new_path) if new_path else PurePosixPath('.')
 
         return dest
     

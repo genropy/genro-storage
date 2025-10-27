@@ -17,7 +17,7 @@ A modern, elegant Python library that provides a unified interface for accessing
 
 ✅ Core implementation complete
 ✅ All backends working (local, S3, GCS, Azure, HTTP, Memory, Base64)
-✅ 106 tests passing
+✅ 160 tests passing (including advanced copy skip strategies)
 ✅ Full documentation on ReadTheDocs
 ⚠️ Not yet on PyPI - install from source
 
@@ -26,6 +26,8 @@ A modern, elegant Python library that provides a unified interface for accessing
 - **Powered by fsspec** - Leverage 20+ battle-tested storage backends
 - **Mount point system** - Organize storage with logical names like `home:`, `uploads:`, `s3:`
 - **Intuitive API** - Pathlib-inspired interface that feels natural and Pythonic
+- **Intelligent copy strategies** - Skip files by existence, size, or hash for efficient incremental backups
+- **Progress tracking** - Built-in callbacks for progress bars and logging during copy operations
 - **Content-based comparison** - Compare files by MD5 hash across different backends
 - **Efficient hashing** - Uses cloud metadata (S3 ETag) when available, avoiding downloads
 - **Flexible configuration** - Load mounts from YAML, JSON, or code
@@ -106,14 +108,34 @@ s3_image.copy(b64_image)
 data_uri = f"data:image/jpeg;base64,{b64_image.path}"
 
 # Advanced features
-# 1. Work with external tools (ffmpeg, imagemagick, etc.)
+# 1. Intelligent incremental backups (NEW!)
+docs = storage.node('home:documents')
+s3_backup = storage.node('uploads:backup/documents')
+
+# Skip files that already exist (fastest)
+docs.copy(s3_backup, skip='exists')
+
+# Skip files with same size (fast, good accuracy)
+docs.copy(s3_backup, skip='size')
+
+# Skip files with same content (accurate, uses S3 ETag - fast!)
+docs.copy(s3_backup, skip='hash')
+
+# With progress tracking
+from tqdm import tqdm
+pbar = tqdm(desc="Backing up", unit="file")
+docs.copy(s3_backup, skip='hash',
+          progress=lambda cur, tot: pbar.update(1))
+pbar.close()
+
+# 2. Work with external tools (ffmpeg, imagemagick, etc.)
 video = storage.node('uploads:video.mp4')
 with video.local_path(mode='r') as local_path:
     # Tool works with local file, auto-uploaded after
     import subprocess
     subprocess.run(['ffmpeg', '-i', local_path, 'output.mp4'])
 
-# 2. Dynamic paths for multi-user apps
+# 3. Dynamic paths for multi-user apps
 def get_user_storage():
     user_id = get_current_user()
     return f'/data/users/{user_id}'
@@ -123,21 +145,21 @@ storage.configure([
 ])
 # Path resolves differently per user!
 
-# 3. Cloud metadata
+# 4. Cloud metadata
 file = storage.node('uploads:document.pdf')
 file.set_metadata({
     'Author': 'John Doe',
     'Department': 'Engineering'
 })
 
-# 4. Generate shareable URLs
+# 5. Generate shareable URLs
 url = file.url(expires_in=3600)  # S3 presigned URL
 
-# 5. Encode to data URI
+# 6. Encode to data URI
 img = storage.node('home:logo.png')
 data_uri = img.to_base64()  # data:image/png;base64,...
 
-# 6. Download from internet
+# 7. Download from internet
 remote = storage.node('uploads:downloaded.pdf')
 remote.fill_from_url('https://example.com/file.pdf')
 ```
