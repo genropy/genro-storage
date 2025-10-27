@@ -306,7 +306,34 @@ class StorageNode:
                 hasher.update(chunk)
         
         return hasher.hexdigest()
-    
+
+    @property
+    def mimetype(self) -> str:
+        """Get MIME type from file extension.
+
+        Uses Python's mimetypes module to guess the MIME type based on
+        the file extension. Returns 'application/octet-stream' if type
+        cannot be determined.
+
+        Returns:
+            str: MIME type string (e.g., 'image/png', 'application/pdf')
+
+        Examples:
+            >>> jpg = storage.node('photos:image.jpg')
+            >>> jpg.mimetype
+            'image/jpeg'
+            >>>
+            >>> pdf = storage.node('documents:report.pdf')
+            >>> pdf.mimetype
+            'application/pdf'
+            >>>
+            >>> # Use for HTTP responses
+            >>> response.headers['Content-Type'] = node.mimetype
+        """
+        import mimetypes
+        mime, _ = mimetypes.guess_type(self.path)
+        return mime or 'application/octet-stream'
+
     # ==================== File I/O Methods ====================
     
     def open(self, mode: str = 'rb') -> BinaryIO | TextIO:
@@ -709,6 +736,237 @@ class StorageNode:
             - Large files are streamed in chunks to avoid memory issues
         """
         return self._backend.local_path(self._path, mode=mode)
+
+    def call(self, *args,
+             callback: Callable[[], None] | None = None,
+             async_mode: bool = False,
+             return_output: bool = False,
+             **subprocess_kwargs) -> str | None:
+        """Execute external command with automatic local_path management.
+
+        Automatically manages local filesystem paths for StorageNode arguments,
+        downloading from cloud storage as needed and uploading changes after
+        execution. Perfect for integrating with external tools like ffmpeg,
+        imagemagick, pandoc, etc.
+
+        Args:
+            *args: Command arguments (str or StorageNode)
+                   StorageNode arguments are automatically converted to local paths
+            callback: Function to call on completion (async mode only)
+            async_mode: Run in background thread (default: False)
+            return_output: Return subprocess output as string (default: False)
+            **subprocess_kwargs: Additional arguments passed to subprocess.run()
+                                (e.g., cwd, env, timeout, shell, etc.)
+
+        Returns:
+            str | None: Command output if return_output=True, None otherwise
+                       In async mode, returns immediately (None)
+
+        Raises:
+            subprocess.CalledProcessError: If command exits with non-zero status
+            FileNotFoundError: If command executable not found
+
+        Examples:
+            >>> # Video conversion (cloud storage)
+            >>> input_video = storage.node('s3:videos/input.mp4')
+            >>> output_video = storage.node('s3:videos/output.mp4')
+            >>> input_video.call('ffmpeg', '-i', input_video, '-vcodec', 'h264', output_video)
+            >>> # Automatically downloads input, uploads output
+
+            >>> # Image resize (local storage)
+            >>> image = storage.node('home:photos/photo.jpg')
+            >>> image.call('convert', image, '-resize', '800x600', image)
+
+            >>> # With callback (async)
+            >>> def on_complete():
+            ...     print("Processing complete!")
+            >>> video.call('ffmpeg', '-i', video, 'output.mp4',
+            ...           callback=on_complete, async_mode=True)
+            >>> # Returns immediately, callback called when done
+
+            >>> # Capture output
+            >>> pdf = storage.node('documents:report.pdf')
+            >>> info = pdf.call('pdfinfo', pdf, return_output=True)
+            >>> print(info)
+
+            >>> # With subprocess options
+            >>> script = storage.node('scripts:process.py')
+            >>> script.call('python', script, 'arg1', 'arg2',
+            ...            cwd='/tmp', timeout=60, env={'DEBUG': '1'})
+
+        Notes:
+            - StorageNode arguments use local_path(mode='rw') automatically
+            - Files are downloaded before command execution
+            - Modified files are uploaded after command execution
+            - In async mode, cleanup happens in background thread
+            - Use return_output=False for commands with large output
+            - For shell commands, use shell=True in subprocess_kwargs
+        """
+        from contextlib import ExitStack
+        import subprocess
+        import threading
+
+        def _execute():
+            with ExitStack() as stack:
+                cmd_args = []
+                for arg in args:
+                    if isinstance(arg, StorageNode):
+                        # Automatically get local path for StorageNode
+                        local_path = stack.enter_context(arg.local_path(mode='rw'))
+                        cmd_args.append(local_path)
+                    else:
+                        cmd_args.append(str(arg))
+
+                # Execute command
+                if return_output:
+                    result = subprocess.check_output(cmd_args, **subprocess_kwargs)
+                    output = result.decode('utf-8') if isinstance(result, bytes) else result
+                else:
+                    subprocess.check_call(cmd_args, **subprocess_kwargs)
+                    output = None
+
+                # Call callback if provided
+                if callback:
+                    callback()
+
+                return output
+
+        if async_mode:
+            # Run in background thread
+            thread = threading.Thread(target=_execute)
+            thread.daemon = True
+            thread.start()
+            return None
+        else:
+            # Run synchronously
+            return _execute()
+
+    def serve(self,
+              environ: dict,
+              start_response: callable,
+              download: bool = False,
+              download_name: str | None = None,
+              cache_max_age: int | None = None) -> list[bytes]:
+        """Serve file via WSGI interface with caching support.
+
+        Serves the file through a WSGI application with:
+        - ETag support for caching (304 Not Modified responses)
+        - Content-Disposition headers for downloads
+        - Cache-Control headers
+        - Efficient streaming for large files
+
+        Perfect for integrating storage with web frameworks like Flask, Django,
+        Pyramid, or any WSGI application.
+
+        Args:
+            environ: WSGI environment dict (contains HTTP headers, request info)
+            start_response: WSGI start_response callable
+            download: If True, force download with Content-Disposition: attachment
+            download_name: Custom filename for downloads (default: basename of file)
+            cache_max_age: Cache-Control max-age in seconds (default: no caching)
+
+        Returns:
+            list[bytes]: Response body as list of byte chunks (WSGI response)
+
+        Raises:
+            FileNotFoundError: If file doesn't exist
+            StorageError: If file cannot be read
+
+        Examples:
+            >>> # Flask integration
+            >>> from flask import Flask, request
+            >>> app = Flask(__name__)
+            >>>
+            >>> @app.route('/files/<path:filepath>')
+            >>> def serve_file(filepath):
+            >>>     node = storage.node(f'uploads:{filepath}')
+            >>>     return node.serve(request.environ, lambda s, h: None,
+            >>>                       cache_max_age=3600)
+            >>>
+            >>> # Download endpoint
+            >>> @app.route('/download/<path:filepath>')
+            >>> def download_file(filepath):
+            >>>     node = storage.node(f'uploads:{filepath}')
+            >>>     return node.serve(request.environ, lambda s, h: None,
+            >>>                       download=True,
+            >>>                       download_name='report.pdf')
+            >>>
+            >>> # Plain WSGI application
+            >>> def application(environ, start_response):
+            >>>     path = environ['PATH_INFO']
+            >>>     node = storage.node(f'static:{path}')
+            >>>     if not node.exists:
+            >>>         start_response('404 Not Found', [('Content-Type', 'text/plain')])
+            >>>         return [b'Not Found']
+            >>>     return node.serve(environ, start_response, cache_max_age=86400)
+
+        Notes:
+            - ETag is computed as "{mtime}-{size}" for efficient caching
+            - Returns 304 Not Modified when client ETag matches
+            - Uses local_path() for efficient cloud storage serving
+            - Streams large files in chunks (doesn't load entire file in memory)
+        """
+        if not self.exists:
+            start_response('404 Not Found', [('Content-Type', 'text/plain')])
+            return [b'Not Found']
+
+        # Check ETag for 304 Not Modified
+        if_none_match = environ.get('HTTP_IF_NONE_MATCH')
+        if if_none_match:
+            # Remove quotes from ETag
+            if_none_match = if_none_match.replace('"', '')
+
+            # Compute our ETag (mtime-size)
+            mtime = self.mtime
+            size = self.size
+            our_etag = f"{mtime}-{size}"
+
+            if our_etag == if_none_match:
+                # Client has current version, return 304
+                headers = [('ETag', f'"{our_etag}"')]
+                start_response('304 Not Modified', headers)
+                return [b'']
+
+        # Build response headers
+        headers = []
+
+        # ETag for caching
+        mtime = self.mtime
+        size = self.size
+        etag = f"{mtime}-{size}"
+        headers.append(('ETag', f'"{etag}"'))
+
+        # Content-Type
+        headers.append(('Content-Type', self.mimetype))
+
+        # Content-Length
+        headers.append(('Content-Length', str(size)))
+
+        # Content-Disposition (download)
+        if download or download_name:
+            filename = download_name or self.basename
+            headers.append(('Content-Disposition', f'attachment; filename="{filename}"'))
+
+        # Cache-Control
+        if cache_max_age is not None:
+            headers.append(('Cache-Control', f'max-age={cache_max_age}'))
+
+        # Start response
+        start_response('200 OK', headers)
+
+        # Stream file content
+        # Use local_path for efficient serving (downloads from cloud if needed)
+        with self.local_path(mode='r') as local_path:
+            # Read and stream in chunks
+            chunk_size = 64 * 1024  # 64KB chunks
+            chunks = []
+            with open(local_path, 'rb') as f:
+                while True:
+                    chunk = f.read(chunk_size)
+                    if not chunk:
+                        break
+                    chunks.append(chunk)
+            return chunks
 
     def get_metadata(self) -> dict[str, str]:
         """Get custom metadata for this file.

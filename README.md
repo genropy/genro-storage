@@ -17,7 +17,7 @@ A modern, elegant Python library that provides a unified interface for accessing
 
 ✅ Core implementation complete
 ✅ All backends working (local, S3, GCS, Azure, HTTP, Memory, Base64)
-✅ 160 tests passing (including advanced copy skip strategies)
+✅ 195 tests passing (including advanced copy skip strategies, call(), serve())
 ✅ Full documentation on ReadTheDocs
 ⚠️ Not yet on PyPI - install from source
 
@@ -30,9 +30,11 @@ A modern, elegant Python library that provides a unified interface for accessing
 - **Progress tracking** - Built-in callbacks for progress bars and logging during copy operations
 - **Content-based comparison** - Compare files by MD5 hash across different backends
 - **Efficient hashing** - Uses cloud metadata (S3 ETag) when available, avoiding downloads
+- **External tool integration** - `call()` method for seamless integration with ffmpeg, imagemagick, pandoc, etc.
+- **WSGI file serving** - `serve()` method for web frameworks (Flask, Django, Pyramid) with ETag caching
+- **MIME type detection** - Automatic content-type detection from file extensions
 - **Flexible configuration** - Load mounts from YAML, JSON, or code
 - **Dynamic paths** - Support for callable paths that resolve at runtime (perfect for user-specific directories)
-- **External tool integration** - `local_path()` context manager for seamless integration with ffmpeg, imagemagick, etc.
 - **Cloud metadata** - Get/set custom metadata on S3, GCS, Azure files
 - **URL generation** - Generate presigned URLs for S3, public URLs for sharing
 - **Base64 utilities** - Encode files to data URIs, download from URLs
@@ -128,14 +130,33 @@ docs.copy(s3_backup, skip='hash',
           progress=lambda cur, tot: pbar.update(1))
 pbar.close()
 
-# 2. Work with external tools (ffmpeg, imagemagick, etc.)
+# 2. Work with external tools using call() (ffmpeg, imagemagick, etc.)
 video = storage.node('uploads:video.mp4')
+thumbnail = storage.node('uploads:thumb.jpg')
+
+# Automatically handles cloud download/upload
+video.call('ffmpeg', '-i', video, '-vf', 'thumbnail', '-frames:v', '1', thumbnail)
+
+# Or use local_path() for more control
 with video.local_path(mode='r') as local_path:
-    # Tool works with local file, auto-uploaded after
     import subprocess
     subprocess.run(['ffmpeg', '-i', local_path, 'output.mp4'])
 
-# 3. Dynamic paths for multi-user apps
+# 3. Serve files via WSGI (Flask, Django, Pyramid)
+from flask import Flask, request
+app = Flask(__name__)
+
+@app.route('/files/<path:filepath>')
+def serve_file(filepath):
+    node = storage.node(f'uploads:{filepath}')
+    # ETag caching, streaming, MIME types - all automatic!
+    return node.serve(request.environ, lambda s, h: None, cache_max_age=3600)
+
+# 4. Check MIME types
+doc = storage.node('uploads:report.pdf')
+print(doc.mimetype)  # 'application/pdf'
+
+# 5. Dynamic paths for multi-user apps
 def get_user_storage():
     user_id = get_current_user()
     return f'/data/users/{user_id}'
@@ -145,21 +166,21 @@ storage.configure([
 ])
 # Path resolves differently per user!
 
-# 4. Cloud metadata
+# 6. Cloud metadata
 file = storage.node('uploads:document.pdf')
 file.set_metadata({
     'Author': 'John Doe',
     'Department': 'Engineering'
 })
 
-# 5. Generate shareable URLs
+# 7. Generate shareable URLs
 url = file.url(expires_in=3600)  # S3 presigned URL
 
-# 6. Encode to data URI
+# 8. Encode to data URI
 img = storage.node('home:logo.png')
 data_uri = img.to_base64()  # data:image/png;base64,...
 
-# 7. Download from internet
+# 9. Download from internet
 remote = storage.node('uploads:downloaded.pdf')
 remote.fill_from_url('https://example.com/file.pdf')
 ```
@@ -257,9 +278,13 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 - ✅ API Design Complete
 - ✅ Core Implementation Complete
 - ✅ FsspecBackend (all 7 storage types working: local, S3, GCS, Azure, HTTP, Memory, Base64)
-- ✅ Comprehensive Test Suite (106 tests, 63% coverage)
+- ✅ Comprehensive Test Suite (195 tests, 79% coverage)
 - ✅ MD5 hashing and content-based equality
 - ✅ Base64 backend with writable mutable paths
+- ✅ Intelligent copy skip strategies (exists, size, hash, custom)
+- ✅ call() method for external tool integration (ffmpeg, imagemagick, etc.)
+- ✅ serve() method for WSGI file serving (Flask, Django, Pyramid)
+- ✅ mimetype property for automatic content-type detection
 - ✅ local_path() context manager for external tools
 - ✅ Callable path support for dynamic directories
 - ✅ Cloud metadata get/set (S3, GCS, Azure)

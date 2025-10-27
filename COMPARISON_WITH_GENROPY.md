@@ -8,13 +8,13 @@
 
 ## Executive Summary
 
-**genro-storage** is a modernized, standalone Python storage library that reimplements the core functionality of genropy's `storage.py` with significant improvements in architecture, testing, and cloud storage support. However, it lacks deep integration with the genropy ecosystem (Bag system, GnrBaseService, WSGI serving).
+**genro-storage** is a modernized, standalone Python storage library that reimplements the core functionality of genropy's `storage.py` with significant improvements in architecture, testing, and cloud storage support. While it lacks deep integration with the genropy ecosystem (Bag system, GnrBaseService), it now includes all generic utility features.
 
 **Status:**
 - ✅ Core file operations: Complete and improved
 - ✅ Cloud storage: Enhanced (S3 versioning, presigned URLs, metadata)
-- ⚠️ genropy integration: Missing (Bag, Service system, WSGI)
-- ❌ Advanced features: Missing (StorageResolver, sync, call, serve)
+- ✅ Generic utilities: Complete (call(), serve(), mimetype, skip strategies)
+- ⚠️ genropy integration: Missing (Bag, Service system) - requires adapter layer
 
 ---
 
@@ -104,19 +104,20 @@ genro_storage/
 
 | Feature | Location in genropy | Impact | Priority |
 |---------|---------------------|--------|----------|
-| **StorageResolver** | Lines 807-928 | 🔴 Critical | HIGH |
-| **XmlStorageResolver** | Lines 946-956 | 🔴 Critical | HIGH |
-| **TxtStorageResolver** | Lines 936-944 | 🔴 Critical | HIGH |
-| **serve() method** | Lines 606-633, 771-797 | 🔴 Critical | HIGH |
-| **Symbolic storage** | Lines 162-195 | 🔴 Critical | HIGH |
-| **sync_to_service()** | Lines 415-443 | ✅ **Replaced by copy() skip strategies** | N/A |
-| **call() method** | Lines 636-666 | 🔴 Critical | HIGH |
-| **ServiceType factory** | Lines 150-195 | 🟡 Medium | MEDIUM |
-| **GnrBaseService integration** | Throughout | 🟡 Medium | MEDIUM |
+| **StorageResolver** | Lines 807-928 | 🔴 Critical (genropy-specific) | HIGH |
+| **XmlStorageResolver** | Lines 946-956 | 🔴 Critical (genropy-specific) | HIGH |
+| **TxtStorageResolver** | Lines 936-944 | 🔴 Critical (genropy-specific) | HIGH |
+| **Symbolic storage** | Lines 162-195 | 🔴 Critical (genropy-specific) | HIGH |
+| **ServiceType factory** | Lines 150-195 | 🟡 Medium (can use callable paths) | MEDIUM |
+| **GnrBaseService integration** | Throughout | 🟡 Medium (genropy-specific) | MEDIUM |
 | **Tag system** | Line 680 | 🟡 Medium | MEDIUM |
-| **ext_attributes property** | Lines 282-283, 709-711 | 🟡 Medium | MEDIUM |
 | **symbolic_url()** | Lines 500-501 | 🟢 Low | LOW |
-| **ExitStack custom** | Lines 28-138 | 🟢 Low | LOW |
+| **ExitStack custom** | Lines 28-138 | 🟢 Low (Python has stdlib ExitStack) | LOW |
+| **sync_to_service()** | Lines 415-443 | ✅ **Replaced by copy() skip strategies** | N/A |
+| **call() method** | Lines 636-666 | ✅ **Implemented** | N/A |
+| **serve() method** | Lines 606-633, 771-797 | ✅ **Implemented** | N/A |
+| **mimetype property** | Lines 445-447 | ✅ **Implemented** | N/A |
+| **ext_attributes property** | Lines 282-283, 709-711 | 🟡 Medium (low utility) | LOW |
 | **NotExistingStorageNode** | Lines 21-22 | ✅ Has equivalent | N/A |
 
 ### ✨ Features ONLY in genro-storage (Improvements)
@@ -125,8 +126,11 @@ genro_storage/
 |---------|-------------|---------|
 | **MD5-based equality** | `node1 == node2` compares content | Content verification |
 | **Path operator `/`** | `node / 'child'` navigation | Pythonic API |
-| **Copy skip strategies** | `skip='hash'`, `'size'`, `'exists'` | Intelligent incremental backups |
+| **Copy skip strategies** | `skip='hash'`, `'size'`, `'exists'`, `'custom'` | Intelligent incremental backups |
 | **Copy callbacks** | `progress`, `on_file`, `on_skip` | Progress tracking & logging |
+| **call() method** | External process integration with auto path handling | ffmpeg, imagemagick, pandoc |
+| **serve() method** | WSGI file serving with ETag caching | Flask, Django, Pyramid |
+| **mimetype property** | Automatic MIME type detection | Content-Type headers |
 | **Writable Base64Backend** | Write returns new base64 path | Inline data handling |
 | **S3 versioning** | Full version history support | Cloud-native features |
 | **Presigned URLs** | S3/GCS temporary URLs | Secure sharing |
@@ -138,7 +142,7 @@ genro_storage/
 | **Streaming (8MB chunks)** | Large file handling | Performance |
 | **Exception hierarchy** | Dual inheritance design | Python compatibility |
 | **Type hints** | Full type annotations | IDE support |
-| **Comprehensive tests** | 160 passing tests | Code quality |
+| **Comprehensive tests** | 195 passing tests, 79% coverage | Code quality |
 | **fsspec integration** | 20+ storage protocols | Extensibility |
 
 ---
