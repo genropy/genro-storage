@@ -19,6 +19,8 @@ Note:
     The "path" is the base64-encoded content itself.
 """
 
+from __future__ import annotations
+
 import base64
 import hashlib
 import io

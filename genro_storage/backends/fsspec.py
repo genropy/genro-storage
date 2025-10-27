@@ -5,6 +5,8 @@ allowing access to local, S3, GCS, Azure, HTTP, and other storage systems
 through a unified interface.
 """
 
+from __future__ import annotations
+
 from typing import BinaryIO, TextIO
 from pathlib import PurePosixPath
 import fsspec

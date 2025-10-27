@@ -4,6 +4,8 @@ This module implements the local filesystem storage backend using
 Python's standard pathlib and file operations.
 """
 
+from __future__ import annotations
+
 from pathlib import Path
 from typing import BinaryIO, TextIO, Callable, Union
 import shutil

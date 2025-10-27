@@ -5,6 +5,8 @@ must implement. It provides the contract for file operations across
 different storage systems.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import BinaryIO, TextIO
 
