@@ -1,124 +1,130 @@
-"""Shared test fixtures and configuration."""
+"""Pytest fixtures for testing with MinIO (S3-compatible storage).
 
-import os
-import tempfile
-import shutil
-from pathlib import Path
+This module provides fixtures to set up and tear down MinIO for integration tests.
+MinIO provides a local S3-compatible object storage for testing.
+"""
+
 import pytest
+import boto3
+from botocore.exceptions import ClientError
+import time
+import os
 
 
-@pytest.fixture
-def temp_dir():
-    """Create a temporary directory for testing.
+@pytest.fixture(scope="session")
+def minio_config():
+    """MinIO connection configuration.
     
-    Yields the path to the temp directory and cleans it up after the test.
+    Returns:
+        dict: Configuration for connecting to MinIO
     """
-    temp_path = tempfile.mkdtemp()
-    yield temp_path
-    shutil.rmtree(temp_path, ignore_errors=True)
+    return {
+        'endpoint_url': os.getenv('MINIO_ENDPOINT', 'http://localhost:9000'),
+        'aws_access_key_id': os.getenv('MINIO_ACCESS_KEY', 'minioadmin'),
+        'aws_secret_access_key': os.getenv('MINIO_SECRET_KEY', 'minioadmin'),
+        'region_name': 'us-east-1'  # MinIO doesn't care, but boto3 requires it
+    }
 
 
-@pytest.fixture
-def storage_manager():
-    """Create a fresh StorageManager instance for testing."""
-    from genro_storage import StorageManager
-    return StorageManager()
-
-
-@pytest.fixture
-def configured_storage(temp_dir):
-    """Create a StorageManager with a local mount configured.
+@pytest.fixture(scope="session")
+def minio_client(minio_config):
+    """Create boto3 S3 client connected to MinIO.
     
-    Provides a storage manager with 'test' mount pointing to a temp directory.
+    Args:
+        minio_config: MinIO configuration fixture
+    
+    Returns:
+        boto3.client: S3 client connected to MinIO
+    
+    Raises:
+        pytest.skip: If MinIO is not available
+    """
+    client = boto3.client('s3', **minio_config)
+    
+    # Check if MinIO is available
+    try:
+        client.list_buckets()
+    except Exception as e:
+        pytest.skip(f"MinIO not available: {e}")
+    
+    return client
+
+
+@pytest.fixture
+def minio_bucket(minio_client):
+    """Create a temporary test bucket in MinIO.
+    
+    Args:
+        minio_client: MinIO S3 client fixture
+    
+    Yields:
+        str: Name of the created bucket
+    
+    The bucket is automatically cleaned up after the test.
+    """
+    bucket_name = f"test-bucket-{int(time.time())}"
+    
+    # Create bucket
+    try:
+        minio_client.create_bucket(Bucket=bucket_name)
+    except ClientError as e:
+        if e.response['Error']['Code'] != 'BucketAlreadyExists':
+            raise
+    
+    yield bucket_name
+    
+    # Cleanup: delete all objects then bucket
+    try:
+        # List and delete all objects
+        response = minio_client.list_objects_v2(Bucket=bucket_name)
+        if 'Contents' in response:
+            objects = [{'Key': obj['Key']} for obj in response['Contents']]
+            if objects:
+                minio_client.delete_objects(
+                    Bucket=bucket_name,
+                    Delete={'Objects': objects}
+                )
+        
+        # Delete bucket
+        minio_client.delete_bucket(Bucket=bucket_name)
+    except Exception as e:
+        print(f"Warning: Failed to cleanup bucket {bucket_name}: {e}")
+
+
+@pytest.fixture
+def s3_storage_config(minio_bucket, minio_config):
+    """Storage configuration for S3 backend using MinIO.
+    
+    Args:
+        minio_bucket: MinIO bucket fixture
+        minio_config: MinIO configuration fixture
+    
+    Returns:
+        dict: Configuration dict for StorageManager
+    """
+    return {
+        'name': 'test-s3',
+        'type': 's3',
+        'bucket': minio_bucket,
+        'endpoint_url': minio_config['endpoint_url'],
+        'key': minio_config['aws_access_key_id'],
+        'secret': minio_config['aws_secret_access_key'],
+    }
+
+
+@pytest.fixture
+def storage_with_s3(s3_storage_config):
+    """Create StorageManager configured with MinIO S3 backend.
+    
+    Args:
+        s3_storage_config: S3 storage configuration fixture
+    
+    Returns:
+        StorageManager: Configured storage manager with S3 backend
     """
     from genro_storage import StorageManager
     
     storage = StorageManager()
-    storage.configure([
-        {'name': 'test', 'type': 'local', 'path': temp_dir}
-    ])
+    storage.configure([s3_storage_config])
+    
     return storage
-
-
-@pytest.fixture
-def multi_storage(temp_dir):
-    """Create a StorageManager with multiple mounts configured.
-    
-    Provides:
-    - 'local1': temp_dir/mount1
-    - 'local2': temp_dir/mount2
-    - 'memory': in-memory storage
-    """
-    from genro_storage import StorageManager
-    
-    mount1 = os.path.join(temp_dir, 'mount1')
-    mount2 = os.path.join(temp_dir, 'mount2')
-    os.makedirs(mount1)
-    os.makedirs(mount2)
-    
-    storage = StorageManager()
-    storage.configure([
-        {'name': 'local1', 'type': 'local', 'path': mount1},
-        {'name': 'local2', 'type': 'local', 'path': mount2},
-        {'name': 'memory', 'type': 'memory'}
-    ])
-    return storage
-
-
-@pytest.fixture
-def sample_file(temp_dir):
-    """Create a sample file with known content.
-    
-    Returns tuple of (file_path, content_bytes).
-    """
-    content = b"Sample file content\nLine 2\nLine 3"
-    file_path = os.path.join(temp_dir, 'sample.txt')
-    
-    with open(file_path, 'wb') as f:
-        f.write(content)
-    
-    return file_path, content
-
-
-@pytest.fixture
-def sample_text_file(temp_dir):
-    """Create a sample text file with UTF-8 content.
-    
-    Returns tuple of (file_path, content_str).
-    """
-    content = "Hello World\nCafé ☕\nLine 3"
-    file_path = os.path.join(temp_dir, 'sample_text.txt')
-    
-    with open(file_path, 'w', encoding='utf-8') as f:
-        f.write(content)
-    
-    return file_path, content
-
-
-@pytest.fixture
-def sample_directory(temp_dir):
-    """Create a sample directory structure.
-    
-    Structure:
-    sample_dir/
-    ├── file1.txt
-    ├── file2.txt
-    └── subdir/
-        └── file3.txt
-    
-    Returns the path to sample_dir.
-    """
-    sample_dir = os.path.join(temp_dir, 'sample_dir')
-    subdir = os.path.join(sample_dir, 'subdir')
-    
-    os.makedirs(subdir)
-    
-    # Create files
-    with open(os.path.join(sample_dir, 'file1.txt'), 'w') as f:
-        f.write('Content 1')
-    with open(os.path.join(sample_dir, 'file2.txt'), 'w') as f:
-        f.write('Content 2')
-    with open(os.path.join(subdir, 'file3.txt'), 'w') as f:
-        f.write('Content 3')
-    
-    return sample_dir

@@ -17,7 +17,8 @@ except ImportError:
 
 from .node import StorageNode
 from .exceptions import StorageConfigError, StorageNotFoundError
-from .backends import StorageBackend, LocalStorage
+from .backends import StorageBackend
+from .backends.fsspec import FsspecBackend
 
 
 class StorageManager:
@@ -268,33 +269,87 @@ class StorageManager:
         mount_name = config['name']
         backend_type = config['type']
         
-        # Create appropriate backend based on type
+        # Create appropriate backend using fsspec
         if backend_type == 'local':
             if 'path' not in config:
                 raise StorageConfigError(
                     f"Local storage '{mount_name}' missing required field: 'path'"
                 )
-            backend = LocalStorage(config['path'])
+            backend = FsspecBackend('file', base_path=config['path'])
+        
         elif backend_type == 'memory':
-            raise StorageConfigError(
-                f"Memory storage not yet implemented for mount '{mount_name}'"
-            )
+            backend = FsspecBackend('memory', base_path=config.get('base_path', ''))
+        
         elif backend_type == 's3':
-            raise StorageConfigError(
-                f"S3 storage not yet implemented for mount '{mount_name}'"
-            )
+            if 'bucket' not in config:
+                raise StorageConfigError(
+                    f"S3 storage '{mount_name}' missing required field: 'bucket'"
+                )
+            # Build S3 path: bucket/prefix
+            base_path = config['bucket']
+            if 'prefix' in config:
+                base_path = f"{base_path}/{config['prefix'].strip('/')}"
+            
+            kwargs = {}
+            if 'region' in config:
+                kwargs['client_kwargs'] = {'region_name': config['region']}
+            if 'anon' in config:
+                kwargs['anon'] = config['anon']
+            if 'key' in config:
+                kwargs['key'] = config['key']
+            if 'secret' in config:
+                kwargs['secret'] = config['secret']
+            if 'endpoint_url' in config:
+                kwargs['endpoint_url'] = config['endpoint_url']
+            
+            backend = FsspecBackend('s3', base_path=base_path, **kwargs)
+        
         elif backend_type == 'gcs':
-            raise StorageConfigError(
-                f"GCS storage not yet implemented for mount '{mount_name}'"
-            )
+            if 'bucket' not in config:
+                raise StorageConfigError(
+                    f"GCS storage '{mount_name}' missing required field: 'bucket'"
+                )
+            base_path = config['bucket']
+            if 'prefix' in config:
+                base_path = f"{base_path}/{config['prefix'].strip('/')}"
+            
+            kwargs = {}
+            if 'token' in config:
+                kwargs['token'] = config['token']
+            if 'project' in config:
+                kwargs['project'] = config['project']
+            
+            backend = FsspecBackend('gcs', base_path=base_path, **kwargs)
+        
         elif backend_type == 'azure':
-            raise StorageConfigError(
-                f"Azure storage not yet implemented for mount '{mount_name}'"
-            )
+            if 'container' not in config:
+                raise StorageConfigError(
+                    f"Azure storage '{mount_name}' missing required field: 'container'"
+                )
+            if 'account_name' not in config:
+                raise StorageConfigError(
+                    f"Azure storage '{mount_name}' missing required field: 'account_name'"
+                )
+            
+            base_path = f"{config['account_name']}/{config['container']}"
+            
+            kwargs = {}
+            if 'account_key' in config:
+                kwargs['account_key'] = config['account_key']
+            if 'sas_token' in config:
+                kwargs['sas_token'] = config['sas_token']
+            if 'connection_string' in config:
+                kwargs['connection_string'] = config['connection_string']
+            
+            backend = FsspecBackend('az', base_path=base_path, **kwargs)
+        
         elif backend_type == 'http':
-            raise StorageConfigError(
-                f"HTTP storage not yet implemented for mount '{mount_name}'"
-            )
+            if 'base_url' not in config:
+                raise StorageConfigError(
+                    f"HTTP storage '{mount_name}' missing required field: 'base_url'"
+                )
+            backend = FsspecBackend('http', base_path=config['base_url'])
+        
         else:
             raise StorageConfigError(
                 f"Unknown storage type '{backend_type}' for mount '{mount_name}'. "
