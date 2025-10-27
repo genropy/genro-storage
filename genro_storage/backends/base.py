@@ -287,6 +287,27 @@ class StorageBackend(ABC):
         """
         pass
     
+    def get_hash(self, path: str) -> str | None:
+        """Get MD5 hash from filesystem metadata if available.
+        
+        This method attempts to retrieve the MD5 hash from the storage
+        backend's metadata without reading the file content. For cloud
+        storage like S3, this uses the ETag. For local storage, this
+        returns None and the hash must be computed by reading the file.
+        
+        Args:
+            path: Relative path to file
+        
+        Returns:
+            str | None: MD5 hash as hexadecimal string, or None if not available
+        
+        Examples:
+            >>> hash_value = backend.get_hash('file.txt')
+            >>> if hash_value:
+            ...     print(f"MD5: {hash_value}")
+        """
+        return None  # Default: no metadata hash available
+    
     def close(self) -> None:
         """Close backend and release resources.
         

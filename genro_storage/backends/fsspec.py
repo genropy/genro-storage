@@ -253,6 +253,38 @@ class FsspecBackend(StorageBackend):
                     dest_item = f"{dest_path}/{item_name}" if dest_path else item_name
                     self.copy(src_item, dest_backend, dest_item)
     
+    def get_hash(self, path: str) -> str | None:
+        """Get MD5 hash from filesystem metadata if available.
+        
+        For S3/MinIO: Uses ETag which is the MD5 hash
+        For GCS: Also uses ETag
+        For Azure: Uses content_md5
+        For local/memory: Returns None (must compute)
+        
+        Args:
+            path: Relative path to file
+        
+        Returns:
+            str | None: MD5 hash as hexadecimal string, or None if not in metadata
+        """
+        full_path = self._full_path(path)
+        
+        try:
+            info = self.fs.info(full_path)
+        except FileNotFoundError:
+            return None
+        
+        # S3/MinIO/GCS: ETag is MD5 (wrapped in quotes)
+        if 'ETag' in info:
+            return info['ETag'].strip('"')
+        
+        # Azure Blob Storage: content_md5
+        if 'content_md5' in info:
+            return info['content_md5']
+        
+        # No hash available in metadata
+        return None
+    
     def close(self) -> None:
         """Close filesystem connection if needed."""
         # Most fsspec filesystems don't need explicit closing

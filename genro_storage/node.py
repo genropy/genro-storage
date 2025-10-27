@@ -221,6 +221,55 @@ class StorageNode:
             parent_path = ''
         return StorageNode(self._manager, self._mount_name, parent_path)
     
+    @property
+    def md5hash(self) -> str:
+        """MD5 hash of file content.
+
+        For cloud storage (S3, GCS, Azure), retrieves hash from metadata (fast).
+        For local storage, computes hash by reading file in blocks (slower).
+
+        Returns:
+            str: MD5 hash as lowercase hexadecimal string (32 characters)
+
+        Raises:
+            FileNotFoundError: If file doesn't exist
+            ValueError: If node is a directory
+
+        Examples:
+            >>> hash1 = node1.md5hash
+            >>> hash2 = node2.md5hash
+            >>> if hash1 == hash2:
+            ...     print("Files have identical content")
+        """
+        # Check if exists first
+        if not self.exists:
+            raise FileNotFoundError(f"File not found: {self.fullpath}")
+
+        # Check if it's a file (not a directory)
+        if not self.isfile:
+            raise ValueError(f"Cannot compute hash of directory: {self.fullpath}")
+        
+        # Try to get hash from backend metadata first (S3 ETag, etc.)
+        metadata_hash = self._backend.get_hash(self._path)
+        if metadata_hash:
+            return metadata_hash.lower()
+        
+        # Fallback: compute MD5 by reading file in blocks
+        import hashlib
+        hasher = hashlib.md5()
+        
+        # Use 64KB blocks like Genropy legacy code
+        BLOCKSIZE = 65536
+        
+        with self.open('rb') as f:
+            while True:
+                chunk = f.read(BLOCKSIZE)
+                if not chunk:
+                    break
+                hasher.update(chunk)
+        
+        return hasher.hexdigest()
+    
     # ==================== File I/O Methods ====================
     
     def open(self, mode: str = 'rb') -> BinaryIO | TextIO:
@@ -325,3 +374,61 @@ class StorageNode:
             'home:documents/reports/2024/q4.pdf'
         """
         return self.child(other)
+    
+    def __eq__(self, other: object) -> bool:
+        """Compare nodes by content (MD5 hash).
+        
+        Two nodes are considered equal if they have the same file content,
+        regardless of their path or location. Comparison is done via MD5 hash.
+        
+        Args:
+            other: Another StorageNode or object to compare
+        
+        Returns:
+            bool: True if both nodes have identical content
+        
+        Examples:
+            >>> file1 = storage.node('home:original.txt')
+            >>> file2 = storage.node('backup:copy.txt')
+            >>> if file1 == file2:
+            ...     print("Files have identical content")
+        
+        Notes:
+            - Only files can be compared (directories return False)
+            - Non-existent files return False
+            - Comparing with non-StorageNode returns NotImplemented
+        """
+        if not isinstance(other, StorageNode):
+            return NotImplemented
+        
+        # If same path, they're equal
+        if self.fullpath == other.fullpath:
+            return True
+        
+        # Both must be files to compare content
+        if not (self.isfile and other.isfile):
+            return False
+        
+        # Compare via MD5 hash
+        try:
+            return self.md5hash == other.md5hash
+        except (FileNotFoundError, ValueError):
+            return False
+    
+    def __ne__(self, other: object) -> bool:
+        """Compare nodes for inequality.
+        
+        Args:
+            other: Another StorageNode or object to compare
+        
+        Returns:
+            bool: True if nodes have different content
+        
+        Examples:
+            >>> if file1 != file2:
+            ...     print("Files differ")
+        """
+        result = self.__eq__(other)
+        if result is NotImplemented:
+            return NotImplemented
+        return not result

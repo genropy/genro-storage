@@ -123,6 +123,51 @@ def s3_storage_config(minio_bucket, minio_config):
 
 
 @pytest.fixture
+def storage_manager():
+    """Create a fresh StorageManager for each test.
+    
+    Returns:
+        StorageManager: Empty storage manager
+    """
+    from genro_storage import StorageManager
+    return StorageManager()
+
+
+@pytest.fixture
+def s3_fs(minio_config):
+    """Create fsspec S3 filesystem connected to MinIO.
+    
+    Args:
+        minio_config: MinIO configuration fixture
+    
+    Returns:
+        S3FileSystem: fsspec S3 filesystem for MinIO
+    """
+    import fsspec
+    
+    try:
+        fs = fsspec.filesystem(
+            's3',
+            key=minio_config['aws_access_key_id'],
+            secret=minio_config['aws_secret_access_key'],
+            client_kwargs={'endpoint_url': minio_config['endpoint_url']}
+        )
+        
+        # Test connection
+        fs.ls('/')
+        
+        # Create test-bucket if it doesn't exist
+        try:
+            fs.mkdir('test-bucket')
+        except:
+            pass  # Bucket may already exist
+        
+        return fs
+    except Exception as e:
+        pytest.skip(f"MinIO not available: {e}")
+
+
+@pytest.fixture
 def storage_with_s3(s3_storage_config):
     """Create StorageManager configured with MinIO S3 backend.
     
