@@ -353,7 +353,98 @@ class StorageNode:
     def mkdir(self, parents: bool = False, exist_ok: bool = False) -> None:
         """Create directory."""
         self._backend.mkdir(self._path, parents=parents, exist_ok=exist_ok)
-    
+
+    # ==================== Advanced Methods ====================
+
+    def local_path(self, mode: str = 'r'):
+        """Get local filesystem path for this file.
+
+        Returns a context manager that provides a local filesystem path.
+        For local storage, returns the actual path. For remote storage
+        (S3, GCS, etc.), downloads to a temporary file, yields the temp path,
+        and uploads changes on exit.
+
+        This is essential for integrating with external tools that only
+        work with local filesystem paths (ffmpeg, ImageMagick, etc.).
+
+        Args:
+            mode: Access mode
+                - 'r': Read-only (download, no upload)
+                - 'w': Write-only (no download, upload on exit)
+                - 'rw': Read-write (download and upload)
+
+        Returns:
+            Context manager yielding str (local filesystem path)
+
+        Examples:
+            >>> # Process video with ffmpeg
+            >>> video = storage.node('s3:videos/input.mp4')
+            >>> with video.local_path(mode='r') as path:
+            ...     subprocess.run(['ffmpeg', '-i', path, 'output.mp4'])
+            >>>
+            >>> # Modify image in place
+            >>> image = storage.node('s3:photos/pic.jpg')
+            >>> with image.local_path(mode='rw') as path:
+            ...     subprocess.run(['convert', path, '-resize', '800x600', path])
+            >>> # Changes automatically uploaded to S3
+
+        Notes:
+            - For local storage, returns the actual path (no copy)
+            - For remote storage, uses temporary files
+            - Temporary files are automatically cleaned up on exit
+            - Large files are streamed in chunks to avoid memory issues
+        """
+        return self._backend.local_path(self._path, mode=mode)
+
+    def get_metadata(self) -> dict[str, str]:
+        """Get custom metadata for this file.
+
+        Returns user-defined metadata attached to the file. Supported for
+        cloud storage (S3, GCS, Azure). For local storage, returns empty dict.
+
+        Returns:
+            dict[str, str]: Metadata key-value pairs
+
+        Raises:
+            FileNotFoundError: If file doesn't exist
+
+        Examples:
+            >>> file = storage.node('s3:documents/report.pdf')
+            >>> metadata = file.get_metadata()
+            >>> print(metadata.get('Author'))
+            'John Doe'
+        """
+        return self._backend.get_metadata(self._path)
+
+    def set_metadata(self, metadata: dict[str, str]) -> None:
+        """Set custom metadata for this file.
+
+        Attaches user-defined metadata to the file. Supported for cloud
+        storage (S3, GCS, Azure). For local storage, raises PermissionError.
+
+        Args:
+            metadata: Metadata key-value pairs to set
+
+        Raises:
+            FileNotFoundError: If file doesn't exist
+            PermissionError: If backend doesn't support metadata
+            ValueError: If metadata keys/values are invalid
+
+        Examples:
+            >>> file = storage.node('s3:documents/report.pdf')
+            >>> file.set_metadata({
+            ...     'Author': 'John Doe',
+            ...     'Version': '1.0',
+            ...     'Department': 'Engineering'
+            ... })
+
+        Notes:
+            - Keys and values must be strings
+            - This typically replaces all existing metadata
+            - Cloud providers may have size/format restrictions
+        """
+        return self._backend.set_metadata(self._path, metadata)
+
     # ==================== Special Methods ====================
     
     def __repr__(self) -> str:

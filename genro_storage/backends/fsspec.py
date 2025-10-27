@@ -255,43 +255,236 @@ class FsspecBackend(StorageBackend):
     
     def get_hash(self, path: str) -> str | None:
         """Get MD5 hash from filesystem metadata if available.
-        
+
         For S3/MinIO: Uses ETag which is the MD5 hash
         For GCS: Also uses ETag
         For Azure: Uses content_md5
         For local/memory: Returns None (must compute)
-        
+
         Args:
             path: Relative path to file
-        
+
         Returns:
             str | None: MD5 hash as hexadecimal string, or None if not in metadata
         """
         full_path = self._full_path(path)
-        
+
         try:
             info = self.fs.info(full_path)
         except FileNotFoundError:
             return None
-        
+
         # S3/MinIO/GCS: ETag is MD5 (wrapped in quotes)
         if 'ETag' in info:
             return info['ETag'].strip('"')
-        
+
         # Azure Blob Storage: content_md5
         if 'content_md5' in info:
             return info['content_md5']
-        
+
         # No hash available in metadata
         return None
-    
+
+    def get_metadata(self, path: str) -> dict[str, str]:
+        """Get custom metadata for a file.
+
+        Retrieves user-defined metadata from cloud storage. Different storage
+        backends store metadata in different ways:
+        - S3: Uses 'Metadata' field
+        - GCS: Uses 'metadata' field
+        - Azure: Uses 'metadata' field
+
+        Args:
+            path: Relative path to file
+
+        Returns:
+            dict[str, str]: Metadata key-value pairs
+
+        Raises:
+            FileNotFoundError: If file doesn't exist
+        """
+        full_path = self._full_path(path)
+
+        try:
+            info = self.fs.info(full_path)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"File not found: {path}")
+
+        # Extract metadata based on protocol
+        if self.protocol == 's3':
+            # S3: metadata in 'Metadata' field (case-sensitive)
+            return info.get('Metadata', {})
+        elif self.protocol in ('gcs', 'gs'):
+            # GCS: metadata in 'metadata' field
+            return info.get('metadata', {})
+        elif self.protocol in ('azure', 'az', 'adl'):
+            # Azure: metadata in 'metadata' field
+            return info.get('metadata', {})
+        else:
+            # Other protocols: no metadata support
+            return {}
+
+    def set_metadata(self, path: str, metadata: dict[str, str]) -> None:
+        """Set custom metadata for a file.
+
+        Stores user-defined metadata with the file in cloud storage.
+
+        Args:
+            path: Relative path to file
+            metadata: Metadata key-value pairs to set
+
+        Raises:
+            FileNotFoundError: If file doesn't exist
+            PermissionError: If backend doesn't support metadata
+            ValueError: If metadata keys/values are invalid
+
+        Notes:
+            - For S3: Replaces all existing metadata
+            - For GCS/Azure: Similar behavior
+            - Some backends have key/value restrictions
+        """
+        full_path = self._full_path(path)
+
+        # Check file exists
+        if not self.fs.exists(full_path):
+            raise FileNotFoundError(f"File not found: {path}")
+
+        # Validate metadata
+        if not isinstance(metadata, dict):
+            raise ValueError("Metadata must be a dictionary")
+
+        for key, value in metadata.items():
+            if not isinstance(key, str) or not isinstance(value, str):
+                raise ValueError("Metadata keys and values must be strings")
+
+        # Set metadata based on protocol
+        if self.protocol == 's3':
+            # S3: Use setxattr or update_metadata if available
+            if hasattr(self.fs, 'setxattr'):
+                for key, value in metadata.items():
+                    self.fs.setxattr(full_path, key, value)
+            else:
+                raise PermissionError(
+                    "S3 metadata update not available in this fsspec version. "
+                    "Consider using boto3 directly for metadata operations."
+                )
+
+        elif self.protocol in ('gcs', 'gs'):
+            # GCS: Use setxattr if available
+            if hasattr(self.fs, 'setxattr'):
+                for key, value in metadata.items():
+                    self.fs.setxattr(full_path, key, value)
+            else:
+                raise PermissionError("GCS metadata update not available")
+
+        elif self.protocol in ('azure', 'az', 'adl'):
+            # Azure: Use setxattr if available
+            if hasattr(self.fs, 'setxattr'):
+                for key, value in metadata.items():
+                    self.fs.setxattr(full_path, key, value)
+            else:
+                raise PermissionError("Azure metadata update not available")
+
+        else:
+            # Other protocols don't support metadata
+            raise PermissionError(
+                f"{self.protocol} backend does not support metadata operations"
+            )
+
+    def local_path(self, path: str, mode: str = 'r'):
+        """Get local filesystem path for remote file.
+
+        Downloads the file to a temporary location, yields the local path,
+        and uploads changes back on exit if the file was modified.
+
+        This allows external tools (ffmpeg, imagemagick, etc.) to work
+        with remote files transparently.
+
+        Args:
+            path: Relative path to file
+            mode: Access mode - 'r' (read), 'w' (write), 'rw' (read-write)
+
+        Returns:
+            Context manager yielding str (local temp file path)
+
+        Examples:
+            >>> # Process remote S3 file with ffmpeg
+            >>> with backend.local_path('video.mp4', mode='r') as local_path:
+            ...     subprocess.run(['ffmpeg', '-i', local_path, 'output.mp4'])
+            >>>
+            >>> # Modify remote file in place
+            >>> with backend.local_path('image.jpg', mode='rw') as local_path:
+            ...     subprocess.run(['convert', local_path, '-resize', '800', local_path])
+            >>> # Changes uploaded automatically
+        """
+        import tempfile
+        import os
+        from contextlib import contextmanager
+
+        @contextmanager
+        def _local_path():
+            full_path = self._full_path(path)
+
+            # Create temporary file
+            suffix = os.path.splitext(path)[1]  # Preserve extension
+            with tempfile.NamedTemporaryFile(mode='w+b', suffix=suffix, delete=False) as tmp:
+                tmp_path = tmp.name
+
+            try:
+                # Download file if reading
+                if mode in ('r', 'rw'):
+                    if self.fs.exists(full_path):
+                        # Download from remote to temp
+                        with self.fs.open(full_path, 'rb') as remote_file:
+                            with open(tmp_path, 'wb') as local_file:
+                                # Stream in chunks to handle large files
+                                chunk_size = 8 * 1024 * 1024  # 8MB chunks
+                                while True:
+                                    chunk = remote_file.read(chunk_size)
+                                    if not chunk:
+                                        break
+                                    local_file.write(chunk)
+                    elif mode == 'rw':
+                        # File doesn't exist but mode is rw - create empty
+                        pass
+
+                # Yield temp path for user to work with
+                yield tmp_path
+
+                # Upload file if writing
+                if mode in ('w', 'rw'):
+                    # Upload from temp to remote
+                    if os.path.exists(tmp_path):
+                        # Ensure parent directory exists
+                        parent = str(PurePosixPath(full_path).parent)
+                        if parent and parent != '.':
+                            self.fs.makedirs(parent, exist_ok=True)
+
+                        # Upload
+                        with open(tmp_path, 'rb') as local_file:
+                            with self.fs.open(full_path, 'wb') as remote_file:
+                                # Stream in chunks
+                                chunk_size = 8 * 1024 * 1024  # 8MB chunks
+                                while True:
+                                    chunk = local_file.read(chunk_size)
+                                    if not chunk:
+                                        break
+                                    remote_file.write(chunk)
+
+            finally:
+                # Always cleanup temp file
+                if os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+
+        return _local_path()
+
     def close(self) -> None:
         """Close filesystem connection if needed."""
         # Most fsspec filesystems don't need explicit closing
         # but S3 and others might have session cleanup
         if hasattr(self.fs, 'close'):
             self.fs.close()
-    
+
     def __repr__(self) -> str:
         """String representation."""
         return f"FsspecBackend(protocol='{self.protocol}', base_path='{self.base_path}')"

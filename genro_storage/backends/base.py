@@ -289,34 +289,140 @@ class StorageBackend(ABC):
     
     def get_hash(self, path: str) -> str | None:
         """Get MD5 hash from filesystem metadata if available.
-        
+
         This method attempts to retrieve the MD5 hash from the storage
         backend's metadata without reading the file content. For cloud
         storage like S3, this uses the ETag. For local storage, this
         returns None and the hash must be computed by reading the file.
-        
+
         Args:
             path: Relative path to file
-        
+
         Returns:
             str | None: MD5 hash as hexadecimal string, or None if not available
-        
+
         Examples:
             >>> hash_value = backend.get_hash('file.txt')
             >>> if hash_value:
             ...     print(f"MD5: {hash_value}")
         """
         return None  # Default: no metadata hash available
+
+    def get_metadata(self, path: str) -> dict[str, str]:
+        """Get custom metadata for a file.
+
+        Returns user-defined metadata attached to the file. For cloud storage
+        (S3, GCS, Azure), this retrieves custom metadata stored with the file.
+        For local storage, this typically returns an empty dict or uses
+        extended attributes if supported.
+
+        Args:
+            path: Relative path to file
+
+        Returns:
+            dict[str, str]: Metadata key-value pairs
+
+        Examples:
+            >>> metadata = backend.get_metadata('document.pdf')
+            >>> print(metadata.get('Content-Type'))
+            'application/pdf'
+
+        Notes:
+            - Keys and values are strings
+            - Cloud storage may have restrictions on key names (e.g., lowercase only)
+            - Returns empty dict if no metadata or not supported
+        """
+        return {}  # Default: no metadata support
+
+    def set_metadata(self, path: str, metadata: dict[str, str]) -> None:
+        """Set custom metadata for a file.
+
+        Attaches user-defined metadata to the file. For cloud storage
+        (S3, GCS, Azure), this sets custom metadata that persists with the file.
+        For local storage, this may use extended attributes if supported,
+        or raise PermissionError if not supported.
+
+        Args:
+            path: Relative path to file
+            metadata: Metadata key-value pairs to set
+
+        Raises:
+            FileNotFoundError: If file doesn't exist
+            PermissionError: If backend doesn't support metadata
+
+        Examples:
+            >>> backend.set_metadata('document.pdf', {
+            ...     'Content-Type': 'application/pdf',
+            ...     'Author': 'John Doe',
+            ...     'Version': '1.0'
+            ... })
+
+        Notes:
+            - Keys and values must be strings
+            - Cloud storage may have restrictions (e.g., max metadata size)
+            - This typically replaces all metadata (not merge)
+        """
+        raise PermissionError(
+            f"{self.__class__.__name__} does not support metadata operations"
+        )
     
+    def local_path(self, path: str, mode: str = 'r'):
+        """Get a local filesystem path for the file.
+
+        Returns a context manager that provides a local filesystem path
+        to the file. For local storage, this returns the actual path.
+        For remote storage (S3, GCS, etc.), this downloads the file to
+        a temporary location, yields the temp path, and uploads changes
+        back on exit if the file was modified.
+
+        This is essential for integrating with external tools that only
+        work with local filesystem paths (ffmpeg, ImageMagick, etc.).
+
+        Args:
+            path: Relative path to file
+            mode: Access mode - 'r' (read-only), 'w' (write-only), 'rw' (read-write)
+
+        Returns:
+            Context manager yielding str (local filesystem path)
+
+        Examples:
+            >>> # Process remote file with external tool
+            >>> with backend.local_path('video.mp4', mode='r') as local_path:
+            ...     subprocess.run(['ffmpeg', '-i', local_path, 'output.mp4'])
+            >>>
+            >>> # Modify remote file in place
+            >>> with backend.local_path('image.jpg', mode='rw') as local_path:
+            ...     subprocess.run(['convert', local_path, '-resize', '800x600', local_path])
+            >>> # Changes automatically uploaded on exit
+
+        Notes:
+            - For read mode ('r'), the file is downloaded but not uploaded
+            - For write mode ('w'), the file is uploaded on exit
+            - For read-write mode ('rw'), both download and upload occur
+            - Temporary files are automatically cleaned up on exit
+            - For local storage, returns the original path (no copy)
+        """
+        from contextlib import contextmanager
+
+        @contextmanager
+        def _local_path():
+            yield self._get_local_path(path, mode)
+
+        return _local_path()
+
+    def _get_local_path(self, path: str, mode: str) -> str:
+        """Implementation detail for local_path. Override in subclasses if needed."""
+        raise NotImplementedError(f"{self.__class__.__name__} must implement _get_local_path")
+
     def close(self) -> None:
         """Close backend and release resources.
-        
+
         This method is called when the backend is no longer needed.
         Implementations should close any open connections, file handles, etc.
-        
+
         The default implementation does nothing. Backends that manage
         resources should override this method.
-        
+
         Examples:
             >>> backend.close()
         """

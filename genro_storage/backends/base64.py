@@ -307,3 +307,54 @@ class Base64Backend(StorageBackend):
         """
         data = self._decode(path)
         return hashlib.md5(data).hexdigest()
+
+    def local_path(self, path: str, mode: str = 'r'):
+        """Get local filesystem path for base64 data.
+
+        Creates a temporary file with the decoded base64 content.
+        Since Base64Backend is read-only, write modes are not supported.
+
+        Args:
+            path: Base64-encoded string
+            mode: Access mode (only 'r' is supported)
+
+        Returns:
+            Context manager yielding str (temp file path)
+
+        Raises:
+            PermissionError: If mode is not 'r'
+            FileNotFoundError: If invalid base64
+
+        Examples:
+            >>> # Use base64 data with external tool
+            >>> node = storage.node('b64:SGVsbG8gV29ybGQ=')
+            >>> with node.local_path() as path:
+            ...     subprocess.run(['cat', path])
+        """
+        import tempfile
+        import os
+        from contextlib import contextmanager
+
+        if mode != 'r':
+            raise PermissionError(
+                f"Base64 backend is read-only. Only mode='r' is supported, got '{mode}'"
+            )
+
+        @contextmanager
+        def _local_path():
+            # Decode data
+            data = self._decode(path)
+
+            # Create temp file
+            with tempfile.NamedTemporaryFile(mode='wb', delete=False) as tmp:
+                tmp.write(data)
+                tmp_path = tmp.name
+
+            try:
+                yield tmp_path
+            finally:
+                # Cleanup
+                if os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+
+        return _local_path()

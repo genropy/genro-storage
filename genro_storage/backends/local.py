@@ -5,7 +5,7 @@ Python's standard pathlib and file operations.
 """
 
 from pathlib import Path
-from typing import BinaryIO, TextIO
+from typing import BinaryIO, TextIO, Callable, Union
 import shutil
 
 from .base import StorageBackend
@@ -13,45 +13,84 @@ from .base import StorageBackend
 
 class LocalStorage(StorageBackend):
     """Local filesystem storage backend.
-    
+
     This backend provides access to files on the local filesystem.
     All paths are relative to a configured base directory.
-    
+
+    The base_path can be either a string or a callable that returns a string.
+    When a callable is provided, it will be evaluated each time the base_path
+    property is accessed, allowing for dynamic paths (e.g., user-specific directories).
+
     Args:
-        base_path: Absolute path to the base directory for this storage
-    
+        path: Absolute path to the base directory, or callable returning path
+
     Raises:
-        ValueError: If base_path is not absolute
-        FileNotFoundError: If base_path doesn't exist
-    
+        ValueError: If resolved path is not absolute or not a directory
+        FileNotFoundError: If resolved path doesn't exist
+
     Examples:
-        >>> # Typically created via StorageManager configuration
+        >>> # Static path
         >>> backend = LocalStorage('/home/user')
-        >>> 
+        >>>
+        >>> # Dynamic path with callable
+        >>> def get_user_dir():
+        ...     user_id = get_current_user()
+        ...     return f'/data/users/{user_id}'
+        >>> backend = LocalStorage(get_user_dir)
+        >>>
         >>> # Access files relative to base
         >>> data = backend.read_bytes('documents/report.pdf')
     """
-    
-    def __init__(self, base_path: str):
+
+    def __init__(self, path: Union[str, Callable[[], str]]):
         """Initialize LocalStorage backend.
-        
+
         Args:
-            base_path: Absolute path to base directory
-        
+            path: Absolute path or callable returning absolute path
+
         Raises:
-            ValueError: If base_path is not absolute
-            FileNotFoundError: If base_path doesn't exist
+            ValueError: If path (string only) is not absolute or not a directory
+            FileNotFoundError: If path (string only) doesn't exist
+
+        Note:
+            When path is a callable, validation is deferred until first access.
+            This allows configuration before the context (e.g., current user) is available.
         """
-        self.base_path = Path(base_path).resolve()  # Resolve to handle symlinks
-        
-        if not Path(base_path).is_absolute():
-            raise ValueError(f"base_path must be absolute, got: {base_path}")
-        
-        if not self.base_path.exists():
-            raise FileNotFoundError(f"Base path does not exist: {base_path}")
-        
-        if not self.base_path.is_dir():
-            raise ValueError(f"Base path must be a directory: {base_path}")
+        self._path_or_callable = path
+
+        # Validate immediately only if path is a string (not callable)
+        if not callable(path):
+            resolved = Path(path).resolve()
+            if not Path(path).is_absolute():
+                raise ValueError(f"base_path must be absolute, got: {path}")
+
+            if not resolved.exists():
+                raise FileNotFoundError(f"Base path does not exist: {path}")
+
+            if not resolved.is_dir():
+                raise ValueError(f"Base path must be a directory: {path}")
+
+    def _resolve_base_path(self) -> Path:
+        """Resolve base path (evaluating callable if necessary).
+
+        Returns:
+            Resolved base path as Path object
+        """
+        if callable(self._path_or_callable):
+            path_str = self._path_or_callable()
+        else:
+            path_str = self._path_or_callable
+
+        return Path(path_str).resolve()
+
+    @property
+    def base_path(self) -> Path:
+        """Get current base path (evaluates callable if needed).
+
+        Returns:
+            Current base path as Path object
+        """
+        return self._resolve_base_path()
     
     def _resolve_path(self, path: str) -> Path:
         """Resolve a relative path to absolute filesystem path.
@@ -205,15 +244,15 @@ class LocalStorage(StorageBackend):
     
     def copy(self, src_path: str, dest_backend: StorageBackend, dest_path: str) -> None:
         """Copy file/directory to another backend.
-        
+
         For local-to-local copies, uses efficient filesystem operations.
         For copies to other backends, streams the data.
         """
         src_full = self._resolve_path(src_path)
-        
+
         if not src_full.exists():
             raise FileNotFoundError(f"Source not found: {src_path}")
-        
+
         if src_full.is_file():
             # Copy single file
             if isinstance(dest_backend, LocalStorage):
@@ -225,15 +264,41 @@ class LocalStorage(StorageBackend):
                 # To other backend: stream via read/write
                 data = self.read_bytes(src_path)
                 dest_backend.write_bytes(dest_path, data)
-        
+
         elif src_full.is_dir():
             # Copy directory recursively
             dest_backend.mkdir(dest_path, parents=True, exist_ok=True)
-            
+
             for item in src_full.iterdir():
                 item_rel_path = f"{src_path}/{item.name}" if src_path else item.name
                 dest_item_path = f"{dest_path}/{item.name}" if dest_path else item.name
                 self.copy(item_rel_path, dest_backend, dest_item_path)
+
+    def local_path(self, path: str, mode: str = 'r'):
+        """Get local filesystem path (returns the actual path).
+
+        For local storage, this simply returns the actual filesystem path
+        since the file is already local. No temporary copy is needed.
+
+        Args:
+            path: Relative path to file
+            mode: Access mode (ignored for local storage)
+
+        Returns:
+            Context manager yielding str (the actual filesystem path)
+
+        Examples:
+            >>> with backend.local_path('video.mp4') as local_path:
+            ...     subprocess.run(['ffmpeg', '-i', local_path, 'out.mp4'])
+        """
+        from contextlib import contextmanager
+
+        @contextmanager
+        def _local_path():
+            full_path = self._resolve_path(path)
+            yield str(full_path)
+
+        return _local_path()
     
     def __repr__(self) -> str:
         """String representation."""

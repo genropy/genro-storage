@@ -18,6 +18,7 @@ except ImportError:
 from .node import StorageNode
 from .exceptions import StorageConfigError, StorageNotFoundError
 from .backends import StorageBackend
+from .backends.local import LocalStorage
 from .backends.fsspec import FsspecBackend
 from .backends.base64 import Base64Backend
 
@@ -270,13 +271,14 @@ class StorageManager:
         mount_name = config['name']
         backend_type = config['type']
         
-        # Create appropriate backend using fsspec
+        # Create appropriate backend
         if backend_type == 'local':
             if 'path' not in config:
                 raise StorageConfigError(
                     f"Local storage '{mount_name}' missing required field: 'path'"
                 )
-            backend = FsspecBackend('file', base_path=config['path'])
+            # LocalStorage supports both string paths and callables
+            backend = LocalStorage(path=config['path'])
         
         elif backend_type == 'memory':
             backend = FsspecBackend('memory', base_path=config.get('base_path', ''))
