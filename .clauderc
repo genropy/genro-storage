@@ -1,0 +1,89 @@
+# genro-storage - Claude Code Configuration
+
+## Project Context
+
+This is **genro-storage**, a universal storage abstraction library for Python that provides a unified interface for local filesystems, cloud storage (S3, GCS, Azure), and remote protocols (HTTP). Built on fsspec with an intuitive mount-point system.
+
+**Status**: v0.1.0-beta (Beta - Production Testing)
+**Python**: 3.9-3.12
+**Tests**: 195 passing, 79% coverage
+
+## Project Structure
+
+- `genro_storage/` - Main package (manager.py, node.py, config.py, backends/)
+- `tests/` - Test suite (unit + integration with MinIO)
+- `docs/` - ReadTheDocs documentation
+- Key docs: API_DESIGN.md, TESTING.md, COPY_SKIP_STRATEGIES.md
+
+## MANDATORY POLICIES
+
+### Code Language Policy
+**ALL code, comments, docstrings, and commit messages MUST be in English.**
+- Variables, functions, classes: English only
+- Comments and docstrings: English only
+- Commit messages: English only
+- No exceptions - strict requirement for international collaboration
+
+### Git and Commit Policy
+**DO NOT include Claude Code attribution in commits:**
+- NO "Co-Authored-By: Claude" footer
+- NO "Generated with Claude Code" messages
+- NO Claude Code attribution of any kind
+- Keep commit messages clean and professional
+- Follow repository's existing commit style
+
+### Development Phase Policy
+**Project is in Beta - breaking changes are acceptable:**
+- DO NOT worry about backward compatibility
+- DO NOT maintain extensive change history in docs
+- DO NOT preserve deprecated code or legacy patterns
+- DO refactor freely to improve design
+- DO focus on getting the API right, even with breaking changes
+- DO keep documentation focused on current version
+- Backward compatibility becomes priority only at v1.0.0
+
+## Key Components
+
+- **StorageManager** (`manager.py`): Main entry point, manages mount points
+- **StorageNode** (`node.py`): File/directory abstraction with unified API
+- **FsspecBackend** (`backends/fsspec_backend.py`): Unified backend for all storage types
+
+## Important Features
+
+1. Mount point system (home:, uploads:, s3:)
+2. Intelligent copy strategies (exists/size/hash)
+3. External tool integration (call() method)
+4. WSGI serving (serve() method)
+5. Base64 backend with writable paths
+6. Cloud metadata support
+7. Callable paths for dynamic resolution
+
+## Common Commands
+
+```bash
+# Run tests
+pytest tests/ -v --cov=genro_storage
+
+# With MinIO integration
+docker-compose up -d
+pytest tests/test_s3_integration.py -v
+
+# Code quality
+black genro_storage/ tests/
+ruff check genro_storage/ tests/
+mypy genro_storage/
+```
+
+## Key Design Decisions
+
+1. Single FsspecBackend handles all storage types
+2. Mutable path for Base64 backend (updates after write)
+3. Skip strategies for efficient incremental backups
+4. Context manager pattern for local_path()
+5. S3 ETag used for efficient hash comparison
+
+## Links
+
+- GitHub: https://github.com/genropy/genro-storage
+- Docs: https://genro-storage.readthedocs.io
+- Issues: https://github.com/genropy/genro-storage/issues
