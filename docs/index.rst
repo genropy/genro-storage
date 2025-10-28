@@ -76,13 +76,6 @@ Documentation Contents
 
 .. toctree::
    :maxdepth: 2
-   :caption: Key Features
-
-   capabilities
-   versioning
-
-.. toctree::
-   :maxdepth: 2
    :caption: User Guide
 
    configuration
@@ -102,6 +95,14 @@ Documentation Contents
 
    contributing
    changelog
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Appendices
+
+   api_reference
+   capabilities
+   versioning
 
 Indices and tables
 ==================
