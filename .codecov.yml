@@ -1,0 +1,23 @@
+# Codecov configuration
+# https://docs.codecov.com/docs/codecov-yaml
+
+coverage:
+  status:
+    project:
+      default:
+        target: 80%  # Fail if coverage drops below 80%
+        threshold: 1%  # Allow 1% drop
+    patch:
+      default:
+        target: 70%  # New code should have at least 70% coverage
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: false  # Comment on every PR
+
+ignore:
+  - "tests/"
+  - "docs/"
+  - "setup.py"
+  - "**/__init__.py"
