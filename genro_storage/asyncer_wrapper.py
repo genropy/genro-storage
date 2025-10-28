@@ -1,0 +1,357 @@
+"""Async wrapper using asyncer for automatic sync→async conversion.
+
+This module provides AsyncStorageManager and AsyncStorageNode classes that wrap
+the synchronous genro-storage API and make it usable in async/await contexts
+using the asyncer library (by Sebastián Ramírez, author of FastAPI).
+
+Example:
+    >>> from genro_storage.asyncer_wrapper import AsyncStorageManager
+    >>>
+    >>> storage = AsyncStorageManager()
+    >>> storage.configure([{
+    ...     'name': 's3',
+    ...     'type': 's3',
+    ...     'bucket': 'my-bucket'
+    ... }])
+    >>>
+    >>> node = storage.node('s3:file.txt')
+    >>> data = await node.read_bytes()
+    >>> await node.write_bytes(b'new data')
+"""
+
+from __future__ import annotations
+from typing import Any, Dict, List, Optional
+
+try:
+    from asyncer import asyncify
+except ImportError:
+    raise ImportError(
+        "asyncer is required for async support. "
+        "Install it with: pip install asyncer"
+    )
+
+from .manager import StorageManager
+from .node import StorageNode
+
+__all__ = ['AsyncStorageManager', 'AsyncStorageNode']
+
+
+class AsyncStorageManager:
+    """Async wrapper around sync StorageManager using asyncer.
+
+    This class wraps the synchronous StorageManager and provides async-compatible
+    methods for use in async/await contexts. It uses asyncer to automatically
+    run blocking operations in a thread pool.
+
+    Note:
+        Configuration methods (configure, add_mount) are synchronous and should
+        be called during application startup, not in async request handlers.
+
+    Example:
+        >>> storage = AsyncStorageManager()
+        >>> storage.configure([{'name': 'local', 'type': 'local', 'path': '/tmp'}])
+        >>>
+        >>> # In async context
+        >>> node = storage.node('local:test.txt')
+        >>> await node.write_text('Hello async world')
+    """
+
+    def __init__(self):
+        """Initialize the async storage manager with a sync StorageManager."""
+        self._storage = StorageManager()
+
+    def configure(self, source: str | list[dict[str, Any]]) -> None:
+        """Configure mount points (synchronous).
+
+        This is a synchronous method and should be called during application
+        startup, not in async request handlers.
+
+        Args:
+            source: Configuration source (file path or list of mount configs)
+
+        Example:
+            >>> storage = AsyncStorageManager()
+            >>> storage.configure([
+            ...     {'name': 's3', 'type': 's3', 'bucket': 'my-bucket'},
+            ...     {'name': 'local', 'type': 'local', 'path': '/tmp'}
+            ... ])
+        """
+        self._storage.configure(source)
+
+    def add_mount(self, config: dict[str, Any]) -> None:
+        """Add a mount point at runtime (synchronous).
+
+        This is a synchronous method that adds a single mount point dynamically.
+
+        Args:
+            config: Mount configuration dictionary
+
+        Example:
+            >>> storage.add_mount({
+            ...     'name': 'uploads',
+            ...     'type': 's3',
+            ...     'bucket': 'uploads-bucket'
+            ... })
+        """
+        self._storage.configure([config])
+
+    def node(self, mount_or_path: str | None = None, *path_parts: str) -> AsyncStorageNode:
+        """Create an async-wrapped StorageNode.
+
+        Args:
+            mount_or_path: Mount point and path (e.g., "s3:path/to/file")
+            *path_parts: Additional path components
+
+        Returns:
+            AsyncStorageNode: Async wrapper around StorageNode
+
+        Example:
+            >>> node = storage.node('s3:documents/report.pdf')
+            >>> # or
+            >>> node = storage.node('s3', 'documents', 'report.pdf')
+        """
+        sync_node = self._storage.node(mount_or_path, *path_parts)
+        return AsyncStorageNode(sync_node)
+
+    def has_mount(self, name: str) -> bool:
+        """Check if a mount point exists (synchronous).
+
+        Args:
+            name: Mount point name
+
+        Returns:
+            bool: True if mount exists
+        """
+        return self._storage.has_mount(name)
+
+    def get_mount_names(self) -> list[str]:
+        """Get list of configured mount names (synchronous).
+
+        Returns:
+            list[str]: List of mount point names
+        """
+        return self._storage.get_mount_names()
+
+
+class AsyncStorageNode:
+    """Async wrapper around sync StorageNode using asyncer.
+
+    This class provides async methods for file operations by wrapping
+    the synchronous StorageNode methods with asyncer.asyncify.
+
+    All I/O operations are async. Properties that don't require I/O
+    (like path, fullpath, basename) remain synchronous.
+
+    Example:
+        >>> node = storage.node('s3:file.txt')
+        >>>
+        >>> # Async I/O operations
+        >>> if await node.exists():
+        ...     data = await node.read_bytes()
+        ...     await node.delete()
+        >>>
+        >>> # Sync properties
+        >>> print(node.path)  # 'file.txt'
+        >>> print(node.fullpath)  # 's3:file.txt'
+    """
+
+    def __init__(self, sync_node: StorageNode):
+        """Initialize async node wrapper.
+
+        Args:
+            sync_node: The synchronous StorageNode to wrap
+        """
+        self._node = sync_node
+
+    # Async I/O operations
+
+    async def read_bytes(self) -> bytes:
+        """Read file content as bytes (async).
+
+        Returns:
+            bytes: File content
+
+        Example:
+            >>> data = await node.read_bytes()
+        """
+        return await asyncify(self._node.read_bytes)()
+
+    async def read_text(self, encoding: str = 'utf-8') -> str:
+        """Read file content as text (async).
+
+        Args:
+            encoding: Text encoding (default: utf-8)
+
+        Returns:
+            str: File content as text
+
+        Example:
+            >>> text = await node.read_text()
+        """
+        return await asyncify(self._node.read_text)(encoding)
+
+    async def write_bytes(self, data: bytes) -> None:
+        """Write bytes to file (async).
+
+        Args:
+            data: Bytes to write
+
+        Example:
+            >>> await node.write_bytes(b'Hello world')
+        """
+        await asyncify(self._node.write_bytes)(data)
+
+    async def write_text(self, text: str, encoding: str = 'utf-8') -> None:
+        """Write text to file (async).
+
+        Args:
+            text: Text to write
+            encoding: Text encoding (default: utf-8)
+
+        Example:
+            >>> await node.write_text('Hello world')
+        """
+        await asyncify(self._node.write_text)(text, encoding)
+
+    async def delete(self) -> None:
+        """Delete file or directory (async).
+
+        Example:
+            >>> await node.delete()
+        """
+        await asyncify(self._node.delete)()
+
+    async def copy(self, target: AsyncStorageNode | StorageNode, **kwargs) -> None:
+        """Copy file to target location (async).
+
+        Args:
+            target: Target node (can be async or sync)
+            **kwargs: Additional arguments for copy
+
+        Example:
+            >>> target = storage.node('s3:backup/file.txt')
+            >>> await node.copy(target)
+        """
+        target_node = target._node if isinstance(target, AsyncStorageNode) else target
+        await asyncify(self._node.copy)(target_node, **kwargs)
+
+    async def move(self, target: AsyncStorageNode | StorageNode) -> None:
+        """Move file to target location (async).
+
+        Args:
+            target: Target node (can be async or sync)
+
+        Example:
+            >>> target = storage.node('s3:archive/file.txt')
+            >>> await node.move(target)
+        """
+        target_node = target._node if isinstance(target, AsyncStorageNode) else target
+        await asyncify(self._node.move)(target_node)
+
+    # Async property access (requires I/O)
+
+    async def exists(self) -> bool:
+        """Check if file exists (async).
+
+        Returns:
+            bool: True if file exists
+
+        Example:
+            >>> if await node.exists():
+            ...     print("File exists")
+        """
+        return await asyncify(lambda: self._node.exists)()
+
+    async def size(self) -> int:
+        """Get file size in bytes (async).
+
+        Returns:
+            int: File size in bytes
+
+        Example:
+            >>> size = await node.size()
+            >>> print(f"File is {size} bytes")
+        """
+        return await asyncify(lambda: self._node.size)()
+
+    async def mtime(self) -> float:
+        """Get last modification time (async).
+
+        Returns:
+            float: Unix timestamp of last modification
+
+        Example:
+            >>> mtime = await node.mtime()
+        """
+        return await asyncify(lambda: self._node.mtime)()
+
+    async def isfile(self) -> bool:
+        """Check if node is a file (async).
+
+        Returns:
+            bool: True if node is a file
+        """
+        return await asyncify(lambda: self._node.isfile)()
+
+    async def isdir(self) -> bool:
+        """Check if node is a directory (async).
+
+        Returns:
+            bool: True if node is a directory
+        """
+        return await asyncify(lambda: self._node.isdir)()
+
+    # Sync properties (no I/O required)
+
+    @property
+    def path(self) -> str:
+        """Get relative path within mount (synchronous).
+
+        Returns:
+            str: Path within mount point
+        """
+        return self._node.path
+
+    @property
+    def fullpath(self) -> str:
+        """Get full path including mount (synchronous).
+
+        Returns:
+            str: Full path (e.g., "s3:path/to/file")
+        """
+        return self._node.fullpath
+
+    @property
+    def basename(self) -> str:
+        """Get filename with extension (synchronous).
+
+        Returns:
+            str: Filename
+        """
+        return self._node.basename
+
+    @property
+    def stem(self) -> str:
+        """Get filename without extension (synchronous).
+
+        Returns:
+            str: Filename stem
+        """
+        return self._node.stem
+
+    @property
+    def suffix(self) -> str:
+        """Get file extension including dot (synchronous).
+
+        Returns:
+            str: File extension (e.g., ".txt")
+        """
+        return self._node.suffix
+
+    def __repr__(self) -> str:
+        """String representation for debugging."""
+        return f"AsyncStorageNode({self._node.fullpath!r})"
+
+    def __str__(self) -> str:
+        """String representation."""
+        return self._node.fullpath
