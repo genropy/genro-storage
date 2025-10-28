@@ -240,40 +240,40 @@ class TestDirectoryOperations:
         # Create directory with files
         dir_node = storage.node('test:mydir')
         dir_node.mkdir()
-        
+
         # Create some files
-        (dir_node / 'file1.txt').write_text("content1")
-        (dir_node / 'file2.txt').write_text("content2")
-        (dir_node / 'subdir').mkdir()
-        
+        dir_node.child('file1.txt').write_text("content1")
+        dir_node.child('file2.txt').write_text("content2")
+        dir_node.child('subdir').mkdir()
+
         # List children
         children = dir_node.children()
         names = [c.basename for c in children]
-        
+
         assert len(children) == 3
         assert 'file1.txt' in names
         assert 'file2.txt' in names
         assert 'subdir' in names
-    
+
     def test_child_method(self, storage):
-        """Test getting child nodes."""
+        """Test child() with single path and varargs."""
         parent = storage.node('test:documents')
         parent.mkdir()
-        
+
+        # Single component
         child = parent.child('report.pdf')
         child.write_text("content")
-        
+
         assert child.fullpath == 'test:documents/report.pdf'
         assert child.exists
-    
-    def test_child_operator(self, storage):
-        """Test / operator for child access."""
-        root = storage.node('test:')
-        
-        # Use / operator
-        node = root / 'documents' / 'reports' / 'file.pdf'
-        
-        assert node.fullpath == 'test:documents/reports/file.pdf'
+
+        # Single path with slashes
+        child2 = parent.child('2024/reports/q4.pdf')
+        assert child2.fullpath == 'test:documents/2024/reports/q4.pdf'
+
+        # Varargs
+        child3 = parent.child('2024', 'reports', 'q4.pdf')
+        assert child3.fullpath == 'test:documents/2024/reports/q4.pdf'
     
     def test_parent_property(self, storage):
         """Test parent property."""
@@ -289,15 +289,15 @@ class TestDirectoryOperations:
         """Test deleting a directory recursively."""
         dir_node = storage.node('test:mydir')
         dir_node.mkdir()
-        
+
         # Create files inside
-        (dir_node / 'file1.txt').write_text("content")
-        (dir_node / 'subdir').mkdir()
-        (dir_node / 'subdir' / 'file2.txt').write_text("content")
-        
+        dir_node.child('file1.txt').write_text("content")
+        dir_node.child('subdir').mkdir()
+        dir_node.child('subdir', 'file2.txt').write_text("content")
+
         # Delete recursively
         dir_node.delete()
-        
+
         assert not dir_node.exists
 
 
@@ -371,23 +371,23 @@ class TestCopyMove:
         # Create source directory with contents
         src = storage.node('test:src_dir')
         src.mkdir()
-        (src / 'file1.txt').write_text("content1")
-        (src / 'subdir').mkdir()
-        (src / 'subdir' / 'file2.txt').write_text("content2")
-        
+        src.child('file1.txt').write_text("content1")
+        src.child('subdir').mkdir()
+        src.child('subdir', 'file2.txt').write_text("content2")
+
         # Copy
         dest = storage.node('test:dest_dir')
         src.copy(dest)
-        
+
         # Check structure copied
         assert dest.exists
-        assert (dest / 'file1.txt').exists
-        assert (dest / 'subdir').exists
-        assert (dest / 'subdir' / 'file2.txt').exists
-        
+        assert dest.child('file1.txt').exists
+        assert dest.child('subdir').exists
+        assert dest.child('subdir', 'file2.txt').exists
+
         # Check content
-        assert (dest / 'file1.txt').read_text() == "content1"
-        assert (dest / 'subdir' / 'file2.txt').read_text() == "content2"
+        assert dest.child('file1.txt').read_text() == "content1"
+        assert dest.child('subdir', 'file2.txt').read_text() == "content2"
 
 
 class TestPathNormalization:

@@ -104,23 +104,23 @@ class TestVersionCount:
 
 
 class TestWriteIfChanged:
-    """Tests for write_bytes_if_changed and write_text_if_changed."""
+    """Tests for write with skip_if_unchanged parameter."""
 
-    def test_write_bytes_if_changed_creates_file(self):
-        """write_bytes_if_changed creates file if it doesn't exist."""
+    def test_write_bytes_skip_if_unchanged_creates_file(self):
+        """write_bytes(skip_if_unchanged=True) creates file if it doesn't exist."""
         storage = StorageManager()
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
 
         # First write should succeed
-        changed = node.write_bytes_if_changed(b'Hello')
+        changed = node.write_bytes(b'Hello', skip_if_unchanged=True)
         assert changed is True
         assert node.exists
         assert node.read_bytes() == b'Hello'
 
-    def test_write_bytes_if_changed_skips_duplicate(self):
-        """write_bytes_if_changed skips if content is identical."""
+    def test_write_bytes_skip_if_unchanged_skips_duplicate(self):
+        """write_bytes(skip_if_unchanged=True) skips if content is identical."""
         storage = StorageManager()
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
@@ -128,15 +128,13 @@ class TestWriteIfChanged:
         node.write_bytes(b'Hello')
 
         # Second write with same content should be skipped
-        # Note: For non-versioned backends, we can't detect duplicates
-        # without reading the file, so this will write anyway
-        changed = node.write_bytes_if_changed(b'Hello')
-        # Memory backend doesn't have versioning, so it can't check ETag
-        # It will write anyway (no optimization possible)
+        # Memory backend will read and compare content
+        changed = node.write_bytes(b'Hello', skip_if_unchanged=True)
+        assert changed is False  # Content is identical, should skip
         assert node.read_bytes() == b'Hello'
 
-    def test_write_bytes_if_changed_updates_different_content(self):
-        """write_bytes_if_changed writes if content is different."""
+    def test_write_bytes_skip_if_unchanged_updates_different_content(self):
+        """write_bytes(skip_if_unchanged=True) writes if content is different."""
         storage = StorageManager()
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
@@ -144,30 +142,30 @@ class TestWriteIfChanged:
         node.write_bytes(b'Hello')
 
         # Write different content
-        changed = node.write_bytes_if_changed(b'World')
+        changed = node.write_bytes(b'World', skip_if_unchanged=True)
         assert changed is True
         assert node.read_bytes() == b'World'
 
-    def test_write_text_if_changed_creates_file(self):
-        """write_text_if_changed creates file if it doesn't exist."""
+    def test_write_text_skip_if_unchanged_creates_file(self):
+        """write_text(skip_if_unchanged=True) creates file if it doesn't exist."""
         storage = StorageManager()
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
 
-        changed = node.write_text_if_changed('Hello')
+        changed = node.write_text('Hello', skip_if_unchanged=True)
         assert changed is True
         assert node.read_text() == 'Hello'
 
-    def test_write_text_if_changed_updates_different_content(self):
-        """write_text_if_changed writes if content is different."""
+    def test_write_text_skip_if_unchanged_updates_different_content(self):
+        """write_text(skip_if_unchanged=True) writes if content is different."""
         storage = StorageManager()
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
         node.write_text('Hello')
 
-        changed = node.write_text_if_changed('World')
+        changed = node.write_text('World', skip_if_unchanged=True)
         assert changed is True
         assert node.read_text() == 'World'
 
@@ -211,36 +209,6 @@ class TestOpenWithVersion:
         with pytest.raises(ValueError, match='Cannot specify both'):
             with node.open(version=-2, as_of=datetime.now()):
                 pass
-
-
-class TestDiffVersions:
-    """Tests for diff_versions method."""
-
-    def test_diff_versions_raises_on_nonversioned(self):
-        """diff_versions raises PermissionError on non-versioned backend."""
-        storage = StorageManager()
-        storage.configure([{'name': 'mem', 'type': 'memory'}])
-
-        node = storage.node('mem:test.txt')
-        node.write_text('content')
-
-        with pytest.raises(PermissionError, match='does not support versioning'):
-            node.diff_versions()
-
-
-class TestRollback:
-    """Tests for rollback method."""
-
-    def test_rollback_raises_on_nonversioned(self):
-        """rollback raises PermissionError on non-versioned backend."""
-        storage = StorageManager()
-        storage.configure([{'name': 'mem', 'type': 'memory'}])
-
-        node = storage.node('mem:test.txt')
-        node.write_text('content')
-
-        with pytest.raises(PermissionError, match='does not support versioning'):
-            node.rollback()
 
 
 class TestCompactVersions:

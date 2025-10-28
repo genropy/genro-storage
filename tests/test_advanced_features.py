@@ -519,8 +519,8 @@ class TestS3Versioning:
         versions = node.versions
         assert versions == []
 
-    def test_open_version_raises_permission_error_memory(self):
-        """Memory storage raises PermissionError for open_version."""
+    def test_open_with_version_raises_permission_error_memory(self):
+        """Memory storage raises PermissionError for open(version=...)."""
         storage = StorageManager()
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
@@ -528,10 +528,10 @@ class TestS3Versioning:
         node.write_text('test')
 
         with pytest.raises(PermissionError, match='does not support versioning'):
-            node.open_version('dummy_version_id')
+            node.open(version='dummy_version_id')
 
-    def test_open_version_raises_permission_error_local(self):
-        """Local storage raises PermissionError for open_version."""
+    def test_open_with_version_raises_permission_error_local(self):
+        """Local storage raises PermissionError for open(version=...)."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
         storage.configure([
@@ -542,4 +542,4 @@ class TestS3Versioning:
         node.write_text('test')
 
         with pytest.raises(PermissionError, match='does not support versioning'):
-            node.open_version('v123')
+            node.open(version='v123')

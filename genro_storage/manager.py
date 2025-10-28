@@ -365,22 +365,25 @@ class StorageManager:
         
         self._mounts[mount_name] = backend
     
-    def node(self, mount_or_path: str, *path_parts: str) -> StorageNode:
+    def node(self, mount_or_path: str, *path_parts: str, version: int | str | None = None) -> StorageNode:
         """Create a StorageNode pointing to a file or directory.
-        
+
         This is the primary way to access files and directories. The path
         uses a mount:path format where the mount name refers to a configured
         storage backend.
-        
+
         Args:
             mount_or_path: Either:
                 - Full path with mount: "mount:path/to/file"
                 - Just mount name: "mount"
             *path_parts: Additional path components to join
-        
+            version: Optional version specifier for versioned storage (S3, GCS).
+                If specified, creates a read-only snapshot node of that version.
+                Can be int (index: -1=latest, -2=previous) or str (version_id).
+
         Returns:
             StorageNode: A new StorageNode instance
-        
+
         Raises:
             KeyError: If mount point doesn't exist (wrapped as StorageNotFoundError)
             ValueError: If path format is invalid
@@ -448,9 +451,9 @@ class StorageManager:
         # Join and normalize path
         path = '/'.join(path_components)
         path = self._normalize_path(path)
-        
+
         # Create and return node
-        return StorageNode(self, mount_name, path)
+        return StorageNode(self, mount_name, path, version=version)
     
     def _normalize_path(self, path: str) -> str:
         """Normalize a path.

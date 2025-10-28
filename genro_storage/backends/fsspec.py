@@ -56,7 +56,11 @@ class FsspecBackend(StorageBackend):
         self.protocol = protocol
         self.base_path = base_path.rstrip('/')
         self.fs_kwargs = kwargs
-        
+
+        # For S3, enable version awareness to support versioning
+        if protocol == 's3':
+            kwargs.setdefault('version_aware', True)
+
         # Create fsspec filesystem instance
         self.fs = fsspec.filesystem(protocol, **kwargs)
     
@@ -513,7 +517,7 @@ class FsspecBackend(StorageBackend):
                 try:
                     versions_info = self.fs.object_version_info(full_path)
                     # Convert to normalized format
-                    return [
+                    versions_list = [
                         {
                             'version_id': v.get('VersionId'),
                             'is_latest': v.get('IsLatest', False),
@@ -523,6 +527,10 @@ class FsspecBackend(StorageBackend):
                         }
                         for v in versions_info
                     ]
+                    # Sort by timestamp (oldest first) for Python-style negative indexing
+                    # where -1 = latest version, -len = oldest version
+                    versions_list.sort(key=lambda v: v['last_modified'])
+                    return versions_list
                 except Exception:
                     # Versioning not enabled or error
                     return []
@@ -596,42 +604,43 @@ class FsspecBackend(StorageBackend):
 
         # S3: Delete specific version
         if self.protocol == 's3':
-            # s3fs may not expose version deletion directly
-            # We need to use the underlying boto3 client
             try:
-                # Try to get the s3 client from s3fs
-                if hasattr(self.fs, 's3'):
-                    # s3fs has an s3 attribute that's the boto3 client
-                    s3_client = self.fs.s3
+                # Create a synchronous boto3 client from stored configuration
+                import boto3
 
-                    # Parse bucket and key from full_path
-                    # full_path format: "bucket-name/path/to/file"
-                    parts = full_path.split('/', 1)
-                    if len(parts) == 2:
-                        bucket, key = parts
-                    else:
-                        bucket = parts[0]
-                        key = ''
+                # Extract bucket and key from full_path (format: bucket/key)
+                parts = full_path.split('/', 1)
+                bucket = parts[0]
+                key = parts[1] if len(parts) > 1 else ''
 
-                    # Delete the specific version
-                    s3_client.delete_object(
-                        Bucket=bucket,
-                        Key=key,
-                        VersionId=version_id
-                    )
-                else:
-                    # Fallback: try using fsspec's rm with version_id
-                    # This may not be supported in all s3fs versions
-                    if hasattr(self.fs, 'rm_file'):
-                        self.fs.rm_file(full_path, version_id=version_id)
-                    else:
-                        raise PermissionError(
-                            "S3 version deletion not available in this fsspec version. "
-                            "Cannot access boto3 client for version deletion."
-                        )
+                # Build boto3 client kwargs from stored fs_kwargs
+                client_kwargs = {}
+
+                # Map s3fs parameter names to boto3 parameter names
+                if 'key' in self.fs_kwargs:
+                    client_kwargs['aws_access_key_id'] = self.fs_kwargs['key']
+                if 'secret' in self.fs_kwargs:
+                    client_kwargs['aws_secret_access_key'] = self.fs_kwargs['secret']
+                if 'token' in self.fs_kwargs:
+                    client_kwargs['aws_session_token'] = self.fs_kwargs['token']
+                if 'endpoint_url' in self.fs_kwargs:
+                    client_kwargs['endpoint_url'] = self.fs_kwargs['endpoint_url']
+                if 'region_name' in self.fs_kwargs:
+                    client_kwargs['region_name'] = self.fs_kwargs['region_name']
+
+                # Create sync boto3 client
+                s3_client = boto3.client('s3', **client_kwargs)
+
+                # Delete the specific version
+                s3_client.delete_object(
+                    Bucket=bucket,
+                    Key=key,
+                    VersionId=version_id
+                )
             except Exception as e:
                 # Re-raise with more context if it's a known error type
-                if 'NoSuchKey' in str(e) or 'NoSuchVersion' in str(e):
+                error_str = str(e)
+                if 'NoSuchKey' in error_str or 'NoSuchVersion' in error_str:
                     raise FileNotFoundError(
                         f"Version {version_id} not found for {path}"
                     ) from e

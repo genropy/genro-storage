@@ -71,20 +71,23 @@ class StorageNode:
         parent: Parent directory as StorageNode
     """
     
-    def __init__(self, manager: StorageManager, mount_name: str, path: str):
+    def __init__(self, manager: StorageManager, mount_name: str, path: str, version: int | str | None = None):
         """Initialize a StorageNode.
-        
+
         Args:
             manager: The StorageManager instance that owns this node
             mount_name: Name of the mount point (e.g., "home", "uploads")
             path: Relative path within the mount (e.g., "documents/file.txt")
-        
+            version: Optional version specifier for versioned storage.
+                If set, the node becomes a read-only snapshot of that version.
+
         Note:
             This should not be called directly. Use ``StorageManager.node()`` instead.
         """
         self._manager = manager
         self._mount_name = mount_name
         self._path = path
+        self._version = version  # None = current version, int/str = specific version
         self._posix_path = PurePosixPath(path) if path else PurePosixPath('.')
         # Get backend from manager
         self._backend = manager._mounts[mount_name]
@@ -342,6 +345,9 @@ class StorageNode:
         Returns backend capabilities which describe what features are supported,
         such as versioning, metadata, presigned URLs, etc.
 
+        If this node is a versioned snapshot (created with version parameter),
+        the versioning capabilities are disabled since the node is read-only.
+
         Returns:
             BackendCapabilities: Object describing supported features
 
@@ -351,12 +357,22 @@ class StorageNode:
             >>> if node.capabilities.presigned_urls:
             ...     url = node.get_presigned_url()
         """
-        return self._backend.capabilities
+        caps = self._backend.capabilities
+
+        # If node has a fixed version, it's a snapshot and loses versioning capabilities
+        if self._version is not None:
+            from dataclasses import replace
+            caps = replace(caps,
+                           versioning=False,
+                           version_listing=False,
+                           version_access=False)
+
+        return caps
 
     # ==================== File I/O Methods ====================
 
     def open(self,
-             mode: str = 'rb',
+             mode: str = 'r',
              version: int | str | None = None,
              as_of: datetime | None = None) -> BinaryIO | TextIO:
         """Open file with optional version control support.
@@ -400,6 +416,23 @@ class StorageNode:
             >>> with node.open(as_of=datetime(2024, 1, 15)) as f:
             ...     historical = f.read()
         """
+        # If node has a fixed version, cannot specify another version
+        if self._version is not None and (version is not None or as_of is not None):
+            raise ValueError(
+                "This node is a versioned snapshot. "
+                "Cannot specify version parameter on an already-versioned node."
+            )
+
+        # If node has a fixed version, it's read-only
+        if self._version is not None and mode in ('w', 'wb', 'a', 'ab'):
+            raise ValueError(
+                "Cannot write to versioned snapshot. "
+                "Create a new node without version parameter to write."
+            )
+
+        # Use node's version if set, otherwise use parameter
+        effective_version = self._version if self._version is not None else version
+
         # Validazione parametri
         if version is not None and as_of is not None:
             raise ValueError(
@@ -408,8 +441,9 @@ class StorageNode:
             )
 
         # Check versioning capability FIRST
-        if version is not None or as_of is not None:
-            if not self.capabilities.versioning:
+        if effective_version is not None or as_of is not None:
+            # Check backend capabilities (not node capabilities, since we might be using self._version)
+            if not self._backend.capabilities.versioning:
                 raise PermissionError(
                     f"{self._mount_name} backend does not support versioning. "
                     f"Supported features: {self._list_supported_features()}"
@@ -428,16 +462,16 @@ class StorageNode:
             return self._backend.open_version(self._path, version_id, mode)
 
         # Accesso per version
-        if version is not None:
+        if effective_version is not None:
             if 'w' in mode or 'a' in mode or '+' in mode:
                 raise ValueError("Cannot write to historical versions (read-only)")
 
             # Se è un intero, risolvi l'indice
-            if isinstance(version, int):
-                version_id = self._resolve_version_index(version)
+            if isinstance(effective_version, int):
+                version_id = self._resolve_version_index(effective_version)
             else:
                 # È già un version_id stringa
-                version_id = version
+                version_id = effective_version
 
             return self._backend.open_version(self._path, version_id, mode)
 
@@ -445,98 +479,127 @@ class StorageNode:
         return self._backend.open(self._path, mode)
     
     def read_bytes(self) -> bytes:
-        """Read entire file as bytes."""
+        """Read entire file as bytes.
+
+        If node has a fixed version, reads that version.
+        """
+        if self._version is not None:
+            with self.open(mode='rb') as f:
+                return f.read()
         return self._backend.read_bytes(self._path)
-    
+
     def read_text(self, encoding: str = 'utf-8') -> str:
-        """Read entire file as string."""
+        """Read entire file as string.
+
+        If node has a fixed version, reads that version.
+        """
+        if self._version is not None:
+            with self.open(mode='r') as f:
+                content = f.read()
+            # If we got bytes, decode them
+            if isinstance(content, bytes):
+                return content.decode(encoding)
+            return content
         return self._backend.read_text(self._path, encoding)
     
-    def write_bytes(self, data: bytes) -> None:
+    def write_bytes(self, data: bytes, skip_if_unchanged: bool = False) -> bool:
         """Write bytes to file.
+
+        Args:
+            data: Bytes to write
+            skip_if_unchanged: If True, skip writing if content identical to current version.
+                Uses MD5 hash comparison with existing file's ETag (S3) or computed hash.
+
+        Returns:
+            bool: True if written, False if skipped (only when skip_if_unchanged=True)
+
+        Raises:
+            ValueError: If node is a versioned snapshot (read-only)
 
         Note:
             For base64 backend, this updates the node's path to the new base64-encoded content.
+
+        Examples:
+            >>> # Simple write
+            >>> node.write_bytes(b'Hello World')
+            True
+
+            >>> # Skip if unchanged (efficient for versioned storage)
+            >>> written = node.write_bytes(data, skip_if_unchanged=True)
+            >>> if written:
+            ...     print("File updated")
+            ... else:
+            ...     print("Content unchanged, skipped")
         """
+        # Cannot write to versioned snapshots
+        if self._version is not None:
+            raise ValueError(
+                "Cannot write to versioned snapshot. "
+                "Create a new node without version parameter to write."
+            )
+        # Check if we should skip
+        if skip_if_unchanged:
+            import hashlib
+
+            # Try to compare with existing content
+            if self.capabilities.versioning and self.exists:
+                # Calculate MD5 of new content
+                new_md5 = hashlib.md5(data).hexdigest()
+
+                # Get latest version ETag
+                versions = self.versions
+                if versions:
+                    # Find latest version
+                    latest = next((v for v in versions if v.get('is_latest')), versions[0])
+                    current_etag = latest.get('etag', '')
+
+                    # Compare (S3 ETag is MD5 for simple uploads)
+                    if current_etag and new_md5 == current_etag:
+                        return False  # Skip: content identical
+            elif self.exists:
+                # Non-versioned backend: compare with current content
+                try:
+                    current_data = self.read_bytes()
+                    if current_data == data:
+                        return False  # Skip: content identical
+                except Exception:
+                    pass  # If we can't read, write anyway
+
+        # Write the data
         result = self._backend.write_bytes(self._path, data)
         # If backend returns a new path (e.g., base64), update it
         if result is not None:
             self._path = result
             self._posix_path = PurePosixPath(result) if result else PurePosixPath('.')
-    
-    def write_text(self, text: str, encoding: str = 'utf-8') -> None:
-        """Write string to file.
 
-        Note:
-            For base64 backend, this updates the node's path to the new base64-encoded content.
-        """
-        result = self._backend.write_text(self._path, text, encoding)
-        # If backend returns a new path (e.g., base64), update it
-        if result is not None:
-            self._path = result
-            self._posix_path = PurePosixPath(result) if result else PurePosixPath('.')
-
-    def write_bytes_if_changed(self, data: bytes) -> bool:
-        """Write bytes only if content differs from current version.
-
-        For versioned storage (S3), compares MD5 hash with latest version's ETag
-        to avoid creating duplicate versions. For non-versioned storage, always writes.
-
-        Args:
-            data: Bytes to write
-
-        Returns:
-            bool: True if written, False if skipped (content unchanged)
-
-        Examples:
-            >>> # Avoid creating S3 versions if content unchanged
-            >>> if node.write_bytes_if_changed(new_data):
-            ...     print("File updated")
-            ... else:
-            ...     print("Content unchanged, skipped")
-
-        Notes:
-            - Only works with versioned storage that provides ETags
-            - Computes MD5 of new content for comparison
-            - Falls back to always writing if comparison not possible
-        """
-        import hashlib
-
-        # Check if we can deduplicate
-        if self.capabilities.versioning and self.exists:
-            # Calculate MD5 of new content
-            new_md5 = hashlib.md5(data).hexdigest()
-
-            # Get latest version ETag
-            versions = self.versions
-            if versions:
-                # Find latest version
-                latest = next((v for v in versions if v.get('is_latest')), versions[0])
-                current_etag = latest.get('etag', '')
-
-                # Compare (S3 ETag is MD5 for simple uploads)
-                if current_etag and new_md5 == current_etag:
-                    return False  # Skip: content identical
-
-        # Write if different or can't compare
-        self.write_bytes(data)
         return True
 
-    def write_text_if_changed(self, text: str, encoding: str = 'utf-8') -> bool:
-        """Write text only if content differs from current version.
+    def write_text(self, text: str, encoding: str = 'utf-8', skip_if_unchanged: bool = False) -> bool:
+        """Write string to file.
 
         Args:
             text: String to write
-            encoding: Text encoding
+            encoding: Text encoding (default: 'utf-8')
+            skip_if_unchanged: If True, skip writing if content identical to current version.
+                Uses MD5 hash comparison with existing file's ETag (S3) or computed hash.
 
         Returns:
-            bool: True if written, False if skipped
+            bool: True if written, False if skipped (only when skip_if_unchanged=True)
+
+        Note:
+            For base64 backend, this updates the node's path to the new base64-encoded content.
 
         Examples:
-            >>> if node.write_text_if_changed("Hello World"):
-            ...     print("File updated")
+            >>> # Simple write
+            >>> node.write_text('Hello World')
+            True
+
+            >>> # Skip if unchanged
+            >>> written = node.write_text(content, skip_if_unchanged=True)
+            >>> if not written:
+            ...     print("Content unchanged, skipped")
         """
-        return self.write_bytes_if_changed(text.encode(encoding))
+        return self.write_bytes(text.encode(encoding), skip_if_unchanged=skip_if_unchanged)
 
     # ==================== File Operations ====================
     
@@ -726,7 +789,7 @@ class StorageNode:
                 # Recurse into children
                 for child in src_node.children():
                     child_relpath = f"{relpath}/{child.basename}" if relpath else child.basename
-                    collect_files(child, dest_node / child.basename, child_relpath)
+                    collect_files(child, dest_node.child(child.basename), child_relpath)
 
         collect_files(self, dest)
 
@@ -934,10 +997,33 @@ class StorageNode:
         names = self._backend.list_dir(self._path)
         return [self.child(name) for name in names]
     
-    def child(self, name: str) -> StorageNode:
-        """Get a child node by name."""
-        child_path = str(self._posix_path / name)
-        return StorageNode(self._manager, self._mount_name, child_path)
+    def child(self, *parts: str) -> StorageNode:
+        """Get a child node by path components.
+
+        Args:
+            *parts: Path components to append. Can be:
+                - Single string with path separators: 'aaa/bbb/ccc'
+                - Multiple strings: 'aaa', 'bbb', 'ccc'
+
+        Returns:
+            StorageNode: Child node with combined path
+
+        Examples:
+            >>> docs = storage.node('home:documents')
+            >>>
+            >>> # Single path string
+            >>> report = docs.child('2024/reports/q4.pdf')
+            >>>
+            >>> # Multiple components
+            >>> report = docs.child('2024', 'reports', 'q4.pdf')
+            >>>
+            >>> # Both produce: 'home:documents/2024/reports/q4.pdf'
+        """
+        # Join all parts into a single path
+        child_path = '/'.join(parts)
+        # Combine with current path
+        full_child_path = str(self._posix_path / child_path)
+        return StorageNode(self._manager, self._mount_name, full_child_path)
     
     def mkdir(self, parents: bool = False, exist_ok: bool = False) -> None:
         """Create directory."""
@@ -1342,38 +1428,6 @@ class StorageNode:
         """
         return self._backend.get_versions(self._path)
 
-    def open_version(self, version_id: str, mode: str = 'rb'):
-        """Open a specific version of this file.
-
-        Opens a historical version from versioned storage (S3).
-        Only read modes are supported for historical versions.
-
-        Args:
-            version_id: Version identifier to open
-            mode: Open mode (read modes only, default: 'rb')
-
-        Returns:
-            File-like object
-
-        Raises:
-            ValueError: If mode is not read-only
-            PermissionError: If versioning not supported
-            FileNotFoundError: If version doesn't exist
-
-        Examples:
-            >>> file = storage.node('s3:documents/report.pdf')
-            >>> versions = file.versions
-            >>> if versions:
-            ...     # Open previous version
-            ...     with file.open_version(versions[1]['version_id']) as f:
-            ...         old_content = f.read()
-
-        Notes:
-            - Only works with S3 versioning enabled
-            - Historical versions are read-only
-        """
-        return self._backend.open_version(self._path, version_id, mode)
-
     def _resolve_version_index(self, index: int) -> str:
         """Resolve version index to version_id.
 
@@ -1417,9 +1471,15 @@ class StorageNode:
         Returns:
             version_id or None if no version found before date
         """
+        from datetime import timezone
+
         versions = self.versions
 
-        # Filtra versioni fino alla data target
+        # Normalize target_date to UTC if naive
+        if target_date.tzinfo is None:
+            target_date = target_date.replace(tzinfo=timezone.utc)
+
+        # Filter versions up to target date
         valid_versions = [
             v for v in versions
             if v['last_modified'] <= target_date
@@ -1428,7 +1488,7 @@ class StorageNode:
         if not valid_versions:
             return None
 
-        # Prendi la più recente prima della data
+        # Get the most recent version before target date
         target_version = max(
             valid_versions,
             key=lambda v: v['last_modified']
@@ -1455,64 +1515,6 @@ class StorageNode:
             >>> print(f"File has {node.version_count} versions")
         """
         return len(self.versions)
-
-    def diff_versions(self, v1: int = -1, v2: int = -2) -> tuple[bytes, bytes]:
-        """Get content from two versions for comparison.
-
-        Args:
-            v1: First version index (default: -1, latest)
-            v2: Second version index (default: -2, previous)
-
-        Returns:
-            Tuple of (v1_content, v2_content)
-
-        Raises:
-            IndexError: If version indices out of range
-            PermissionError: If versioning not supported
-
-        Examples:
-            >>> current, previous = node.diff_versions()
-            >>> if current != previous:
-            ...     print("File changed!")
-
-            >>> # Compare with older version
-            >>> current, old = node.diff_versions(-1, -5)
-        """
-        with self.open(version=v1) as f:
-            content1 = f.read()
-
-        with self.open(version=v2) as f:
-            content2 = f.read()
-
-        return content1, content2
-
-    def rollback(self, to_version: int = -2) -> None:
-        """Rollback file to a previous version.
-
-        Creates a new version with content from specified version.
-        This does not delete versions, it creates a new one.
-
-        Args:
-            to_version: Version index to rollback to (default: -2, previous)
-
-        Raises:
-            IndexError: If version index out of range
-            PermissionError: If versioning not supported or storage read-only
-
-        Examples:
-            >>> # Oops, uploaded wrong file! Rollback to previous
-            >>> node.rollback()  # or node.rollback(-2)
-
-            >>> # Rollback to version from 3 versions ago
-            >>> node.rollback(-4)
-        """
-        # Leggi contenuto dalla versione target
-        with self.open(version=to_version) as f:
-            old_content = f.read()
-
-        # Scrivi come nuova versione
-        with self.open(mode='wb') as f:
-            f.write(old_content)
 
     def compact_versions(self, dry_run: bool = False) -> int:
         """Compact version history by removing consecutive duplicates.
@@ -1726,18 +1728,7 @@ class StorageNode:
     def __str__(self) -> str:
         """String representation."""
         return self.fullpath
-    
-    def __truediv__(self, other: str) -> StorageNode:
-        """Support path / 'child' syntax.
-        
-        Examples:
-            >>> docs = storage.node('home:documents')
-            >>> report = docs / 'reports' / '2024' / 'q4.pdf'
-            >>> print(report.fullpath)
-            'home:documents/reports/2024/q4.pdf'
-        """
-        return self.child(other)
-    
+
     def __eq__(self, other: object) -> bool:
         """Compare nodes by content (MD5 hash).
         
