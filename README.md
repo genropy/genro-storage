@@ -193,6 +193,8 @@ remote.fill_from_url('https://example.com/file.pdf')
 
 ### Async Usage (NEW in v0.2.0!)
 
+Built on [asyncer](https://github.com/tiangolo/asyncer) by Sebastián Ramírez (FastAPI author) for automatic sync→async conversion with no event loop blocking.
+
 ```python
 from genro_storage import AsyncStorageManager
 
@@ -380,6 +382,7 @@ See [TESTING.md](TESTING.md) for detailed testing instructions with MinIO.
 ## Built With
 
 - [fsspec](https://filesystem-spec.readthedocs.io/) - Pythonic filesystem abstraction
+- [asyncer](https://github.com/tiangolo/asyncer) - Async wrapper support (optional)
 - Modern Python (3.9+) with full type hints
 - Optional backends: s3fs, gcsfs, adlfs, aiohttp
 
