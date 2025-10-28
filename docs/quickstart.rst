@@ -125,8 +125,8 @@ Here's a complete working example:
     report = storage.node('data:reports/2024-q4.txt')
     report.write_text(\"\"\"
 Q4 2024 Sales Report
-====================
-Total Sales: 1234567
+---------------------
+Total Sales: $1,234,567
 Growth: +15%
 \"\"\")
 
