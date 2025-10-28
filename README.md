@@ -189,7 +189,32 @@ remote.fill_from_url('https://example.com/file.pdf')
 
 ## Learning with Interactive Tutorials
 
-The best way to learn genro-storage is through our **hands-on Jupyter notebooks** in the [`notebooks/`](notebooks/) directory:
+The best way to learn genro-storage is through our **hands-on Jupyter notebooks** in the [`notebooks/`](notebooks/) directory.
+
+### Run Online (No Installation Required)
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/genropy/genro-storage/main?filepath=notebooks)
+
+Click the badge above to launch an interactive Jupyter environment in your browser. Ready in ~2 minutes!
+
+### Run Locally
+
+```bash
+# 1. Install Jupyter
+pip install jupyter notebook
+
+# 2. Navigate to notebooks directory
+cd notebooks
+
+# 3. Launch Jupyter
+jupyter notebook
+
+# 4. Open 01_quickstart.ipynb and start learning!
+```
+
+**Note:** Jupyter will open in your browser automatically. Execute cells sequentially with `Shift+Enter`.
+
+### Tutorial Contents
 
 | Notebook | Topic | Duration | Level |
 |----------|-------|----------|-------|
@@ -202,18 +227,7 @@ The best way to learn genro-storage is through our **hands-on Jupyter notebooks*
 | 07 - Advanced Features | External tools, WSGI, metadata | 35 min | Advanced |
 | 08 - Real World Examples | Complete use cases | 40 min | Advanced |
 
-**Quick start:**
-
-```bash
-# Install Jupyter
-pip install jupyter notebook
-
-# Run the tutorials
-cd notebooks
-jupyter notebook
-```
-
-Start with [01_quickstart.ipynb](notebooks/01_quickstart.ipynb) and follow the learning path. Each notebook has runnable examples you can execute and modify.
+**Total time:** ~3.5 hours • **Start here:** [01_quickstart.ipynb](notebooks/01_quickstart.ipynb)
 
 See [notebooks/README.md](notebooks/README.md) for the complete learning guide.
 

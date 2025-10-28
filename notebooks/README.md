@@ -1,6 +1,28 @@
 # genro-storage Interactive Tutorials
 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/genropy/genro-storage/main?filepath=notebooks)
+
 Welcome! These Jupyter notebooks provide hands-on, interactive tutorials for learning genro-storage.
+
+## 🚀 Quick Start
+
+### Option 1: Run Online (Easiest)
+
+**Click the Binder badge above** ☝️ to launch an interactive Jupyter environment in your browser. No installation required!
+
+### Option 2: Run Locally
+
+```bash
+# Install Jupyter
+pip install jupyter notebook
+
+# Launch from this directory
+jupyter notebook
+
+# Open 01_quickstart.ipynb and start learning!
+```
+
+**Important:** Execute notebook cells **sequentially from top to bottom** using `Shift+Enter`. Variables persist between cells!
 
 ## 📚 Learning Path
 
@@ -19,32 +41,14 @@ The notebooks are designed to be followed in order, from beginner to advanced:
 
 **Total time:** ~3.5 hours (but you can skip around!)
 
-## 🚀 Getting Started
+### Optional: Cloud Storage Examples
 
-### Prerequisites
+Most examples use in-memory storage, but if you want to try S3/GCS/Azure examples:
 
 ```bash
-# Install genro-storage with development dependencies
-pip install genro-storage
-
-# For cloud storage examples (optional)
 pip install genro-storage[s3]    # Amazon S3
 pip install genro-storage[gcs]   # Google Cloud Storage
 pip install genro-storage[azure] # Azure Blob Storage
-
-# Install Jupyter
-pip install jupyter notebook
-```
-
-### Running the Notebooks
-
-```bash
-# Start Jupyter Notebook from the notebooks directory
-cd notebooks
-jupyter notebook
-
-# Or use JupyterLab
-jupyter lab
 ```
 
 ## 📖 What You'll Learn
