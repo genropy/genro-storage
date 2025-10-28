@@ -120,10 +120,7 @@ jobs:
         MINIO_ACCESS_KEY: minioadmin
         MINIO_SECRET_KEY: minioadmin
       run: |
-        coverage run -m pytest tests/ -v
-        coverage report --show-missing
-        coverage html
-        coverage json
+        pytest -v --cov=genro_storage --cov-report=term --cov-report=html --cov-report=json
 
     - name: Stop MinIO
       if: always()
