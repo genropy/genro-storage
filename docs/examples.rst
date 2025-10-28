@@ -192,6 +192,166 @@ Download files from the internet directly to storage:
     s3_file = storage.node('s3:archives/backup.zip')
     s3_file.fill_from_url('https://backups.example.com/latest.zip', timeout=300)
 
+Intelligent Copy and Sync
+-------------------------
+
+Copy files with filtering, skip strategies, and progress tracking:
+
+Basic Filtering
+~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    # Copy only specific file types
+    src = storage.node('local:project/')
+    dest = storage.node('s3:backup/')
+
+    # Only Python files
+    src.copy(dest, include='*.py')
+
+    # Multiple file types
+    src.copy(dest, include=['*.py', '*.json', '*.md'])
+
+    # Exclude patterns
+    src.copy(dest, exclude=['*.log', '*.tmp', '__pycache__/**'])
+
+    # Combine include and exclude
+    src.copy(dest,
+             include='*.py',
+             exclude='test_*.py')  # Python files, but no tests
+
+Custom Filtering
+~~~~~~~~~~~~~~~~
+
+Filter by file size, modification time, or custom logic:
+
+.. code-block:: python
+
+    # Only files smaller than 10MB
+    src.copy(dest, filter=lambda node, path: node.size < 10_000_000)
+
+    # Only recently modified files
+    from datetime import datetime, timedelta
+    cutoff = datetime.now() - timedelta(days=7)
+    src.copy(dest, filter=lambda n, p: n.mtime > cutoff.timestamp())
+
+    # Custom logic based on path
+    src.copy(dest, filter=lambda n, p: 'node_modules' not in p)
+
+Skip Strategies for Incremental Sync
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Avoid re-copying unchanged files:
+
+.. code-block:: python
+
+    # Skip if file exists (fastest)
+    src.copy(dest, skip='exists')
+
+    # Skip if same size (fast)
+    src.copy(dest, skip='size')
+
+    # Skip if same content/hash (accurate, uses MD5/ETag)
+    src.copy(dest, skip='hash')
+
+Combine Filtering and Skip Logic
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    # Intelligent backup: filter what to copy, skip what's unchanged
+    src.copy(dest,
+             include=['*.py', '*.js', '*.json'],  # Only code/config
+             exclude=['*.log', '__pycache__/**'],  # No logs/cache
+             filter=lambda n, p: n.size < 100_000_000,  # < 100MB
+             skip='hash',  # Skip if content unchanged
+             progress=lambda c, t: print(f"Progress: {c}/{t}"))
+
+Real-World Examples
+~~~~~~~~~~~~~~~~~~~
+
+Source code backup:
+
+.. code-block:: python
+
+    # Backup source code, exclude generated files
+    project = storage.node('local:~/my-project/')
+    backup = storage.node('s3:backups/my-project/')
+
+    project.copy(backup,
+                 include=['*.py', '*.js', '*.json', '*.md', '*.yaml'],
+                 exclude=[
+                     '*.pyc',
+                     '__pycache__/**',
+                     'node_modules/**',
+                     '.git/**',
+                     '*.log'
+                 ],
+                 skip='hash')  # Only changed files
+    print("Backup completed!")
+
+Sync only recent changes:
+
+.. code-block:: python
+
+    # Sync files modified in last 30 days
+    from datetime import datetime, timedelta
+
+    src = storage.node('local:documents/')
+    dest = storage.node('s3:archives/')
+
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+
+    src.copy(dest,
+             filter=lambda n, p: n.mtime > thirty_days_ago.timestamp(),
+             skip='hash')
+
+Media files (no large videos):
+
+.. code-block:: python
+
+    # Copy images only, skip large files
+    media = storage.node('uploads:media/')
+    cdn = storage.node('s3:cdn/media/')
+
+    media.copy(cdn,
+               include=['*.jpg', '*.png', '*.gif', '*.webp'],
+               filter=lambda n, p: n.size < 5_000_000,  # < 5MB
+               skip='exists')  # Don't re-upload
+
+With Progress Tracking
+~~~~~~~~~~~~~~~~~~~~~~
+
+Monitor copy operations with callbacks:
+
+.. code-block:: python
+
+    copied_files = []
+    skipped_files = []
+
+    def on_progress(current, total):
+        percent = (current / total) * 100
+        print(f"Progress: {current}/{total} ({percent:.1f}%)")
+
+    def on_file(node):
+        copied_files.append(node.path)
+        print(f"✓ Copied: {node.basename}")
+
+    def on_skip(node, reason):
+        skipped_files.append((node.path, reason))
+        print(f"⊘ Skipped: {node.basename} ({reason})")
+
+    src.copy(dest,
+             exclude='*.log',
+             skip='hash',
+             progress=on_progress,
+             on_file=on_file,
+             on_skip=on_skip)
+
+    print(f"\nSummary:")
+    print(f"  Copied: {len(copied_files)} files")
+    print(f"  Skipped: {len(skipped_files)} files")
+
 S3 Versioning
 -------------
 

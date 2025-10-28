@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import BinaryIO, TextIO, TYPE_CHECKING, Callable, Literal
 from pathlib import PurePosixPath
 from enum import Enum
+from datetime import datetime
 
 if TYPE_CHECKING:
     from .manager import StorageManager
@@ -334,21 +335,113 @@ class StorageNode:
         mime, _ = mimetypes.guess_type(self.path)
         return mime or 'application/octet-stream'
 
+    @property
+    def capabilities(self):
+        """Get capabilities of underlying backend.
+
+        Returns backend capabilities which describe what features are supported,
+        such as versioning, metadata, presigned URLs, etc.
+
+        Returns:
+            BackendCapabilities: Object describing supported features
+
+        Examples:
+            >>> if node.capabilities.versioning:
+            ...     versions = node.versions
+            >>> if node.capabilities.presigned_urls:
+            ...     url = node.get_presigned_url()
+        """
+        return self._backend.capabilities
+
     # ==================== File I/O Methods ====================
-    
-    def open(self, mode: str = 'rb') -> BinaryIO | TextIO:
-        """Open file and return file-like object.
-        
+
+    def open(self,
+             mode: str = 'rb',
+             version: int | str | None = None,
+             as_of: datetime | None = None) -> BinaryIO | TextIO:
+        """Open file with optional version control support.
+
         Args:
             mode: File mode ('r', 'rb', 'w', 'wb', 'a', 'ab')
-        
+            version: Version to open:
+                - None: Latest version (default)
+                - str: Specific version_id (e.g., 'abc123...')
+                - int: Version index with negative indexing support:
+                    - -1: Latest version
+                    - -2: Previous version
+                    - 0: Oldest version
+                    - 1: Second oldest version
+            as_of: Open file as it was at this datetime
+
         Returns:
             BinaryIO | TextIO: File-like object (context manager)
-        
+
+        Raises:
+            ValueError: If both version and as_of provided, or invalid mode for historical versions
+            IndexError: If version index out of range
+            FileNotFoundError: If no version found for as_of date
+            PermissionError: If backend doesn't support versioning
+
         Examples:
-            >>> with node.open('rb') as f:
+            >>> # Latest version
+            >>> with node.open() as f:
             ...     data = f.read()
+
+            >>> # Previous version (pythonic!)
+            >>> with node.open(version=-2) as f:
+            ...     previous = f.read()
+
+            >>> # Specific version by ID
+            >>> with node.open(version='abc123xyz') as f:
+            ...     old_content = f.read()
+
+            >>> # Version at date
+            >>> from datetime import datetime
+            >>> with node.open(as_of=datetime(2024, 1, 15)) as f:
+            ...     historical = f.read()
         """
+        # Validazione parametri
+        if version is not None and as_of is not None:
+            raise ValueError(
+                "Cannot specify both version and as_of. "
+                "Use version for ID/index or as_of for date-based access."
+            )
+
+        # Check versioning capability FIRST
+        if version is not None or as_of is not None:
+            if not self.capabilities.versioning:
+                raise PermissionError(
+                    f"{self._mount_name} backend does not support versioning. "
+                    f"Supported features: {self._list_supported_features()}"
+                )
+
+        # Accesso per data
+        if as_of is not None:
+            if 'w' in mode or 'a' in mode or '+' in mode:
+                raise ValueError("Cannot write to historical versions (read-only)")
+
+            version_id = self._resolve_version_at_date(as_of)
+            if not version_id:
+                raise FileNotFoundError(
+                    f"No version found before {as_of} for {self.fullpath}"
+                )
+            return self._backend.open_version(self._path, version_id, mode)
+
+        # Accesso per version
+        if version is not None:
+            if 'w' in mode or 'a' in mode or '+' in mode:
+                raise ValueError("Cannot write to historical versions (read-only)")
+
+            # Se è un intero, risolvi l'indice
+            if isinstance(version, int):
+                version_id = self._resolve_version_index(version)
+            else:
+                # È già un version_id stringa
+                version_id = version
+
+            return self._backend.open_version(self._path, version_id, mode)
+
+        # Accesso normale (latest)
         return self._backend.open(self._path, mode)
     
     def read_bytes(self) -> bytes:
@@ -382,7 +475,69 @@ class StorageNode:
         if result is not None:
             self._path = result
             self._posix_path = PurePosixPath(result) if result else PurePosixPath('.')
-    
+
+    def write_bytes_if_changed(self, data: bytes) -> bool:
+        """Write bytes only if content differs from current version.
+
+        For versioned storage (S3), compares MD5 hash with latest version's ETag
+        to avoid creating duplicate versions. For non-versioned storage, always writes.
+
+        Args:
+            data: Bytes to write
+
+        Returns:
+            bool: True if written, False if skipped (content unchanged)
+
+        Examples:
+            >>> # Avoid creating S3 versions if content unchanged
+            >>> if node.write_bytes_if_changed(new_data):
+            ...     print("File updated")
+            ... else:
+            ...     print("Content unchanged, skipped")
+
+        Notes:
+            - Only works with versioned storage that provides ETags
+            - Computes MD5 of new content for comparison
+            - Falls back to always writing if comparison not possible
+        """
+        import hashlib
+
+        # Check if we can deduplicate
+        if self.capabilities.versioning and self.exists:
+            # Calculate MD5 of new content
+            new_md5 = hashlib.md5(data).hexdigest()
+
+            # Get latest version ETag
+            versions = self.versions
+            if versions:
+                # Find latest version
+                latest = next((v for v in versions if v.get('is_latest')), versions[0])
+                current_etag = latest.get('etag', '')
+
+                # Compare (S3 ETag is MD5 for simple uploads)
+                if current_etag and new_md5 == current_etag:
+                    return False  # Skip: content identical
+
+        # Write if different or can't compare
+        self.write_bytes(data)
+        return True
+
+    def write_text_if_changed(self, text: str, encoding: str = 'utf-8') -> bool:
+        """Write text only if content differs from current version.
+
+        Args:
+            text: String to write
+            encoding: Text encoding
+
+        Returns:
+            bool: True if written, False if skipped
+
+        Examples:
+            >>> if node.write_text_if_changed("Hello World"):
+            ...     print("File updated")
+        """
+        return self.write_bytes_if_changed(text.encode(encoding))
+
     # ==================== File Operations ====================
     
     def delete(self) -> None:
@@ -490,8 +645,11 @@ class StorageNode:
                             skip_fn: Callable[[StorageNode, StorageNode], bool] | None,
                             progress: Callable[[int, int], None] | None,
                             on_file: Callable[[StorageNode], None] | None,
-                            on_skip: Callable[[StorageNode, str], None] | None) -> StorageNode:
-        """Copy directory recursively with skip logic and progress tracking.
+                            on_skip: Callable[[StorageNode, str], None] | None,
+                            include_patterns: list[str] | None = None,
+                            exclude_patterns: list[str] | None = None,
+                            filter_fn: Callable[[StorageNode, str], bool] | None = None) -> StorageNode:
+        """Copy directory recursively with filtering, skip logic and progress tracking.
 
         Args:
             dest: Destination node
@@ -500,6 +658,9 @@ class StorageNode:
             progress: Progress callback(current, total)
             on_file: Callback after each file copied
             on_skip: Callback when file skipped
+            include_patterns: Glob patterns for files to include
+            exclude_patterns: Glob patterns for files to exclude
+            filter_fn: Custom filter function(node, relpath) -> bool
 
         Returns:
             Destination node
@@ -508,13 +669,55 @@ class StorageNode:
         if not dest.exists:
             dest.mkdir(parents=True, exist_ok=True)
 
-        # Collect all files to process
+        # Collect all files to process (with filtering)
         files_to_process = []
 
-        def collect_files(src_node: StorageNode, dest_node: StorageNode):
-            """Recursively collect all files."""
+        def matches_filters(node: StorageNode, relpath: str) -> tuple[bool, str]:
+            """Check if file matches include/exclude/filter criteria.
+
+            Returns:
+                tuple[bool, str]: (should_include, reason_if_excluded)
+            """
+            from fnmatch import fnmatch
+
+            # If include patterns specified, file must match at least one (whitelist mode)
+            if include_patterns:
+                matched = False
+                for pattern in include_patterns:
+                    if fnmatch(relpath, pattern):
+                        matched = True
+                        break
+                if not matched:
+                    return False, f"not matching include patterns"
+
+            # Check exclude patterns (blacklist)
+            if exclude_patterns:
+                for pattern in exclude_patterns:
+                    if fnmatch(relpath, pattern):
+                        return False, f"matching exclude pattern '{pattern}'"
+
+            # Apply custom filter function
+            if filter_fn:
+                try:
+                    if not filter_fn(node, relpath):
+                        return False, "filtered by custom function"
+                except Exception as e:
+                    # If filter raises exception, skip the file
+                    return False, f"filter error: {e}"
+
+            return True, ""
+
+        def collect_files(src_node: StorageNode, dest_node: StorageNode, relpath: str = ""):
+            """Recursively collect all files that match filters."""
             if src_node.isfile:
-                files_to_process.append((src_node, dest_node))
+                # Apply filtering
+                should_include, reason = matches_filters(src_node, relpath)
+                if should_include:
+                    files_to_process.append((src_node, dest_node, relpath))
+                elif on_skip:
+                    # Notify about filtered files
+                    on_skip(src_node, reason)
+
             elif src_node.isdir:
                 # Ensure destination dir exists
                 if not dest_node.exists:
@@ -522,15 +725,16 @@ class StorageNode:
 
                 # Recurse into children
                 for child in src_node.children():
-                    collect_files(child, dest_node / child.basename)
+                    child_relpath = f"{relpath}/{child.basename}" if relpath else child.basename
+                    collect_files(child, dest_node / child.basename, child_relpath)
 
         collect_files(self, dest)
 
         # Process files with progress tracking
         total = len(files_to_process)
 
-        for idx, (src, dst) in enumerate(files_to_process, 1):
-            # Check skip condition
+        for idx, (src, dst, relpath) in enumerate(files_to_process, 1):
+            # Check skip condition (skip logic is destination-based)
             should_skip, reason = src._should_skip_file(dst, skip, skip_fn)
 
             if should_skip:
@@ -555,22 +759,43 @@ class StorageNode:
         return dest
 
     def copy(self, dest: StorageNode | str,
+             # Filtering (source-based)
+             include: str | list[str] | None = None,
+             exclude: str | list[str] | None = None,
+             filter: Callable[[StorageNode, str], bool] | None = None,
+             # Skip logic (destination-based)
              skip: SkipStrategy | Literal['never', 'exists', 'size', 'hash', 'custom'] = 'never',
              skip_fn: Callable[[StorageNode, StorageNode], bool] | None = None,
+             # Callbacks
              progress: Callable[[int, int], None] | None = None,
              on_file: Callable[[StorageNode], None] | None = None,
              on_skip: Callable[[StorageNode, str], None] | None = None) -> StorageNode:
-        """Copy file or directory to destination with intelligent skip logic.
+        """Copy file or directory to destination with filtering and skip logic.
 
-        Supports multiple skip strategies for efficient incremental backups:
-        - 'never': Always copy (overwrite existing files) - default
-        - 'exists': Skip if destination file exists (fastest)
-        - 'size': Skip if destination exists and has same size (fast)
-        - 'hash': Skip if destination exists and has same content/MD5 (accurate)
-        - 'custom': Use custom skip function
+        Supports filtering which files to copy (source-based) and skipping
+        existing files (destination-based) for efficient incremental backups.
+
+        Filtering (applied to source files):
+            - 'include': Glob patterns for files to include (whitelist)
+            - 'exclude': Glob patterns for files to exclude (blacklist)
+            - 'filter': Custom function(node, relpath) -> bool
+
+        Skip strategies (applied to destination files):
+            - 'never': Always copy (overwrite existing files) - default
+            - 'exists': Skip if destination file exists (fastest)
+            - 'size': Skip if destination exists and has same size (fast)
+            - 'hash': Skip if destination exists and has same content/MD5 (accurate)
+            - 'custom': Use custom skip function
 
         Args:
             dest: Destination node or path string
+            include: Glob pattern(s) for files to include. If specified, only matching
+                    files are copied (whitelist mode). Can be string or list of strings.
+            exclude: Glob pattern(s) for files to exclude. Applied after include.
+                    Can be string or list of strings.
+            filter: Custom filter function(node, relative_path) -> bool.
+                   Return True to include file, False to exclude.
+                   Applied after include/exclude patterns.
             skip: Skip strategy (default: 'never' = always copy)
             skip_fn: Custom skip function(src, dest) -> bool (required if skip='custom')
             progress: Callback(current, total) called after each file
@@ -588,33 +813,38 @@ class StorageNode:
             >>> # Simple copy (overwrite) - default behavior
             >>> src.copy(dest)
             >>>
-            >>> # Skip existing files (fast incremental backup)
-            >>> src.copy(dest, skip='exists')
+            >>> # Copy only Python files
+            >>> src.copy(dest, include='*.py')
             >>>
-            >>> # Skip if same size (faster, less accurate)
-            >>> src.copy(dest, skip='size')
+            >>> # Copy all except logs and temp files
+            >>> src.copy(dest, exclude=['*.log', '*.tmp', '__pycache__/**'])
             >>>
-            >>> # Skip if same content (accurate, uses MD5/ETag)
-            >>> src.copy(dest, skip='hash')
+            >>> # Combine include and exclude
+            >>> src.copy(dest, include='*.py', exclude='test_*.py')
             >>>
-            >>> # Custom skip logic
-            >>> def skip_older(src, dest):
-            ...     return dest.exists and dest.mtime > src.mtime
-            >>> src.copy(dest, skip='custom', skip_fn=skip_older)
+            >>> # Custom filter: only files smaller than 10MB
+            >>> src.copy(dest, filter=lambda node, path: node.size < 10_000_000)
             >>>
-            >>> # With progress tracking
-            >>> def progress(current, total):
-            ...     print(f"Progress: {current}/{total}")
-            >>> src.copy(dest, skip='hash', progress=progress)
+            >>> # Filter by modification time
+            >>> from datetime import datetime, timedelta
+            >>> cutoff = datetime.now() - timedelta(days=7)
+            >>> src.copy(dest, filter=lambda n, p: n.mtime > cutoff.timestamp())
             >>>
-            >>> # Track what was copied vs skipped
-            >>> copied = []
-            >>> skipped = []
-            >>> src.copy(dest, skip='hash',
-            ...          on_file=lambda n: copied.append(n.path),
-            ...          on_skip=lambda n, r: skipped.append((n.path, r)))
+            >>> # Combine filtering and skip strategy
+            >>> src.copy(dest,
+            ...          include=['*.py', '*.json'],
+            ...          exclude='__pycache__/**',
+            ...          skip='hash')  # Skip if content identical
+            >>>
+            >>> # Full-featured backup with tracking
+            >>> src.copy(dest,
+            ...          exclude=['*.log', '*.tmp', 'node_modules/**'],
+            ...          filter=lambda n, p: n.size < 100_000_000,
+            ...          skip='hash',
+            ...          progress=lambda c, t: print(f"{c}/{t}"))
 
         Performance Notes:
+            - Filtering is applied before copying (saves bandwidth)
             - skip='exists': ~1-2ms per file (only existence check)
             - skip='size': ~2-5ms per file (existence + size read)
             - skip='hash':
@@ -625,8 +855,10 @@ class StorageNode:
             For local storage, 'size' is usually sufficient.
 
         Note:
-            If copying to base64 backend, the destination node's path will be
-            updated to the new base64-encoded content.
+            - Include/exclude patterns match against relative paths from source
+            - If copying to base64 backend, destination path will be updated
+            - Filtering is source-based (which files to copy)
+            - Skip logic is destination-based (whether to overwrite)
         """
         if not self.exists:
             raise FileNotFoundError(f"Source not found: {self.fullpath}")
@@ -635,19 +867,35 @@ class StorageNode:
         if skip == 'custom' and skip_fn is None:
             raise ValueError("skip='custom' requires skip_fn parameter")
 
+        # Normalize include/exclude patterns to lists
+        include_patterns = []
+        if include is not None:
+            include_patterns = [include] if isinstance(include, str) else list(include)
+
+        exclude_patterns = []
+        if exclude is not None:
+            exclude_patterns = [exclude] if isinstance(exclude, str) else list(exclude)
+
         # Convert string to StorageNode if needed
         if isinstance(dest, str):
             dest = self._manager.node(dest)
 
-        # If skip strategy is not 'never' or we have callbacks, use enhanced copy
-        if skip != 'never' or progress or on_file or on_skip:
+        # Check if we need enhanced copy (with skip/filter/callbacks)
+        has_filters = bool(include_patterns or exclude_patterns or filter)
+        needs_enhanced = skip != 'never' or progress or on_file or on_skip or has_filters
+
+        if needs_enhanced:
             # Single file copy
             if self.isfile:
+                # For single files, filters don't apply (no relative path context)
                 return self._copy_file_with_skip(dest, skip, skip_fn, on_file, on_skip)
 
-            # Directory copy (recursive)
+            # Directory copy (recursive with filtering)
             elif self.isdir:
-                return self._copy_dir_with_skip(dest, skip, skip_fn, progress, on_file, on_skip)
+                return self._copy_dir_with_skip(
+                    dest, skip, skip_fn, progress, on_file, on_skip,
+                    include_patterns, exclude_patterns, filter
+                )
 
         # Simple copy without skip logic (backward compatible)
         else:
@@ -1125,6 +1373,236 @@ class StorageNode:
             - Historical versions are read-only
         """
         return self._backend.open_version(self._path, version_id, mode)
+
+    def _resolve_version_index(self, index: int) -> str:
+        """Resolve version index to version_id.
+
+        Supports negative indexing like Python lists.
+
+        Args:
+            index: Version index
+                -1 = latest (most recent)
+                -2 = previous version
+                0 = oldest version
+                1 = second oldest
+
+        Returns:
+            version_id string
+
+        Raises:
+            IndexError: If index out of range
+        """
+        versions = self.versions
+
+        if not versions:
+            raise IndexError(f"No versions available for {self.fullpath}")
+
+        try:
+            # Python gestisce automaticamente indici negativi
+            version_info = versions[index]
+            return version_info['version_id']
+        except IndexError:
+            total = len(versions)
+            raise IndexError(
+                f"Version index {index} out of range. "
+                f"Available versions: 0 to {total-1} or -1 to -{total}"
+            )
+
+    def _resolve_version_at_date(self, target_date: datetime) -> str | None:
+        """Find version_id closest to (but not after) target_date.
+
+        Args:
+            target_date: Target datetime
+
+        Returns:
+            version_id or None if no version found before date
+        """
+        versions = self.versions
+
+        # Filtra versioni fino alla data target
+        valid_versions = [
+            v for v in versions
+            if v['last_modified'] <= target_date
+        ]
+
+        if not valid_versions:
+            return None
+
+        # Prendi la più recente prima della data
+        target_version = max(
+            valid_versions,
+            key=lambda v: v['last_modified']
+        )
+
+        return target_version['version_id']
+
+    def _list_supported_features(self) -> str:
+        """Helper to list what this backend supports.
+
+        Returns:
+            Human-readable string of supported features
+        """
+        return str(self.capabilities)
+
+    @property
+    def version_count(self) -> int:
+        """Get total number of versions available.
+
+        Returns:
+            int: Number of versions, or 0 if versioning not supported
+
+        Examples:
+            >>> print(f"File has {node.version_count} versions")
+        """
+        return len(self.versions)
+
+    def diff_versions(self, v1: int = -1, v2: int = -2) -> tuple[bytes, bytes]:
+        """Get content from two versions for comparison.
+
+        Args:
+            v1: First version index (default: -1, latest)
+            v2: Second version index (default: -2, previous)
+
+        Returns:
+            Tuple of (v1_content, v2_content)
+
+        Raises:
+            IndexError: If version indices out of range
+            PermissionError: If versioning not supported
+
+        Examples:
+            >>> current, previous = node.diff_versions()
+            >>> if current != previous:
+            ...     print("File changed!")
+
+            >>> # Compare with older version
+            >>> current, old = node.diff_versions(-1, -5)
+        """
+        with self.open(version=v1) as f:
+            content1 = f.read()
+
+        with self.open(version=v2) as f:
+            content2 = f.read()
+
+        return content1, content2
+
+    def rollback(self, to_version: int = -2) -> None:
+        """Rollback file to a previous version.
+
+        Creates a new version with content from specified version.
+        This does not delete versions, it creates a new one.
+
+        Args:
+            to_version: Version index to rollback to (default: -2, previous)
+
+        Raises:
+            IndexError: If version index out of range
+            PermissionError: If versioning not supported or storage read-only
+
+        Examples:
+            >>> # Oops, uploaded wrong file! Rollback to previous
+            >>> node.rollback()  # or node.rollback(-2)
+
+            >>> # Rollback to version from 3 versions ago
+            >>> node.rollback(-4)
+        """
+        # Leggi contenuto dalla versione target
+        with self.open(version=to_version) as f:
+            old_content = f.read()
+
+        # Scrivi come nuova versione
+        with self.open(mode='wb') as f:
+            f.write(old_content)
+
+    def compact_versions(self, dry_run: bool = False) -> int:
+        """Compact version history by removing consecutive duplicates.
+
+        Scans version history and removes versions that have identical content
+        to the immediately preceding version. This cleans up unnecessary versions
+        created by repeated writes of the same content, reducing storage costs.
+
+        The rule: For each pair of consecutive versions with the same ETag,
+        delete the second (more recent) one, keeping the first (older) one.
+
+        Non-consecutive duplicates are preserved to maintain history
+        (e.g., reverting to an earlier state).
+
+        Args:
+            dry_run: If True, only report what would be deleted without actually deleting
+
+        Returns:
+            int: Number of versions removed (or would be removed if dry_run=True)
+
+        Raises:
+            PermissionError: If versioning not supported
+
+        Examples:
+            >>> # Check what would be removed
+            >>> count = node.compact_versions(dry_run=True)
+            >>> print(f"Would remove {count} duplicate versions")
+
+            >>> # Actually compact the history
+            >>> removed = node.compact_versions()
+            >>> print(f"Removed {removed} redundant versions")
+
+        Notes:
+            - Only works with backends that support versioning
+            - Requires backend to support version deletion (S3)
+            - Preserves the oldest of each duplicate pair
+            - History of changes is maintained (non-consecutive duplicates kept)
+            - Useful for reducing storage costs on versioned buckets
+
+        Example scenario:
+            v1: content A (etag: xxx)
+            v2: content A (etag: xxx) ← REMOVED (consecutive duplicate)
+            v3: content B (etag: yyy)
+            v4: content B (etag: yyy) ← REMOVED (consecutive duplicate)
+            v5: content A (etag: xxx) ← KEPT (not consecutive to v1, shows revert)
+        """
+        if not self.capabilities.versioning:
+            raise PermissionError(
+                f"{self._mount_name} backend does not support versioning"
+            )
+
+        versions = self.versions
+        if len(versions) < 2:
+            return 0  # Nothing to clean up
+
+        # Sort by date (oldest first) to process chronologically
+        sorted_versions = sorted(versions, key=lambda v: v['last_modified'])
+
+        to_delete = []
+
+        # Compare consecutive pairs
+        for i in range(len(sorted_versions) - 1):
+            current = sorted_versions[i]
+            next_version = sorted_versions[i + 1]
+
+            current_etag = current.get('etag', '')
+            next_etag = next_version.get('etag', '')
+
+            # If consecutive versions have same content, mark the newer one for deletion
+            if current_etag and next_etag and current_etag == next_etag:
+                to_delete.append(next_version['version_id'])
+
+        if dry_run:
+            return len(to_delete)
+
+        # Delete marked versions
+        deleted_count = 0
+        for version_id in to_delete:
+            try:
+                self._backend.delete_version(self._path, version_id)
+                deleted_count += 1
+            except Exception as e:
+                # Log but continue with other deletions
+                import warnings
+                warnings.warn(
+                    f"Failed to delete version {version_id}: {e}",
+                    RuntimeWarning
+                )
+
+        return deleted_count
 
     def fill_from_url(self, url: str, timeout: int = 30) -> None:
         """Download content from URL and write to this file.

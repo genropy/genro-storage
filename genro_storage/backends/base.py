@@ -10,21 +10,42 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import BinaryIO, TextIO
 
+from ..capabilities import BackendCapabilities
+
 
 class StorageBackend(ABC):
     """Abstract base class for storage backends.
-    
+
     All storage backend implementations (Local, S3, GCS, Azure, HTTP, etc.)
     must inherit from this class and implement all abstract methods.
-    
+
     This ensures a consistent interface across all storage types and makes
     it easy to add new backends in the future.
-    
+
     Note:
         Backend implementations should not be instantiated directly by users.
         They are created internally by StorageManager based on configuration.
     """
-    
+
+    @property
+    @abstractmethod
+    def capabilities(self) -> BackendCapabilities:
+        """Return the capabilities of this backend.
+
+        This property must be implemented by all backend subclasses to declare
+        what features they support. This enables feature detection and validation
+        before attempting operations.
+
+        Returns:
+            BackendCapabilities: Object describing supported features
+
+        Examples:
+            >>> caps = backend.capabilities
+            >>> if caps.versioning:
+            ...     versions = backend.get_versions('file.txt')
+        """
+        pass
+
     @abstractmethod
     def exists(self, path: str) -> bool:
         """Check if a file or directory exists.
@@ -406,6 +427,38 @@ class StorageBackend(ABC):
         """
         raise PermissionError(
             f"{self.__class__.__name__} does not support versioning"
+        )
+
+    def delete_version(self, path: str, version_id: str) -> None:
+        """Delete a specific version of a file.
+
+        Removes a specific version from versioned storage. The current version
+        and other versions remain unaffected. This is useful for cleaning up
+        duplicate or unwanted versions.
+
+        Default implementation raises PermissionError. Override in subclasses
+        that support versioning (e.g., S3).
+
+        Args:
+            path: Relative path to file
+            version_id: Version identifier to delete
+
+        Raises:
+            PermissionError: If backend doesn't support versioning
+            FileNotFoundError: If version doesn't exist
+            ValueError: If attempting to delete the only remaining version
+
+        Examples:
+            >>> # Delete a specific version
+            >>> backend.delete_version('file.txt', 'abc123')
+
+        Notes:
+            - Cannot delete the current version if it's the only version
+            - Some backends may have restrictions on version deletion
+            - This operation is typically irreversible
+        """
+        raise PermissionError(
+            f"{self.__class__.__name__} does not support version deletion"
         )
 
     def url(self, path: str, expires_in: int = 3600, **kwargs) -> str | None:

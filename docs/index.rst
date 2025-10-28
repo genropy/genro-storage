@@ -76,6 +76,13 @@ Documentation Contents
 
 .. toctree::
    :maxdepth: 2
+   :caption: Key Features
+
+   capabilities
+   versioning
+
+.. toctree::
+   :maxdepth: 2
    :caption: User Guide
 
    configuration

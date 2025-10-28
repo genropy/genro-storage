@@ -12,6 +12,7 @@ from pathlib import PurePosixPath
 import fsspec
 
 from .base import StorageBackend
+from ..capabilities import BackendCapabilities
 
 
 class FsspecBackend(StorageBackend):
@@ -61,23 +62,245 @@ class FsspecBackend(StorageBackend):
     
     def _full_path(self, path: str) -> str:
         """Combine base_path with relative path.
-        
+
         Args:
             path: Relative path
-        
+
         Returns:
             str: Full path including base_path
         """
         if not path:
             return self.base_path or '/'
-        
+
         if self.base_path:
             # Normalize path separators
             clean_path = path.lstrip('/')
             return f"{self.base_path}/{clean_path}"
-        
+
         return path
-    
+
+    @property
+    def capabilities(self) -> BackendCapabilities:
+        """Return capabilities based on fsspec protocol.
+
+        Different protocols have different capabilities. This method returns
+        the appropriate capabilities for each protocol type.
+
+        Returns:
+            BackendCapabilities: Capabilities specific to this protocol
+        """
+        protocol = self.protocol.lower()
+
+        # S3 capabilities
+        if protocol == 's3':
+            # Check if versioning is available
+            has_versioning = self._check_s3_versioning()
+
+            return BackendCapabilities(
+                read=True,
+                write=True,
+                delete=True,
+                mkdir=True,
+                list_dir=True,
+
+                # Versioning (if enabled on bucket)
+                versioning=has_versioning,
+                version_listing=has_versioning,
+                version_access=has_versioning,
+
+                # S3 metadata
+                metadata=True,
+
+                # S3 URLs
+                presigned_urls=True,
+                public_urls=True,
+
+                # Advanced
+                atomic_operations=True,  # S3 PUT is atomic
+                symbolic_links=False,
+                copy_optimization=True,  # Server-side copy
+                hash_on_metadata=True,  # ETag = MD5
+
+                # Performance
+                append_mode=False,  # S3 doesn't support append
+                seek_support=True,
+
+                readonly=False,
+                temporary=False
+            )
+
+        # GCS capabilities
+        elif protocol in ('gcs', 'gs'):
+            return BackendCapabilities(
+                read=True,
+                write=True,
+                delete=True,
+                mkdir=True,
+                list_dir=True,
+
+                # GCS has different versioning model
+                versioning=False,
+                version_listing=False,
+                version_access=False,
+
+                metadata=True,
+                presigned_urls=True,
+                public_urls=True,
+
+                atomic_operations=True,
+                symbolic_links=False,
+                copy_optimization=True,
+                hash_on_metadata=True,  # GCS provides MD5
+
+                append_mode=False,
+                seek_support=True,
+
+                readonly=False,
+                temporary=False
+            )
+
+        # Azure Blob Storage
+        elif protocol in ('az', 'abfs', 'azure'):
+            return BackendCapabilities(
+                read=True,
+                write=True,
+                delete=True,
+                mkdir=True,
+                list_dir=True,
+
+                versioning=False,
+                metadata=True,
+                presigned_urls=True,
+                public_urls=True,
+
+                atomic_operations=True,
+                symbolic_links=False,
+                copy_optimization=True,
+                hash_on_metadata=True,
+
+                append_mode=True,  # Azure supports append blobs
+                seek_support=True,
+
+                readonly=False,
+                temporary=False
+            )
+
+        # HTTP/HTTPS (read-only)
+        elif protocol in ('http', 'https'):
+            return BackendCapabilities(
+                read=True,
+                write=False,
+                delete=False,
+                mkdir=False,
+                list_dir=False,
+
+                versioning=False,
+                metadata=False,
+                presigned_urls=False,
+                public_urls=True,
+
+                atomic_operations=False,
+                symbolic_links=False,
+                copy_optimization=False,
+                hash_on_metadata=False,
+
+                append_mode=False,
+                seek_support=True,  # Via range requests
+
+                readonly=True,
+                temporary=False
+            )
+
+        # FTP/SFTP
+        elif protocol in ('ftp', 'sftp'):
+            return BackendCapabilities(
+                read=True,
+                write=True,
+                delete=True,
+                mkdir=True,
+                list_dir=True,
+
+                versioning=False,
+                metadata=False,
+                presigned_urls=False,
+                public_urls=False,
+
+                atomic_operations=False,
+                symbolic_links=False,
+                copy_optimization=False,
+                hash_on_metadata=False,
+
+                append_mode=True,
+                seek_support=True,
+
+                readonly=False,
+                temporary=False
+            )
+
+        # Memory filesystem (testing)
+        elif protocol == 'memory':
+            return BackendCapabilities(
+                read=True,
+                write=True,
+                delete=True,
+                mkdir=True,
+                list_dir=True,
+
+                versioning=False,
+                metadata=False,
+                presigned_urls=False,
+                public_urls=False,
+
+                atomic_operations=True,
+                symbolic_links=False,
+                copy_optimization=True,
+                hash_on_metadata=False,
+
+                append_mode=True,
+                seek_support=True,
+
+                readonly=False,
+                temporary=True  # Ephemeral!
+            )
+
+        # Default for unknown protocols (conservative)
+        else:
+            return BackendCapabilities(
+                read=True,
+                write=True,
+                delete=True,
+                mkdir=True,
+                list_dir=True,
+
+                versioning=False,
+                metadata=False,
+                presigned_urls=False,
+                public_urls=False,
+
+                atomic_operations=True,
+                symbolic_links=False,
+                copy_optimization=False,
+                hash_on_metadata=False,
+
+                append_mode=True,
+                seek_support=True,
+
+                readonly=False,
+                temporary=False
+            )
+
+    def _check_s3_versioning(self) -> bool:
+        """Check if S3 bucket has versioning enabled.
+
+        Returns:
+            bool: True if versioning is available
+        """
+        try:
+            # Check if s3fs supports versioning methods
+            return hasattr(self.fs, 'object_version_info')
+        except Exception:
+            return False
+
     def exists(self, path: str) -> bool:
         """Check if file or directory exists."""
         full_path = self._full_path(path)
@@ -295,7 +518,8 @@ class FsspecBackend(StorageBackend):
                             'version_id': v.get('VersionId'),
                             'is_latest': v.get('IsLatest', False),
                             'last_modified': v.get('LastModified'),
-                            'size': v.get('Size', 0)
+                            'size': v.get('Size', 0),
+                            'etag': v.get('ETag', '').strip('"')  # S3 ETag (MD5 for simple uploads)
                         }
                         for v in versions_info
                     ]
@@ -348,6 +572,76 @@ class FsspecBackend(StorageBackend):
         raise PermissionError(
             f"{self.protocol} backend does not support versioning"
         )
+
+    def delete_version(self, path: str, version_id: str) -> None:
+        """Delete a specific version of a file.
+
+        Removes a specific version from S3 versioned storage. The current version
+        and other versions remain unaffected.
+
+        Args:
+            path: Relative path to file
+            version_id: Version identifier to delete
+
+        Raises:
+            PermissionError: If versioning not supported
+            FileNotFoundError: If version doesn't exist
+            Exception: If S3 deletion fails
+
+        Examples:
+            >>> # Delete a specific version
+            >>> backend.delete_version('file.txt', 'abc123xyz')
+        """
+        full_path = self._full_path(path)
+
+        # S3: Delete specific version
+        if self.protocol == 's3':
+            # s3fs may not expose version deletion directly
+            # We need to use the underlying boto3 client
+            try:
+                # Try to get the s3 client from s3fs
+                if hasattr(self.fs, 's3'):
+                    # s3fs has an s3 attribute that's the boto3 client
+                    s3_client = self.fs.s3
+
+                    # Parse bucket and key from full_path
+                    # full_path format: "bucket-name/path/to/file"
+                    parts = full_path.split('/', 1)
+                    if len(parts) == 2:
+                        bucket, key = parts
+                    else:
+                        bucket = parts[0]
+                        key = ''
+
+                    # Delete the specific version
+                    s3_client.delete_object(
+                        Bucket=bucket,
+                        Key=key,
+                        VersionId=version_id
+                    )
+                else:
+                    # Fallback: try using fsspec's rm with version_id
+                    # This may not be supported in all s3fs versions
+                    if hasattr(self.fs, 'rm_file'):
+                        self.fs.rm_file(full_path, version_id=version_id)
+                    else:
+                        raise PermissionError(
+                            "S3 version deletion not available in this fsspec version. "
+                            "Cannot access boto3 client for version deletion."
+                        )
+            except Exception as e:
+                # Re-raise with more context if it's a known error type
+                if 'NoSuchKey' in str(e) or 'NoSuchVersion' in str(e):
+                    raise FileNotFoundError(
+                        f"Version {version_id} not found for {path}"
+                    ) from e
+                raise
+
+        # Other protocols: not supported
+        else:
+            raise PermissionError(
+                f"{self.protocol} backend does not support version deletion"
+            )
 
     def get_hash(self, path: str) -> str | None:
         """Get MD5 hash from filesystem metadata if available.

@@ -9,8 +9,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import BinaryIO, TextIO, Callable, Union
 import shutil
+import sys
 
 from .base import StorageBackend
+from ..capabilities import BackendCapabilities
 
 
 class LocalStorage(StorageBackend):
@@ -93,7 +95,55 @@ class LocalStorage(StorageBackend):
             Current base path as Path object
         """
         return self._resolve_base_path()
-    
+
+    @property
+    def capabilities(self) -> BackendCapabilities:
+        """Return capabilities of local filesystem backend.
+
+        Returns:
+            BackendCapabilities: Full support for basic operations, symbolic links
+                                 on Unix/Linux, no versioning or cloud features
+        """
+        # Check if we're on Unix/Linux for symlink support
+        is_unix = sys.platform != 'win32'
+
+        return BackendCapabilities(
+            # Core operations
+            read=True,
+            write=True,
+            delete=True,
+
+            # Directory operations
+            mkdir=True,
+            list_dir=True,
+
+            # No versioning on local filesystem
+            versioning=False,
+            version_listing=False,
+            version_access=False,
+
+            # No custom metadata (could use xattr but not standard)
+            metadata=False,
+
+            # No URL generation
+            presigned_urls=False,
+            public_urls=False,
+
+            # Advanced features
+            atomic_operations=True,  # OS handles this
+            symbolic_links=is_unix,  # Unix/Linux only
+            copy_optimization=True,  # Uses native OS copy
+            hash_on_metadata=False,  # Must compute MD5
+
+            # Performance
+            append_mode=True,
+            seek_support=True,
+
+            # Access
+            readonly=False,
+            temporary=False
+        )
+
     def _resolve_path(self, path: str) -> Path:
         """Resolve a relative path to absolute filesystem path.
         

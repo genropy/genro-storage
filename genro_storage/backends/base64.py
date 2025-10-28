@@ -28,6 +28,7 @@ import time
 from typing import BinaryIO, TextIO
 
 from .base import StorageBackend
+from ..capabilities import BackendCapabilities
 from ..exceptions import StorageError
 
 
@@ -45,6 +46,52 @@ class Base64Backend(StorageBackend):
     def __init__(self) -> None:
         """Initialize the Base64 backend."""
         self._creation_time = time.time()
+
+    @property
+    def capabilities(self) -> BackendCapabilities:
+        """Return capabilities of base64 backend.
+
+        Base64 backend is read-only and provides inline data URIs.
+
+        Returns:
+            BackendCapabilities: Read-only with data URI support
+        """
+        return BackendCapabilities(
+            # Read-only operations
+            read=True,
+            write=False,
+            delete=False,
+
+            # No directory concept
+            mkdir=False,
+            list_dir=False,
+
+            # No versioning
+            versioning=False,
+            version_listing=False,
+            version_access=False,
+
+            # No metadata
+            metadata=False,
+
+            # Returns data URIs
+            presigned_urls=False,
+            public_urls=True,  # data:// URIs are "public"
+
+            # Inline data
+            atomic_operations=False,
+            symbolic_links=False,
+            copy_optimization=False,
+            hash_on_metadata=False,
+
+            # Performance
+            append_mode=False,
+            seek_support=True,
+
+            # Access
+            readonly=True,
+            temporary=False
+        )
 
     def _decode(self, path: str) -> bytes:
         """Decode base64 path to bytes.
