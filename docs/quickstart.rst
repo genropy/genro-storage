@@ -267,6 +267,81 @@ Copy files between different storage backends:
     # Cleanup
     local_file.delete()
 
+Async Usage (NEW in v0.2.0!)
+-----------------------------
+
+For async/await contexts like FastAPI or asyncio applications:
+
+Basic Setup
+~~~~~~~~~~~
+
+.. code-block:: python
+
+    from genro_storage import AsyncStorageManager
+
+    # Initialize async storage manager
+    storage = AsyncStorageManager()
+
+    # Configure (sync - call at startup)
+    storage.configure([
+        {'name': 'uploads', 'type': 's3', 'bucket': 'my-bucket'},
+        {'name': 'cache', 'type': 'local', 'path': '/tmp/cache'}
+    ])
+
+Async File Operations
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    async def process_file(filepath: str):
+        node = storage.node(f'uploads:{filepath}')
+
+        # All I/O operations are async
+        if await node.exists():
+            data = await node.read_bytes()
+            size = await node.size()
+            return data
+
+        raise FileNotFoundError(filepath)
+
+FastAPI Integration
+~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    from fastapi import FastAPI, HTTPException
+
+    app = FastAPI()
+
+    @app.get("/files/{filepath:path}")
+    async def get_file(filepath: str):
+        node = storage.node(f'uploads:{filepath}')
+
+        if not await node.exists():
+            raise HTTPException(status_code=404)
+
+        return {
+            "data": await node.read_bytes(),
+            "size": await node.size()
+        }
+
+Concurrent Operations
+~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    import asyncio
+
+    async def backup_all(file_list):
+        async def backup_one(filepath):
+            source = storage.node(f'uploads:{filepath}')
+            target = storage.node(f'backups:{filepath}')
+            data = await source.read_bytes()
+            await target.write_bytes(data)
+
+        # Process all files in parallel
+        await asyncio.gather(*[backup_one(f) for f in file_list])
+
 Next Steps
 ----------
 

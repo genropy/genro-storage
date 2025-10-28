@@ -10,6 +10,7 @@ it adds an intuitive mount-point system and user-friendly API inspired by Unix f
 Features
 --------
 
+* **Async/await support** - Use in FastAPI, asyncio apps with AsyncStorageManager (NEW in v0.2.0!)
 * **Powered by fsspec** - Leverage 20+ battle-tested storage backends
 * **Mount point system** - Organize storage with logical names like ``home:``, ``uploads:``, ``s3:``
 * **Intuitive API** - Pathlib-inspired interface that feels natural and Pythonic
@@ -25,6 +26,9 @@ Features
 
 Quick Example
 -------------
+
+Synchronous Usage
+~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -43,12 +47,34 @@ Quick Example
     if node.exists:
         # Copy from S3 to local
         node.copy(storage.node('home:cache/avatar.jpg'))
-        
+
         # Read and process
         data = node.read_bytes()
-        
+
         # Backup to GCS
         node.copy(storage.node('backups:avatars/user_123.jpg'))
+
+Async Usage (NEW in v0.2.0!)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    from genro_storage import AsyncStorageManager
+
+    # Configure
+    storage = AsyncStorageManager()
+    storage.configure([
+        {'name': 'uploads', 'type': 's3', 'bucket': 'my-bucket'}
+    ])
+
+    # Use in async context
+    async def process_file(filepath: str):
+        node = storage.node(f'uploads:{filepath}')
+
+        if await node.exists():
+            data = await node.read_bytes()
+            size = await node.size()
+            return data
 
 Installation
 ------------
@@ -62,7 +88,8 @@ Installation
     pip install genro-storage[s3]      # Amazon S3
     pip install genro-storage[gcs]     # Google Cloud Storage
     pip install genro-storage[azure]   # Azure Blob Storage
-    pip install genro-storage[full]    # All backends
+    pip install genro-storage[async]   # Async support (NEW!)
+    pip install genro-storage[all]     # All backends + async
 
 Documentation Contents
 ----------------------

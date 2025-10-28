@@ -13,18 +13,20 @@ A modern, elegant Python library that provides a unified interface for accessing
 
 ## Status: Beta - Ready for Production Testing
 
-**Current Version:** 0.1.0-beta
+**Current Version:** 0.2.0
 **Last Updated:** October 2025
 
 ✅ Core implementation complete
 ✅ All backends working (local, S3, GCS, Azure, HTTP, Memory, Base64)
-✅ 195 tests passing on Python 3.9-3.12
+✅ **NEW:** Async/await support for FastAPI, asyncio applications
+✅ 274 tests passing on Python 3.9-3.12
 ✅ Full documentation on ReadTheDocs
 ✅ Battle-tested code from Genropy (19+ years in production, storage abstraction since 2018)
 ✅ Available on PyPI
 
 ## Key Features
 
+- **Async/await support** - Use in FastAPI, asyncio apps with AsyncStorageManager (NEW in v0.2.0!)
 - **Powered by fsspec** - Leverage 20+ battle-tested storage backends
 - **Mount point system** - Organize storage with logical names like `home:`, `uploads:`, `s3:`
 - **Intuitive API** - Pathlib-inspired interface that feels natural and Pythonic
@@ -67,6 +69,8 @@ Think of it as **"requests" is to "urllib"** - a friendlier interface to an exce
 - **Testing scenarios** requiring storage mocking
 
 ## Quick Example
+
+### Synchronous Usage
 
 ```python
 from genro_storage import StorageManager
@@ -187,6 +191,71 @@ remote = storage.node('uploads:downloaded.pdf')
 remote.fill_from_url('https://example.com/file.pdf')
 ```
 
+### Async Usage (NEW in v0.2.0!)
+
+```python
+from genro_storage import AsyncStorageManager
+
+# Initialize async storage manager
+storage = AsyncStorageManager()
+
+# Configure (sync - call at startup)
+storage.configure([
+    {'name': 'uploads', 'type': 's3', 'bucket': 'my-app-uploads'},
+    {'name': 'cache', 'type': 'local', 'path': '/tmp/cache'}
+])
+
+# Use in async context (FastAPI, asyncio, etc.)
+async def process_file(file_path: str):
+    node = storage.node(f'uploads:{file_path}')
+
+    # All I/O operations are async
+    if await node.exists():
+        data = await node.read_bytes()
+
+        # Process and cache
+        processed = process_data(data)
+        cache_node = storage.node('cache:processed.dat')
+        await cache_node.write_bytes(processed)
+
+        return processed
+
+    raise FileNotFoundError(file_path)
+
+# FastAPI example
+from fastapi import FastAPI, HTTPException
+
+app = FastAPI()
+
+@app.get("/files/{filepath:path}")
+async def get_file(filepath: str):
+    """Serve file from S3 storage."""
+    node = storage.node(f'uploads:{filepath}')
+
+    if not await node.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return {
+        "data": await node.read_bytes(),
+        "size": await node.size(),
+        "mime_type": node.mimetype  # Sync property
+    }
+
+# Concurrent operations
+import asyncio
+
+async def backup_files(file_list):
+    """Backup multiple files concurrently."""
+    async def backup_one(filepath):
+        source = storage.node(f'uploads:{filepath}')
+        target = storage.node(f'backups:{filepath}')
+        data = await source.read_bytes()
+        await target.write_bytes(data)
+
+    # Process all files in parallel
+    await asyncio.gather(*[backup_one(f) for f in file_list])
+```
+
 ## Learning with Interactive Tutorials
 
 The best way to learn genro-storage is through our **hands-on Jupyter notebooks** in the [`notebooks/`](notebooks/) directory.
@@ -279,7 +348,8 @@ pip install genro-storage[s3]      # Amazon S3
 pip install genro-storage[gcs]     # Google Cloud Storage
 pip install genro-storage[azure]   # Azure Blob Storage
 pip install genro-storage[http]    # HTTP/HTTPS
-pip install genro-storage[all]     # All backends
+pip install genro-storage[async]   # Async support (NEW in v0.2.0!)
+pip install genro-storage[all]     # All backends + async
 ```
 
 ## Testing
@@ -324,7 +394,7 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 - ✅ API Design Complete and Stable
 - ✅ Core Implementation Complete
 - ✅ FsspecBackend (all 7 storage types working: local, S3, GCS, Azure, HTTP, Memory, Base64)
-- ✅ Comprehensive Test Suite (195 tests, 79% coverage)
+- ✅ Comprehensive Test Suite (274 tests, 81% coverage)
 - ✅ CI/CD with Python 3.9, 3.10, 3.11, 3.12
 - ✅ MD5 hashing and content-based equality
 - ✅ Base64 backend with writable mutable paths
@@ -337,15 +407,15 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 - ✅ Cloud metadata get/set (S3, GCS, Azure)
 - ✅ URL generation (presigned URLs, data URIs)
 - ✅ S3 versioning support
+- ✅ Async/await support (AsyncStorageManager, AsyncStorageNode)
 - ✅ Full Documentation on ReadTheDocs
 - ✅ MinIO Integration Testing
 - 🎯 Ready for early adopters and production testing
-- ⏳ First PyPI release (v0.1.0)
 - ⏳ Extended GCS/Azure integration testing
 
 **Roadmap:**
-- v0.1.0 (Q4 2025) - First PyPI release (Beta)
-- v0.2.0 (Q1 2026) - Async support, performance optimizations
+- v0.2.0 (October 2025) - Async support ✅ **RELEASED**
+- v0.3.0 (Q1 2026) - Native async API, runtime mount management, performance optimizations
 - v1.0.0 (2026) - Production-ready, stable API guarantee
 
 ## Contributing

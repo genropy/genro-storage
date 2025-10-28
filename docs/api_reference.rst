@@ -3,6 +3,9 @@ API Quick Reference
 
 This appendix provides a quick reference for all genro-storage APIs.
 
+.. note::
+   For async/await support (FastAPI, asyncio), see :ref:`async-api-reference` below.
+
 StorageManager API
 ------------------
 
@@ -546,3 +549,209 @@ Create ZIP Archive
     # Zip multiple files (iternode)
     archive = storage.iternode(file1, file2, file3)
     zip_bytes = archive.zip()
+
+.. _async-api-reference:
+
+Async API Reference (v0.2.0+)
+==============================
+
+For async/await contexts (FastAPI, asyncio applications).
+
+AsyncStorageManager API
+------------------------
+
+Configuration
+~~~~~~~~~~~~~
+
+.. list-table::
+   :widths: 30 70
+   :header-rows: 1
+
+   * - Method
+     - Description
+   * - ``configure(source)``
+     - Configure mount points (synchronous - call at startup)
+   * - ``add_mount(config)``
+     - Add single mount point at runtime (synchronous)
+   * - ``get_mount_names()``
+     - Get list of configured mount point names (synchronous)
+   * - ``has_mount(name)``
+     - Check if a mount point is configured (synchronous)
+
+Node Creation
+~~~~~~~~~~~~~
+
+.. list-table::
+   :widths: 30 70
+   :header-rows: 1
+
+   * - Method
+     - Description
+   * - ``node(mount_or_path, *parts)``
+     - Create an AsyncStorageNode (synchronous)
+
+AsyncStorageNode API
+--------------------
+
+All I/O operations are async. Properties without I/O remain synchronous.
+
+Async I/O Operations
+~~~~~~~~~~~~~~~~~~~~~
+
+.. list-table::
+   :widths: 30 40 30
+   :header-rows: 1
+
+   * - Method
+     - Description
+     - Return Type
+   * - ``await read_text(encoding='utf-8')``
+     - Read entire file as string
+     - ``str``
+   * - ``await read_bytes()``
+     - Read entire file as bytes
+     - ``bytes``
+   * - ``await write_text(text, encoding='utf-8')``
+     - Write string to file
+     - ``None``
+   * - ``await write_bytes(data)``
+     - Write bytes to file
+     - ``None``
+   * - ``await exists()``
+     - Check if file exists
+     - ``bool``
+   * - ``await size()``
+     - Get file size in bytes
+     - ``int``
+   * - ``await mtime()``
+     - Get last modification time
+     - ``float``
+   * - ``await isfile()``
+     - Check if node is a file
+     - ``bool``
+   * - ``await isdir()``
+     - Check if node is a directory
+     - ``bool``
+   * - ``await delete()``
+     - Delete file or directory
+     - ``None``
+   * - ``await copy(target)``
+     - Copy file to target location
+     - ``None``
+   * - ``await move(target)``
+     - Move file to target location
+     - ``None``
+
+Synchronous Properties
+~~~~~~~~~~~~~~~~~~~~~~~
+
+These properties do not require I/O and remain synchronous:
+
+.. list-table::
+   :widths: 30 40 30
+   :header-rows: 1
+
+   * - Property
+     - Description
+     - Type
+   * - ``path``
+     - File system path (without mount prefix)
+     - ``str``
+   * - ``fullpath``
+     - Full path including mount
+     - ``str``
+   * - ``basename``
+     - Filename with extension
+     - ``str``
+   * - ``stem``
+     - Filename without extension
+     - ``str``
+   * - ``suffix``
+     - File extension (including dot)
+     - ``str``
+
+Usage Examples
+~~~~~~~~~~~~~~
+
+Basic Usage
+^^^^^^^^^^^
+
+.. code-block:: python
+
+    from genro_storage import AsyncStorageManager
+
+    storage = AsyncStorageManager()
+    storage.configure([
+        {'name': 'uploads', 'type': 's3', 'bucket': 'my-bucket'}
+    ])
+
+    # Async context
+    async def process():
+        node = storage.node('uploads:file.txt')
+
+        # Async I/O
+        if await node.exists():
+            data = await node.read_bytes()
+            await node.write_bytes(b'new data')
+
+        # Sync properties
+        print(node.path)
+        print(node.basename)
+
+FastAPI Integration
+^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+    from fastapi import FastAPI, HTTPException
+    from genro_storage import AsyncStorageManager
+
+    app = FastAPI()
+    storage = AsyncStorageManager()
+
+    @app.on_event("startup")
+    async def startup():
+        storage.configure([
+            {'name': 'uploads', 'type': 's3', 'bucket': 'my-bucket'}
+        ])
+
+    @app.get("/files/{filepath:path}")
+    async def get_file(filepath: str):
+        node = storage.node(f'uploads:{filepath}')
+
+        if not await node.exists():
+            raise HTTPException(status_code=404)
+
+        return {
+            "data": await node.read_bytes(),
+            "size": await node.size(),
+            "mime_type": node.mimetype  # Sync property
+        }
+
+Concurrent Operations
+^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+    import asyncio
+
+    async def process_multiple(file_list):
+        async def process_one(filepath):
+            node = storage.node(f'uploads:{filepath}')
+            if await node.exists():
+                data = await node.read_bytes()
+                return len(data)
+            return 0
+
+        # Process all files concurrently
+        sizes = await asyncio.gather(*[process_one(f) for f in file_list])
+        return sum(sizes)
+
+Implementation Notes
+~~~~~~~~~~~~~~~~~~~~
+
+- Built on **asyncer** library for automatic sync→async conversion
+- Uses ThreadPoolExecutor for I/O-bound operations
+- No event loop blocking
+- Configuration methods are synchronous (call at startup)
+- Full compatibility with underlying sync API (81% coverage, 274 tests)
