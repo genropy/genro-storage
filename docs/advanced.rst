@@ -54,17 +54,15 @@ The ``call()`` Method
     output = storage.node('s3:processed.mp4')
 
     video.call(
-        'ffmpeg -i {input} -vcodec h264 -crf 28 {output}',
-        input=video,
-        output=output
+        'ffmpeg', '-i', video, '-vcodec', 'h264', '-crf', '28', output
     )
 
 **How it works:**
 
-1. Downloads ``input`` file(s) to temporary local paths
-2. Substitutes ``{input}`` and ``{output}`` with temp paths
+1. Downloads ``StorageNode`` arguments to temporary local paths
+2. Converts them to string paths in the command
 3. Runs the command via subprocess
-4. Uploads ``output`` file(s) back to original storage
+4. Uploads modified files back to original storage
 5. Cleans up temporary files automatically
 
 **Method signature:**
@@ -73,21 +71,20 @@ The ``call()`` Method
 
     def call(
         self,
-        command: str | list[str],
-        *,
-        shell: bool = False,
-        check: bool = True,
-        timeout: int | None = None,
-        **path_kwargs: StorageNode | str
-    ) -> subprocess.CompletedProcess
+        *args,  # Command and arguments (str or StorageNode)
+        callback: Callable[[], None] | None = None,
+        async_mode: bool = False,
+        return_output: bool = False,
+        **subprocess_kwargs  # timeout, shell, cwd, env, etc.
+    ) -> str | None
 
 **Parameters:**
 
-- ``command``: Command string with ``{placeholders}`` or list of args
-- ``shell``: If True, run command through shell (security risk!)
-- ``check``: If True, raise exception on non-zero exit code
-- ``timeout``: Maximum seconds to wait
-- ``**path_kwargs``: StorageNode or string paths to substitute
+- ``*args``: Command and arguments. StorageNode arguments are automatically converted to local paths
+- ``callback``: Function to call when async_mode command completes
+- ``async_mode``: If True, run in background thread
+- ``return_output``: If True, return command output as string
+- ``**subprocess_kwargs``: Additional arguments (timeout, shell, cwd, env, etc.)
 
 Advanced call() Examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -102,11 +99,9 @@ Advanced call() Examples
     merged = storage.node('s3:full.mp4')
 
     video1.call(
-        'ffmpeg -i {v1} -i {v2} -filter_complex "[0:v][1:v]concat=n=2:v=1[v]" '
-        '-map "[v]" {out}',
-        v1=video1,
-        v2=video2,
-        out=merged
+        'ffmpeg', '-i', video1, '-i', video2,
+        '-filter_complex', '[0:v][1:v]concat=n=2:v=1[v]',
+        '-map', '[v]', merged
     )
 
 **Image processing:**
@@ -118,9 +113,7 @@ Advanced call() Examples
     thumb = storage.node('uploads:thumb.jpg')
 
     photo.call(
-        ['convert', '{input}', '-resize', '200x200', '-quality', '85', '{output}'],
-        input=photo,
-        output=thumb
+        'convert', photo, '-resize', '200x200', '-quality', '85', thumb
     )
 
 **Document conversion:**
@@ -132,9 +125,7 @@ Advanced call() Examples
     pdf = storage.node('docs:report.pdf')
 
     doc.call(
-        'pandoc {input} -o {output} --pdf-engine=xelatex',
-        input=doc,
-        output=pdf,
+        'pandoc', doc, '-o', pdf, '--pdf-engine=xelatex',
         timeout=60  # 60 seconds max
     )
 
@@ -143,13 +134,11 @@ Advanced call() Examples
 .. code-block:: python
 
     try:
-        result = video.call(
-            'ffmpeg -i {input} {output}',
-            input=video,
-            output=output,
-            check=True  # Raises on failure
+        output_text = video.call(
+            'ffmpeg', '-i', video, output,
+            return_output=True  # Capture output
         )
-        print(f"Success! Exit code: {result.returncode}")
+        print(f"Success! Output: {output_text}")
     except subprocess.CalledProcessError as e:
         print(f"Command failed: {e.stderr}")
 
@@ -818,20 +807,20 @@ Tool Integration
 
     # ✅ Good: Handle errors
     try:
-        video.call('ffmpeg -i {input} {output}', input=video, output=result)
+        video.call('ffmpeg', '-i', video, '-codec', 'h264', result)
     except subprocess.CalledProcessError as e:
         logger.error(f"ffmpeg failed: {e.stderr}")
         # Clean up or retry
 
     # ✅ Good: Set timeouts
-    doc.call('pandoc {in} -o {out}', in=doc, out=pdf, timeout=60)
+    doc.call('pandoc', doc, '-o', pdf, timeout=60)
 
     # ❌ Bad: shell=True with user input (security risk!)
     filename = user_input  # DANGEROUS!
-    node.call(f'convert {filename} output.jpg', shell=True)
+    node.call('convert', filename, 'output.jpg', shell=True)
 
-    # ✅ Good: Use argument list with shell=False
-    node.call(['convert', filename, 'output.jpg'], shell=False)
+    # ✅ Good: Pass arguments as separate items
+    node.call('convert', filename, 'output.jpg')
 
 Web Serving
 ~~~~~~~~~~~

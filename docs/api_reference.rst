@@ -124,6 +124,9 @@ Properties
    * - ``fullpath``
      - Full path including mount
      - None
+   * - ``path``
+     - File system path (without mount prefix)
+     - None
    * - ``parent``
      - Parent directory node
      - None
@@ -147,8 +150,8 @@ Copy and Move
    * - Method
      - Description
      - Capabilities Required
-   * - ``copy(dest, include=None, exclude=None, skip='never')``
-     - Copy file/directory to destination with filtering
+   * - ``copy(dest, include=None, exclude=None, filter=None, skip='never', skip_fn=None, progress=None, on_file=None, on_skip=None)``
+     - Copy file/directory to destination with filtering and callbacks
      - ``read`` (source), ``write`` (dest)
    * - ``move(dest)``
      - Move file/directory to destination
@@ -208,7 +211,7 @@ Archiving
      - Description
      - Capabilities Required
    * - ``zip()``
-     - Create ZIP archive from node content (returns bytes)
+     - Create ZIP archive: single file, directory (recursive), or iternode (multiple files)
      - ``read``
 
 Metadata
@@ -421,8 +424,36 @@ When copying files, you can specify a skip strategy to avoid unnecessary operati
      - Skip if same MD5 hash
      - Medium (may use ETag)
    * - ``custom``
-     - Use custom skip function
+     - Use custom skip function via ``skip_fn`` parameter
      - Depends on function
+
+Copy Parameters
+---------------
+
+Additional ``copy()`` parameters for advanced control:
+
+.. list-table::
+   :widths: 20 50 30
+   :header-rows: 1
+
+   * - Parameter
+     - Description
+     - Example
+   * - ``filter``
+     - Callable to filter files: ``filter(node, path) -> bool``
+     - Filter by size, type, etc.
+   * - ``skip_fn``
+     - Custom skip function: ``skip_fn(src, dest) -> bool``
+     - Required when ``skip='custom'``
+   * - ``progress``
+     - Progress callback: ``progress(current, total) -> None``
+     - Update progress bar
+   * - ``on_file``
+     - Called for each file: ``on_file(node) -> None``
+     - Logging, notifications
+   * - ``on_skip``
+     - Called when file skipped: ``on_skip(node, reason) -> None``
+     - Track skipped files
 
 Common Patterns
 ---------------
@@ -444,6 +475,41 @@ Progress Tracking
     pbar = tqdm(desc="Copying")
     source.copy(dest, progress=lambda cur, tot: pbar.update(1))
 
+Filter by Size
+~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    # Copy only files smaller than 10MB
+    source.copy(dest, filter=lambda node, path: node.size < 10_000_000)
+
+Custom Skip Logic
+~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    # Skip if destination is newer
+    def skip_if_newer(src, dest):
+        if not dest.exists:
+            return False
+        return dest.mtime > src.mtime
+
+    source.copy(dest, skip='custom', skip_fn=skip_if_newer)
+
+Copy with Callbacks
+~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    # Log each file and track skips
+    def log_file(node):
+        print(f"Copied: {node.path}")
+
+    def log_skip(node, reason):
+        print(f"Skipped {node.path}: {reason}")
+
+    source.copy(dest, skip='hash', on_file=log_file, on_skip=log_skip)
+
 Lazy Concatenation
 ~~~~~~~~~~~~~~~~~~
 
@@ -463,16 +529,20 @@ Generate Diff
     diff = storage.diffnode(version1, version2)
     diff.copy(storage.node('changes.diff'))
 
-Create Archive
-~~~~~~~~~~~~~~
+Create ZIP Archive
+~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
-    # ZIP multiple files
+    # Zip a single file
+    file = storage.node('data:report.pdf')
+    zip_bytes = file.zip()
+    storage.node('data:report.zip').write_bytes(zip_bytes)
+
+    # Zip entire directory (recursive)
+    folder = storage.node('data:documents/')
+    zip_bytes = folder.zip()
+
+    # Zip multiple files (iternode)
     archive = storage.iternode(file1, file2, file3)
     zip_bytes = archive.zip()
-    storage.node('backup.zip').write_bytes(zip_bytes)
-
-    # Or ZIP a directory
-    docs = storage.node('home:documents')
-    storage.node('archive.zip').write_bytes(docs.zip())

@@ -97,19 +97,25 @@ You can see the list of all available versions:
 Restore a Version
 ~~~~~~~~~~~~~~~~~
 
-You can rollback by creating a new version with the content of a previous one:
+You can restore a previous version by reading it and writing it back as a new version:
 
 .. code-block:: python
 
-    # Restore previous version
-    node.rollback()
+    # Read previous version
+    with node.open(version=-2) as f:
+        old_content = f.read()
 
-    # Or restore a specific version
-    node.rollback(-4)  # Four versions ago
+    # Write it back (creates new version)
+    node.write_bytes(old_content)
+
+    # Or restore a specific version by ID
+    with node.open(version='version-id-here') as f:
+        content = f.read()
+    node.write_bytes(content)
 
 .. note::
-   Rollback **creates a new version**, it doesn't delete anything.
-   You can always go back further.
+   Restoring **creates a new version**, it doesn't delete anything.
+   You can always go back further in the version history.
 
 Avoid Duplicate Versions
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -120,10 +126,14 @@ and skip writing:
 .. code-block:: python
 
     # Writes only if content is different
-    if node.write_bytes_if_changed(new_data):
+    changed = node.write_bytes(new_data, skip_if_unchanged=True)
+    if changed:
         print("File updated - new version created")
     else:
         print("Content identical - no new version")
+
+    # Same for text files
+    changed = node.write_text(text, skip_if_unchanged=True)
 
 This is useful for:
 
@@ -182,24 +192,41 @@ This is useful when:
 Compare Versions
 ~~~~~~~~~~~~~~~~
 
-You can read two versions and compare them:
+You can read different versions and compare them:
 
 .. code-block:: python
 
-    # Compare current version with previous
-    current, previous = node.diff_versions()
+    # Read current and previous versions
+    with node.open() as f:
+        current = f.read()
+    with node.open(version=-2) as f:
+        previous = f.read()
 
     if current == previous:
         print("No changes")
     else:
         print("File was modified")
 
-    # Compare with older versions
-    current, old = node.diff_versions(-1, -5)
+    # Or use diffnode for text diff
+    from genro_storage import StorageManager
+    storage = StorageManager()
+
+    # Create version-specific nodes
+    current_node = storage.node('s3:myfile.txt')
+    with current_node.open(version=-2) as f:
+        prev_content = f.read()
+
+    # Write previous content to temp node
+    prev_node = storage.node('mem:prev.txt')
+    prev_node.write_bytes(prev_content)
+
+    # Generate diff
+    diff = storage.diffnode(prev_node, current_node)
+    print(diff.read_text())
 
 .. note::
-   ``diff_versions()`` returns raw contents (bytes).
-   It's up to you to decide how to compare or analyze them in your code.
+   For binary files, compare the raw bytes. For text files, you can
+   use ``diffnode()`` to generate a unified diff.
 
 When to Use Versioning
 -----------------------

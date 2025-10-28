@@ -187,6 +187,36 @@ remote = storage.node('uploads:downloaded.pdf')
 remote.fill_from_url('https://example.com/file.pdf')
 ```
 
+## Learning with Interactive Tutorials
+
+The best way to learn genro-storage is through our **hands-on Jupyter notebooks** in the [`notebooks/`](notebooks/) directory:
+
+| Notebook | Topic | Duration | Level |
+|----------|-------|----------|-------|
+| 01 - Quickstart | Basic concepts and first steps | 15 min | Beginner |
+| 02 - Backends | Storage backends and configuration | 20 min | Beginner |
+| 03 - File Operations | Read, write, copy, directories | 25 min | Beginner |
+| 04 - Virtual Nodes | iternode, diffnode, zip archives | 30 min | Intermediate |
+| 05 - Copy Strategies | Smart copying and filtering | 25 min | Intermediate |
+| 06 - Versioning | S3 version history and rollback | 30 min | Intermediate |
+| 07 - Advanced Features | External tools, WSGI, metadata | 35 min | Advanced |
+| 08 - Real World Examples | Complete use cases | 40 min | Advanced |
+
+**Quick start:**
+
+```bash
+# Install Jupyter
+pip install jupyter notebook
+
+# Run the tutorials
+cd notebooks
+jupyter notebook
+```
+
+Start with [01_quickstart.ipynb](notebooks/01_quickstart.ipynb) and follow the learning path. Each notebook has runnable examples you can execute and modify.
+
+See [notebooks/README.md](notebooks/README.md) for the complete learning guide.
+
 ## Installation
 
 ### From GitHub (Recommended)
