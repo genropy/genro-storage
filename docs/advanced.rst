@@ -316,6 +316,179 @@ Framework-Specific Examples
 - Caching: ETags and Last-Modified headers reduce bandwidth
 - For very large files (>1GB), consider CDN or signed URLs
 
+Virtual Nodes
+-------------
+
+Virtual nodes are special nodes that don't correspond to physical files but provide lazy,
+on-demand operations like concatenation and diff generation.
+
+The ``iternode()`` Method
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Create a virtual node that lazily concatenates multiple nodes:
+
+.. code-block:: python
+
+    # Build a document from multiple parts
+    header = storage.node('docs:header.txt')
+    body = storage.node('docs:body.txt')
+    footer = storage.node('docs:footer.txt')
+
+    # Create virtual concatenation node
+    document = storage.iternode(header, body, footer)
+
+    # Content is only read when materialized
+    full_text = document.read_text()
+
+    # Or copy to destination
+    document.copy(storage.node('output:full_document.txt'))
+
+**How it works:**
+
+- Creates a virtual node with no physical storage
+- Stores references to source nodes
+- Content is read and concatenated only when accessed via ``read_text()``, ``read_bytes()``, or ``copy()``
+- Fully lazy evaluation - changes to source files are reflected
+
+**Dynamic building:**
+
+.. code-block:: python
+
+    # Start with empty accumulator
+    builder = storage.iternode()
+
+    # Add sections dynamically
+    builder.append(storage.node('intro.txt'))
+
+    for i in range(1, 5):
+        section = storage.node(f'section{i}.txt')
+        builder.append(section)
+
+    # Add multiple at once
+    builder.extend(
+        storage.node('conclusion.txt'),
+        storage.node('references.txt')
+    )
+
+    # Materialize final document
+    final = storage.node('complete_document.txt')
+    builder.copy(final)
+
+**Creating archives:**
+
+.. code-block:: python
+
+    # Collect multiple files
+    files = storage.iternode(
+        storage.node('file1.txt'),
+        storage.node('file2.txt'),
+        storage.node('file3.txt')
+    )
+
+    # Create ZIP archive
+    zip_bytes = files.zip()
+
+    # Save ZIP
+    archive = storage.node('backup.zip')
+    archive.write_bytes(zip_bytes)
+
+The ``diffnode()`` Method
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Create a virtual node that generates unified diffs between two files:
+
+.. code-block:: python
+
+    # Compare two versions
+    version1 = storage.node('docs:config_v1.txt')
+    version2 = storage.node('docs:config_v2.txt')
+
+    # Create diff node
+    diff = storage.diffnode(version1, version2)
+
+    # Generate diff output
+    changes = diff.read_text()
+    print(changes)
+
+    # Or save to file
+    diff.copy(storage.node('changes.diff'))
+
+**How it works:**
+
+- Creates a virtual node that compares two text files
+- Generates unified diff format (like ``diff -u``)
+- Only computes diff when content is accessed
+- Raises ``ValueError`` for binary files
+
+**Use cases:**
+
+.. code-block:: python
+
+    # Track configuration changes
+    old_config = storage.node('s3:prod/config.json')
+    new_config = storage.node('s3:staging/config.json')
+
+    changes = storage.diffnode(old_config, new_config)
+    if changes.read_text():
+        notify_admins(changes.read_text())
+
+    # Compare file versions (with versioning)
+    current = storage.node('s3:document.txt')
+    previous = storage.node('s3:document.txt', version=-2)
+
+    diff = storage.diffnode(previous, current)
+    diff.copy(storage.node('changelog.diff'))
+
+Virtual Node Properties
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Virtual nodes have special characteristics:
+
+.. code-block:: python
+
+    node = storage.iternode(file1, file2)
+
+    # Always False - no physical storage
+    print(node.exists)  # False
+
+    # Cannot write to virtual nodes
+    node.write_text('data')  # Raises ValueError
+
+    # Can read (materializes content)
+    content = node.read_text()  # Works
+
+    # Can copy (materializes and writes to destination)
+    node.copy(storage.node('output.txt'))  # Works
+
+    # iternode supports append/extend
+    node.append(file3)  # Works for iternode
+    node.extend(file4, file5)  # Works for iternode
+
+    # diffnode does not support modification
+    diff_node.append(...)  # Raises ValueError
+
+**When to use virtual nodes:**
+
+✅ **Use iternode when:**
+
+- Building documents from multiple sources
+- Creating reports with dynamic sections
+- Lazy concatenation without intermediate files
+- Creating archives from multiple files
+
+✅ **Use diffnode when:**
+
+- Comparing file versions
+- Generating change reports
+- Tracking configuration differences
+- Creating patch files
+
+❌ **Don't use virtual nodes when:**
+
+- You need to check if content exists (use ``exists`` on source nodes)
+- You need to write/modify content (materialize to real node first)
+- You need file metadata (size, mtime, etc.)
+
 File Properties and Metadata
 -----------------------------
 

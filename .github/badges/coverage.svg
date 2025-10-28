@@ -1,21 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="116" height="20" role="img" aria-label="coverage: 80%">
-    <title>coverage: 80%</title>
-    <linearGradient id="s" x2="0" y2="100%">
-        <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
-        <stop offset="1" stop-opacity=".1"/>
-    </linearGradient>
-    <clipPath id="r">
-        <rect width="116" height="20" rx="3" fill="#fff"/>
-    </clipPath>
-    <g clip-path="url(#r)">
-        <rect width="61" height="20" fill="#555"/>
-        <rect x="61" width="55" height="20" fill="#a4a61d"/>
-        <rect width="116" height="20" fill="url(#s)"/>
-    </g>
-    <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110">
-        <text aria-hidden="true" x="315" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="510">coverage</text>
-        <text x="315" y="140" transform="scale(.1)" fill="#fff" textLength="510">coverage</text>
-        <text aria-hidden="true" x="875" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="450">80%</text>
-        <text x="875" y="140" transform="scale(.1)" fill="#fff" textLength="450">80%</text>
-    </g>
-</svg>
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" width="116" height="20" role="img" aria-label="coverage: 80%">
+    <ns0:title>coverage: 81%</ns0:title>
+    <ns0:linearGradient id="s" x2="0" y2="100%">
+        <ns0:stop offset="0" stop-color="#bbb" stop-opacity=".1" />
+        <ns0:stop offset="1" stop-opacity=".1" />
+    </ns0:linearGradient>
+    <ns0:clipPath id="r">
+        <ns0:rect width="116" height="20" rx="3" fill="#fff" />
+    </ns0:clipPath>
+    <ns0:g clip-path="url(#r)">
+        <ns0:rect width="61" height="20" fill="#555" />
+        <ns0:rect x="61" width="55" height="20" fill="#97ca00" />
+        <ns0:rect width="116" height="20" fill="url(#s)" />
+    </ns0:g>
+    <ns0:g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110">
+        <ns0:text aria-hidden="true" x="315" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="510">coverage</ns0:text>
+        <ns0:text x="315" y="140" transform="scale(.1)" fill="#fff" textLength="510">coverage</ns0:text>
+        <ns0:text aria-hidden="true" x="875" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="450">81%</ns0:text>
+        <ns0:text x="875" y="140" transform="scale(.1)" fill="#fff" textLength="450">81%</ns0:text>
+    </ns0:g>
+</ns0:svg>

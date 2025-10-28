@@ -71,13 +71,13 @@ class StorageNode:
         parent: Parent directory as StorageNode
     """
     
-    def __init__(self, manager: StorageManager, mount_name: str, path: str, version: int | str | None = None):
+    def __init__(self, manager: StorageManager, mount_name: str | None, path: str | None, version: int | str | None = None):
         """Initialize a StorageNode.
 
         Args:
             manager: The StorageManager instance that owns this node
-            mount_name: Name of the mount point (e.g., "home", "uploads")
-            path: Relative path within the mount (e.g., "documents/file.txt")
+            mount_name: Name of the mount point (e.g., "home", "uploads"), or None for dummy node
+            path: Relative path within the mount (e.g., "documents/file.txt"), or None for dummy node
             version: Optional version specifier for versioned storage.
                 If set, the node becomes a read-only snapshot of that version.
 
@@ -89,8 +89,14 @@ class StorageNode:
         self._path = path
         self._version = version  # None = current version, int/str = specific version
         self._posix_path = PurePosixPath(path) if path else PurePosixPath('.')
-        # Get backend from manager
-        self._backend = manager._mounts[mount_name]
+
+        # Virtual node support (set by iternode()/diffnode())
+        self._is_virtual = False
+        self._virtual_type = None  # 'iter' or 'diff'
+        self._sources: list[StorageNode] = []  # For virtual nodes
+
+        # Get backend from manager (None for virtual nodes)
+        self._backend = manager._mounts[mount_name] if mount_name else None
     
     # ==================== Properties ====================
     
@@ -132,16 +138,20 @@ class StorageNode:
     @property
     def exists(self) -> bool:
         """True if file or directory exists.
-        
+
         Returns:
-            bool: True if the file or directory exists on the storage backend
-        
+            bool: True if the file or directory exists on the storage backend.
+                  Virtual nodes always return False.
+
         Examples:
             >>> if node.exists:
             ...     print("File exists!")
             ... else:
             ...     print("File not found")
         """
+        # Virtual nodes don't have physical storage
+        if self._is_virtual:
+            return False
         return self._backend.exists(self._path)
     
     @property
@@ -482,17 +492,74 @@ class StorageNode:
         """Read entire file as bytes.
 
         If node has a fixed version, reads that version.
+        For virtual nodes, materializes content.
         """
+        # Virtual node: materialize content
+        if self._is_virtual:
+            if self._virtual_type == 'iter':
+                # Concatenate all sources as bytes
+                return b''.join(node.read_bytes() for node in self._sources)
+            elif self._virtual_type == 'diff':
+                # Diff as bytes (encode UTF-8)
+                return self.read_text().encode('utf-8')
+            else:
+                raise ValueError(f"Unknown virtual type: {self._virtual_type}")
+
+        # Versioned node
         if self._version is not None:
             with self.open(mode='rb') as f:
                 return f.read()
+
+        # Normal node
         return self._backend.read_bytes(self._path)
 
     def read_text(self, encoding: str = 'utf-8') -> str:
         """Read entire file as string.
 
         If node has a fixed version, reads that version.
+        For virtual nodes, materializes content.
         """
+        # Virtual node: materialize content
+        if self._is_virtual:
+            if self._virtual_type == 'iter':
+                # Concatenate all sources as text
+                return ''.join(node.read_text(encoding) for node in self._sources)
+            elif self._virtual_type == 'diff':
+                # Generate unified diff
+                if len(self._sources) != 2:
+                    raise ValueError("diffnode requires exactly 2 nodes")
+
+                node1, node2 = self._sources
+
+                # Check if binary by reading bytes first
+                bytes1 = node1.read_bytes()
+                bytes2 = node2.read_bytes()
+
+                # Check for null bytes (binary indicator)
+                if b'\x00' in bytes1 or b'\x00' in bytes2:
+                    raise ValueError("Cannot diff binary files")
+
+                # Try to decode
+                try:
+                    text1 = bytes1.decode(encoding)
+                    text2 = bytes2.decode(encoding)
+                except UnicodeDecodeError:
+                    raise ValueError("Cannot diff binary files")
+
+                # Generate unified diff
+                import difflib
+                lines1 = text1.splitlines(keepends=True)
+                lines2 = text2.splitlines(keepends=True)
+                diff_lines = difflib.unified_diff(
+                    lines1, lines2,
+                    fromfile=node1.fullpath or 'file1',
+                    tofile=node2.fullpath or 'file2'
+                )
+                return ''.join(diff_lines)
+            else:
+                raise ValueError(f"Unknown virtual type: {self._virtual_type}")
+
+        # Versioned node
         if self._version is not None:
             with self.open(mode='r') as f:
                 content = f.read()
@@ -500,6 +567,8 @@ class StorageNode:
             if isinstance(content, bytes):
                 return content.decode(encoding)
             return content
+
+        # Normal node
         return self._backend.read_text(self._path, encoding)
     
     def write_bytes(self, data: bytes, skip_if_unchanged: bool = False) -> bool:
@@ -531,6 +600,13 @@ class StorageNode:
             ... else:
             ...     print("Content unchanged, skipped")
         """
+        # Cannot write to virtual nodes
+        if self._is_virtual:
+            raise ValueError(
+                "Cannot write to virtual node (no path). "
+                "Virtual nodes are read-only."
+            )
+
         # Cannot write to versioned snapshots
         if self._version is not None:
             raise ValueError(
@@ -923,6 +999,17 @@ class StorageNode:
             - Filtering is source-based (which files to copy)
             - Skip logic is destination-based (whether to overwrite)
         """
+        # Convert string to StorageNode if needed
+        if isinstance(dest, str):
+            dest = self._manager.node(dest)
+
+        # Virtual node: copy materialized content
+        if self._is_virtual:
+            # Read content and write to destination
+            content = self.read_bytes()
+            dest.write_bytes(content)
+            return dest
+
         if not self.exists:
             raise FileNotFoundError(f"Source not found: {self.fullpath}")
 
@@ -938,10 +1025,6 @@ class StorageNode:
         exclude_patterns = []
         if exclude is not None:
             exclude_patterns = [exclude] if isinstance(exclude, str) else list(exclude)
-
-        # Convert string to StorageNode if needed
-        if isinstance(dest, str):
-            dest = self._manager.node(dest)
 
         # Check if we need enhanced copy (with skip/filter/callbacks)
         has_filters = bool(include_patterns or exclude_patterns or filter)
@@ -989,7 +1072,126 @@ class StorageNode:
         self._backend = dest._backend
         
         return self
-    
+
+    # ==================== Virtual Node Methods ====================
+
+    def append(self, node: StorageNode) -> None:
+        """Append a node to this virtual node (iternode only).
+
+        This method is only available for virtual nodes created with
+        storage.iternode(). It adds a node reference to the accumulation list.
+        Content is read lazily when materialized.
+
+        Args:
+            node: StorageNode to append
+
+        Raises:
+            ValueError: If not a virtual iternode
+
+        Examples:
+            >>> iternode = storage.iternode()
+            >>> n1 = storage.node('mem:part1.txt')
+            >>> iternode.append(n1)
+            >>> content = iternode.read_text()  # Materializes here
+        """
+        if not self._is_virtual or self._virtual_type != 'iter':
+            raise ValueError("append() is only available for iternode virtual nodes")
+        self._sources.append(node)
+
+    def extend(self, *nodes: StorageNode) -> None:
+        """Extend this virtual node with multiple nodes (iternode only).
+
+        This method is only available for virtual nodes created with
+        storage.iternode(). It adds multiple node references to the accumulation list.
+        Content is read lazily when materialized.
+
+        Args:
+            *nodes: StorageNodes to append
+
+        Raises:
+            ValueError: If not a virtual iternode
+
+        Examples:
+            >>> iternode = storage.iternode(n1)
+            >>> iternode.extend(n2, n3, n4)
+            >>> content = iternode.read_text()  # Materializes all
+        """
+        if not self._is_virtual or self._virtual_type != 'iter':
+            raise ValueError("extend() is only available for iternode virtual nodes")
+        self._sources.extend(nodes)
+
+    def zip(self) -> bytes:
+        """Create ZIP archive from node content.
+
+        Behavior depends on node type:
+        - Regular file: Creates ZIP containing that file
+        - Regular directory: Creates ZIP with all files recursively
+        - Virtual iternode: Creates ZIP with all accumulated nodes as separate files
+
+        Returns:
+            bytes: ZIP archive as bytes
+
+        Raises:
+            ValueError: If node doesn't exist (for regular nodes)
+
+        Examples:
+            >>> # ZIP a directory
+            >>> docs = storage.node('home:documents')
+            >>> zip_bytes = docs.zip()
+            >>>
+            >>> # ZIP accumulated files
+            >>> iternode = storage.iternode(n1, n2, n3)
+            >>> zip_bytes = iternode.zip()
+            >>>
+            >>> # Save ZIP
+            >>> archive = storage.node('backup.zip')
+            >>> archive.write_bytes(zip_bytes)
+        """
+        import zipfile
+        import io
+
+        buffer = io.BytesIO()
+
+        with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+            if self._is_virtual and self._virtual_type == 'iter':
+                # Virtual iternode: add each source node as separate file
+                for node in self._sources:
+                    # Use basename as filename in ZIP
+                    filename = node.basename if node.basename else 'file'
+                    zf.writestr(filename, node.read_bytes())
+
+            elif self.isfile:
+                # Single file: add to ZIP
+                zf.writestr(self.basename, self.read_bytes())
+
+            elif self.isdir:
+                # Directory: recursively add all files
+                self._zip_directory(zf, self, '')
+
+            else:
+                raise ValueError(f"Cannot create ZIP: node doesn't exist or is invalid type")
+
+        return buffer.getvalue()
+
+    def _zip_directory(self, zf: 'zipfile.ZipFile', dir_node: StorageNode, arc_prefix: str) -> None:
+        """Recursively add directory contents to ZIP.
+
+        Args:
+            zf: ZipFile object to write to
+            dir_node: Directory node to process
+            arc_prefix: Archive path prefix for this directory
+        """
+        for child in dir_node.children():
+            # Build archive path
+            arc_path = f"{arc_prefix}/{child.basename}" if arc_prefix else child.basename
+
+            if child.isfile:
+                # Add file to ZIP
+                zf.writestr(arc_path, child.read_bytes())
+            elif child.isdir:
+                # Recurse into subdirectory
+                self._zip_directory(zf, child, arc_path)
+
     # ==================== Directory Operations ====================
     
     def children(self) -> list[StorageNode]:

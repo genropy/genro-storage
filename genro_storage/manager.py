@@ -365,17 +365,21 @@ class StorageManager:
         
         self._mounts[mount_name] = backend
     
-    def node(self, mount_or_path: str, *path_parts: str, version: int | str | None = None) -> StorageNode:
+    def node(self, mount_or_path: str | None = None, *path_parts: str, version: int | str | None = None) -> StorageNode:
         """Create a StorageNode pointing to a file or directory.
 
         This is the primary way to access files and directories. The path
         uses a mount:path format where the mount name refers to a configured
         storage backend.
 
+        When called without arguments, creates a dummy/accumulator node that
+        can be used to build content from multiple sources.
+
         Args:
             mount_or_path: Either:
                 - Full path with mount: "mount:path/to/file"
                 - Just mount name: "mount"
+                - None: creates a dummy accumulator node (no storage backend)
             *path_parts: Additional path components to join
             version: Optional version specifier for versioned storage (S3, GCS).
                 If specified, creates a read-only snapshot node of that version.
@@ -427,7 +431,18 @@ class StorageManager:
             
             >>> # Parent directory traversal not allowed
             >>> node = storage.node('home:documents/../etc/passwd')  # ValueError
+
+            **Dummy node (accumulator):**
+
+            >>> dummy = storage.node()  # No parameters
+            >>> dummy.append(node1)
+            >>> dummy.extend(node2, node3)
+            >>> dummy.read_text()  # Concatenates all sources
         """
+        # Create dummy node if no mount specified
+        if mount_or_path is None:
+            return StorageNode(self, None, None, version=version)
+
         # Parse mount and path
         if ':' in mount_or_path:
             # Format: "mount:path"
@@ -454,7 +469,84 @@ class StorageManager:
 
         # Create and return node
         return StorageNode(self, mount_name, path, version=version)
-    
+
+    def iternode(self, *nodes) -> StorageNode:
+        """Create a virtual node that concatenates multiple nodes lazily.
+
+        This creates a virtual node (no physical storage) that accumulates
+        references to other nodes. Content is only read when materialized
+        via read_text(), read_bytes(), copy(), or zip().
+
+        Args:
+            *nodes: StorageNode instances to concatenate
+
+        Returns:
+            StorageNode: Virtual node with concatenation capability
+
+        Examples:
+            >>> # Create from existing nodes
+            >>> n1 = storage.node('mem:part1.txt')
+            >>> n2 = storage.node('mem:part2.txt')
+            >>> combined = storage.iternode(n1, n2)
+            >>>
+            >>> # Read concatenated content
+            >>> content = combined.read_text()
+            >>>
+            >>> # Add more nodes
+            >>> n3 = storage.node('mem:part3.txt')
+            >>> combined.append(n3)
+            >>>
+            >>> # Save to file
+            >>> result = storage.node('mem:result.txt')
+            >>> combined.copy(result)
+            >>>
+            >>> # Create ZIP
+            >>> zip_bytes = combined.zip()
+        """
+        from .node import StorageNode
+        node = StorageNode(self, None, None, version=None)
+        node._is_virtual = True
+        node._virtual_type = 'iter'
+        node._sources = list(nodes)
+        return node
+
+    def diffnode(self, node1: StorageNode, node2: StorageNode) -> StorageNode:
+        """Create a virtual node that generates a diff between two nodes.
+
+        This creates a virtual node that generates a unified diff between
+        two text files. The diff is only computed when materialized via
+        read_text() or copy().
+
+        Args:
+            node1: First node (old version)
+            node2: Second node (new version)
+
+        Returns:
+            StorageNode: Virtual node with diff capability
+
+        Raises:
+            ValueError: If nodes contain binary data
+
+        Examples:
+            >>> # Compare two versions
+            >>> v1 = storage.node('mem:config_v1.txt')
+            >>> v2 = storage.node('mem:config_v2.txt')
+            >>> diff = storage.diffnode(v1, v2)
+            >>>
+            >>> # Read diff
+            >>> changes = diff.read_text()
+            >>>
+            >>> # Save diff to file
+            >>> diff_file = storage.node('mem:changes.diff')
+            >>> diff.copy(diff_file)
+        """
+        from .node import StorageNode
+        node = StorageNode(self, None, None, version=None)
+        node._is_virtual = True
+        node._virtual_type = 'diff'
+        node._sources = [node1, node2]
+        return node
+
     def _normalize_path(self, path: str) -> str:
         """Normalize a path.
         
