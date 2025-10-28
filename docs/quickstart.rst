@@ -267,7 +267,7 @@ Copy files between different storage backends:
     # Cleanup
     local_file.delete()
 
-Async Usage (NEW in v0.2.0!)
+Async Usage (NEW in v0.3.0!)
 -----------------------------
 
 For async/await contexts like FastAPI or asyncio applications:

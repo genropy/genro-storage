@@ -4,7 +4,7 @@ API Quick Reference
 This appendix provides a quick reference for all genro-storage APIs.
 
 .. note::
-   For async/await support (FastAPI, asyncio), see :ref:`async-api-reference` below.
+   For async/await support (FastAPI, asyncio) available in v0.3.0+, see :ref:`async-api-reference` below.
 
 StorageManager API
 ------------------
@@ -552,7 +552,7 @@ Create ZIP Archive
 
 .. _async-api-reference:
 
-Async API Reference (v0.2.0+)
+Async API Reference (v0.3.0+)
 ==============================
 
 For async/await contexts (FastAPI, asyncio applications).

@@ -10,7 +10,7 @@ it adds an intuitive mount-point system and user-friendly API inspired by Unix f
 Features
 --------
 
-* **Async/await support** - Use in FastAPI, asyncio apps with AsyncStorageManager (NEW in v0.2.0!)
+* **Async/await support** - Use in FastAPI, asyncio apps with AsyncStorageManager (NEW in v0.3.0!)
 * **Powered by fsspec** - Leverage 20+ battle-tested storage backends
 * **Mount point system** - Organize storage with logical names like ``home:``, ``uploads:``, ``s3:``
 * **Intuitive API** - Pathlib-inspired interface that feels natural and Pythonic
@@ -54,7 +54,7 @@ Synchronous Usage
         # Backup to GCS
         node.copy(storage.node('backups:avatars/user_123.jpg'))
 
-Async Usage (NEW in v0.2.0!)
+Async Usage (NEW in v0.3.0!)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
@@ -88,7 +88,7 @@ Installation
     pip install genro-storage[s3]      # Amazon S3
     pip install genro-storage[gcs]     # Google Cloud Storage
     pip install genro-storage[azure]   # Azure Blob Storage
-    pip install genro-storage[async]   # Async support (NEW!)
+    pip install genro-storage[async]   # Async support (NEW in v0.3.0!)
     pip install genro-storage[all]     # All backends + async
 
 Documentation Contents

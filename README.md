@@ -13,12 +13,12 @@ A modern, elegant Python library that provides a unified interface for accessing
 
 ## Status: Beta - Ready for Production Testing
 
-**Current Version:** 0.2.0
+**Current Version:** 0.3.0-dev
 **Last Updated:** October 2025
 
 ✅ Core implementation complete
 ✅ All backends working (local, S3, GCS, Azure, HTTP, Memory, Base64)
-✅ **NEW:** Async/await support for FastAPI, asyncio applications
+✅ **NEW in v0.3.0:** Async/await support for FastAPI, asyncio applications (asyncer-based)
 ✅ 274 tests passing on Python 3.9-3.12
 ✅ Full documentation on ReadTheDocs
 ✅ Battle-tested code from Genropy (19+ years in production, storage abstraction since 2018)
@@ -26,7 +26,7 @@ A modern, elegant Python library that provides a unified interface for accessing
 
 ## Key Features
 
-- **Async/await support** - Use in FastAPI, asyncio apps with AsyncStorageManager (NEW in v0.2.0!)
+- **Async/await support** - Use in FastAPI, asyncio apps with AsyncStorageManager (NEW in v0.3.0!)
 - **Powered by fsspec** - Leverage 20+ battle-tested storage backends
 - **Mount point system** - Organize storage with logical names like `home:`, `uploads:`, `s3:`
 - **Intuitive API** - Pathlib-inspired interface that feels natural and Pythonic
@@ -191,9 +191,9 @@ remote = storage.node('uploads:downloaded.pdf')
 remote.fill_from_url('https://example.com/file.pdf')
 ```
 
-### Async Usage (NEW in v0.2.0!)
+### Async Usage (NEW in v0.3.0!)
 
-Built on [asyncer](https://github.com/tiangolo/asyncer) by Sebastián Ramírez (FastAPI author) for automatic sync→async conversion with no event loop blocking.
+Built on [asyncer](https://github.com/tiangolo/asyncer) by Sebastián Ramírez (FastAPI author) for automatic sync→async conversion with no event loop blocking. Native async implementation planned for v0.4.0.
 
 ```python
 from genro_storage import AsyncStorageManager
@@ -350,7 +350,7 @@ pip install genro-storage[s3]      # Amazon S3
 pip install genro-storage[gcs]     # Google Cloud Storage
 pip install genro-storage[azure]   # Azure Blob Storage
 pip install genro-storage[http]    # HTTP/HTTPS
-pip install genro-storage[async]   # Async support (NEW in v0.2.0!)
+pip install genro-storage[async]   # Async support (NEW in v0.3.0!)
 pip install genro-storage[all]     # All backends + async
 ```
 
@@ -382,7 +382,7 @@ See [TESTING.md](TESTING.md) for detailed testing instructions with MinIO.
 ## Built With
 
 - [fsspec](https://filesystem-spec.readthedocs.io/) - Pythonic filesystem abstraction
-- [asyncer](https://github.com/tiangolo/asyncer) - Async wrapper support (optional)
+- [asyncer](https://github.com/tiangolo/asyncer) - Async wrapper (v0.3.0+, bridge to native async in v0.4.0)
 - Modern Python (3.9+) with full type hints
 - Optional backends: s3fs, gcsfs, adlfs, aiohttp
 
@@ -410,15 +410,16 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 - ✅ Cloud metadata get/set (S3, GCS, Azure)
 - ✅ URL generation (presigned URLs, data URIs)
 - ✅ S3 versioning support
-- ✅ Async/await support (AsyncStorageManager, AsyncStorageNode)
 - ✅ Full Documentation on ReadTheDocs
 - ✅ MinIO Integration Testing
+- 🚧 Async/await support (AsyncStorageManager, AsyncStorageNode) - v0.3.0 in development
 - 🎯 Ready for early adopters and production testing
 - ⏳ Extended GCS/Azure integration testing
 
 **Roadmap:**
-- v0.2.0 (October 2025) - Async support ✅ **RELEASED**
-- v0.3.0 (Q1 2026) - Native async API, runtime mount management, performance optimizations
+- v0.2.0 (October 2025) - Virtual nodes, tutorials, enhanced testing ✅ **RELEASED**
+- v0.3.0 (Q4 2025) - Async support via asyncer wrapper 🚧 **IN DEVELOPMENT**
+- v0.4.0 (Q1 2026) - Native async API, runtime mount management
 - v1.0.0 (2026) - Production-ready, stable API guarantee
 
 ## Contributing
