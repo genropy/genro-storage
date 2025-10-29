@@ -54,20 +54,31 @@ class TestSMBConfiguration:
             }])
 
     @pytest.mark.skipif(not HAS_SMB, reason="smbprotocol not installed")
+    @pytest.mark.integration
     def test_smb_configuration_basic(self):
-        """Test basic SMB configuration."""
+        """Test basic SMB configuration with Docker container."""
         storage = StorageManager()
 
         storage.configure([{
             'name': 'smb_test',
             'type': 'smb',
-            'host': '192.168.1.100',
-            'share': 'documents'
+            'host': 'localhost',
+            'share': 'share',
+            'username': 'testuser',
+            'password': 'testpass'
         }])
 
         assert 'smb_test' in storage._mounts
 
+        # Test basic file operation
+        node = storage.node('smb_test:test.txt')
+        node.write('Hello SMB!', mode='w')
+        assert node.exists
+        content = node.read(mode='r')
+        assert content == 'Hello SMB!'
+
     @pytest.mark.skipif(not HAS_SMB, reason="smbprotocol not installed")
+    @pytest.mark.integration
     def test_smb_configuration_with_auth(self):
         """Test SMB configuration with authentication."""
         storage = StorageManager()
@@ -75,11 +86,10 @@ class TestSMBConfiguration:
         storage.configure([{
             'name': 'smb_test',
             'type': 'smb',
-            'host': 'fileserver.local',
-            'share': 'docs',
-            'username': 'user',
-            'password': 'secret',
-            'domain': 'WORKGROUP',
+            'host': 'localhost',
+            'share': 'share',
+            'username': 'testuser',
+            'password': 'testpass',
             'port': 445
         }])
 
@@ -112,22 +122,31 @@ class TestSFTPConfiguration:
             }])
 
     @pytest.mark.skipif(not HAS_SFTP, reason="paramiko not installed")
-    @pytest.mark.skip(reason="SFTP requires actual server connection")
+    @pytest.mark.integration
     def test_sftp_configuration_basic(self):
-        """Test basic SFTP configuration."""
+        """Test basic SFTP configuration with Docker container."""
         storage = StorageManager()
 
         storage.configure([{
             'name': 'sftp_test',
             'type': 'sftp',
-            'host': 'server.example.com',
-            'username': 'user'
+            'host': 'localhost',
+            'port': 2222,
+            'username': 'testuser',
+            'password': 'testpass'
         }])
 
         assert 'sftp_test' in storage._mounts
 
+        # Test basic file operation
+        node = storage.node('sftp_test:test.txt')
+        node.write('Hello SFTP!', mode='w')
+        assert node.exists
+        content = node.read(mode='r')
+        assert content == 'Hello SFTP!'
+
     @pytest.mark.skipif(not HAS_SFTP, reason="paramiko not installed")
-    @pytest.mark.skip(reason="SFTP requires actual server connection")
+    @pytest.mark.integration
     def test_sftp_configuration_with_password(self):
         """Test SFTP configuration with password."""
         storage = StorageManager()
@@ -135,16 +154,15 @@ class TestSFTPConfiguration:
         storage.configure([{
             'name': 'sftp_test',
             'type': 'sftp',
-            'host': '192.168.1.100',
-            'port': 22,
-            'username': 'user',
-            'password': 'secret'
+            'host': 'localhost',
+            'port': 2222,
+            'username': 'testuser',
+            'password': 'testpass'
         }])
 
         assert 'sftp_test' in storage._mounts
 
-    @pytest.mark.skipif(not HAS_SFTP, reason="paramiko not installed")
-    @pytest.mark.skip(reason="SFTP requires actual server connection")
+    @pytest.mark.skip(reason="SSH key auth not configured in Docker container")
     def test_sftp_configuration_with_key(self):
         """Test SFTP configuration with SSH key."""
         storage = StorageManager()
@@ -152,8 +170,9 @@ class TestSFTPConfiguration:
         storage.configure([{
             'name': 'sftp_test',
             'type': 'sftp',
-            'host': 'server.example.com',
-            'username': 'deploy',
+            'host': 'localhost',
+            'port': 2222,
+            'username': 'testuser',
             'key_filename': '/home/user/.ssh/id_rsa',
             'passphrase': 'keypassword'
         }])
@@ -344,14 +363,17 @@ class TestBackendCapabilities:
     """Test backend capabilities are correctly set."""
 
     @pytest.mark.skipif(not HAS_SMB, reason="smbprotocol not installed")
+    @pytest.mark.integration
     def test_smb_capabilities(self):
         """Test SMB backend capabilities."""
         storage = StorageManager()
         storage.configure([{
             'name': 'smb_test',
             'type': 'smb',
-            'host': 'server',
-            'share': 'docs'
+            'host': 'localhost',
+            'share': 'share',
+            'username': 'testuser',
+            'password': 'testpass'
         }])
 
         backend = storage._mounts['smb_test']
@@ -365,15 +387,17 @@ class TestBackendCapabilities:
         assert caps.readonly is False
 
     @pytest.mark.skipif(not HAS_SFTP, reason="paramiko not installed")
-    @pytest.mark.skip(reason="SFTP requires actual server connection")
+    @pytest.mark.integration
     def test_sftp_capabilities(self):
         """Test SFTP backend capabilities."""
         storage = StorageManager()
         storage.configure([{
             'name': 'sftp_test',
             'type': 'sftp',
-            'host': 'server',
-            'username': 'user'
+            'host': 'localhost',
+            'port': 2222,
+            'username': 'testuser',
+            'password': 'testpass'
         }])
 
         backend = storage._mounts['sftp_test']

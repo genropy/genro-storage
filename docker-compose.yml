@@ -1,4 +1,5 @@
 services:
+  # MinIO - S3-compatible storage
   minio:
     image: minio/minio:latest
     container_name: genro-storage-minio
@@ -17,6 +18,64 @@ services:
       timeout: 3s
       retries: 5
 
+  # SFTP Server
+  sftp:
+    image: atmoz/sftp:latest
+    container_name: genro-storage-sftp
+    ports:
+      - "2222:22"
+    command: testuser:testpass:1001
+    volumes:
+      - sftp-data:/home/testuser/upload
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep sshd"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Samba/SMB Server
+  samba:
+    image: dperson/samba:latest
+    container_name: genro-storage-samba
+    ports:
+      - "139:139"
+      - "445:445"
+    environment:
+      USER: "testuser;testpass"
+      SHARE: "share;/share;yes;no;no;testuser"
+    volumes:
+      - smb-data:/share
+    command: '-u "testuser;testpass" -s "share;/share;yes;no;no;testuser" -p'
+    healthcheck:
+      test: ["CMD-SHELL", "smbclient -L localhost -U testuser%testpass -m SMB3"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # WebDAV Server
+  webdav:
+    image: bytemark/webdav:latest
+    container_name: genro-storage-webdav
+    ports:
+      - "8080:80"
+    environment:
+      AUTH_TYPE: Basic
+      USERNAME: testuser
+      PASSWORD: testpass
+    volumes:
+      - webdav-data:/var/lib/dav
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 volumes:
   minio-data:
+    driver: local
+  sftp-data:
+    driver: local
+  smb-data:
+    driver: local
+  webdav-data:
     driver: local
