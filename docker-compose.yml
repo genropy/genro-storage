@@ -70,6 +70,23 @@ services:
       timeout: 3s
       retries: 5
 
+  # Azurite - Azure Storage Emulator
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: genro-storage-azurite
+    ports:
+      - "10000:10000"  # Blob service
+      - "10001:10001"  # Queue service
+      - "10002:10002"  # Table service
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --loose
+    volumes:
+      - azurite-data:/data
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "10000"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 volumes:
   minio-data:
     driver: local
@@ -78,4 +95,6 @@ volumes:
   smb-data:
     driver: local
   webdav-data:
+    driver: local
+  azurite-data:
     driver: local

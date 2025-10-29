@@ -21,7 +21,7 @@ A modern, elegant Python library that provides a unified interface for accessing
 ✅ **NEW in v0.4.2:** Git, GitHub, WebDAV, and LibArchive backends
 ✅ **NEW in v0.4.1:** SMB, SFTP, ZIP, and TAR backends
 ✅ **NEW in v0.3.0:** Async/await support for FastAPI, asyncio applications (asyncer-based)
-✅ 349 tests (329 passing, 20 skipped) on Python 3.9-3.12
+✅ 355 tests (345 passing, 10 skipped) with 82% coverage on Python 3.9-3.12
 ✅ Full documentation on ReadTheDocs
 ✅ Battle-tested code from Genropy (19+ years in production, storage abstraction since 2018)
 ✅ Available on PyPI
