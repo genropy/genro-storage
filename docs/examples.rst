@@ -44,10 +44,10 @@ Multi-Cloud Setup
     local.write_text('{"result": "processed"}')
 
     # Upload to S3
-    local.copy('s3:results/data.json')
+    local.copy_to('s3:results/data.json')
 
     # Backup to GCS
-    local.copy('gcs:backups/data.json')
+    local.copy_to('gcs:backups/data.json')
 
 Directory Operations
 --------------------
@@ -207,16 +207,16 @@ Basic Filtering
     dest = storage.node('s3:backup/')
 
     # Only Python files
-    src.copy(dest, include='*.py')
+    src.copy_to(dest, include='*.py')
 
     # Multiple file types
-    src.copy(dest, include=['*.py', '*.json', '*.md'])
+    src.copy_to(dest, include=['*.py', '*.json', '*.md'])
 
     # Exclude patterns
-    src.copy(dest, exclude=['*.log', '*.tmp', '__pycache__/**'])
+    src.copy_to(dest, exclude=['*.log', '*.tmp', '__pycache__/**'])
 
     # Combine include and exclude
-    src.copy(dest,
+    src.copy_to(dest,
              include='*.py',
              exclude='test_*.py')  # Python files, but no tests
 
@@ -228,15 +228,15 @@ Filter by file size, modification time, or custom logic:
 .. code-block:: python
 
     # Only files smaller than 10MB
-    src.copy(dest, filter=lambda node, path: node.size < 10_000_000)
+    src.copy_to(dest, filter=lambda node, path: node.size < 10_000_000)
 
     # Only recently modified files
     from datetime import datetime, timedelta
     cutoff = datetime.now() - timedelta(days=7)
-    src.copy(dest, filter=lambda n, p: n.mtime > cutoff.timestamp())
+    src.copy_to(dest, filter=lambda n, p: n.mtime > cutoff.timestamp())
 
     # Custom logic based on path
-    src.copy(dest, filter=lambda n, p: 'node_modules' not in p)
+    src.copy_to(dest, filter=lambda n, p: 'node_modules' not in p)
 
 Skip Strategies for Incremental Sync
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -246,13 +246,13 @@ Avoid re-copying unchanged files:
 .. code-block:: python
 
     # Skip if file exists (fastest)
-    src.copy(dest, skip='exists')
+    src.copy_to(dest, skip='exists')
 
     # Skip if same size (fast)
-    src.copy(dest, skip='size')
+    src.copy_to(dest, skip='size')
 
     # Skip if same content/hash (accurate, uses MD5/ETag)
-    src.copy(dest, skip='hash')
+    src.copy_to(dest, skip='hash')
 
 Combine Filtering and Skip Logic
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -260,7 +260,7 @@ Combine Filtering and Skip Logic
 .. code-block:: python
 
     # Intelligent backup: filter what to copy, skip what's unchanged
-    src.copy(dest,
+    src.copy_to(dest,
              include=['*.py', '*.js', '*.json'],  # Only code/config
              exclude=['*.log', '__pycache__/**'],  # No logs/cache
              filter=lambda n, p: n.size < 100_000_000,  # < 100MB
@@ -278,7 +278,7 @@ Source code backup:
     project = storage.node('local:~/my-project/')
     backup = storage.node('s3:backups/my-project/')
 
-    project.copy(backup,
+    project.copy_to(backup,
                  include=['*.py', '*.js', '*.json', '*.md', '*.yaml'],
                  exclude=[
                      '*.pyc',
@@ -302,7 +302,7 @@ Sync only recent changes:
 
     thirty_days_ago = datetime.now() - timedelta(days=30)
 
-    src.copy(dest,
+    src.copy_to(dest,
              filter=lambda n, p: n.mtime > thirty_days_ago.timestamp(),
              skip='hash')
 
@@ -314,7 +314,7 @@ Media files (no large videos):
     media = storage.node('uploads:media/')
     cdn = storage.node('s3:cdn/media/')
 
-    media.copy(cdn,
+    media.copy_to(cdn,
                include=['*.jpg', '*.png', '*.gif', '*.webp'],
                filter=lambda n, p: n.size < 5_000_000,  # < 5MB
                skip='exists')  # Don't re-upload
@@ -341,7 +341,7 @@ Monitor copy operations with callbacks:
         skipped_files.append((node.path, reason))
         print(f"⊘ Skipped: {node.basename} ({reason})")
 
-    src.copy(dest,
+    src.copy_to(dest,
              exclude='*.log',
              skip='hash',
              progress=on_progress,

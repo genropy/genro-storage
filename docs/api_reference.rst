@@ -433,7 +433,7 @@ When copying files, you can specify a skip strategy to avoid unnecessary operati
 Copy Parameters
 ---------------
 
-Additional ``copy()`` parameters for advanced control:
+Additional ``copy_to()`` parameters for advanced control:
 
 .. list-table::
    :widths: 20 50 30
@@ -467,7 +467,7 @@ Incremental Backup
 .. code-block:: python
 
     # Copy only changed files
-    source.copy(dest, skip='hash')
+    source.copy_to(dest, skip='hash')
 
 Progress Tracking
 ~~~~~~~~~~~~~~~~~
@@ -476,7 +476,7 @@ Progress Tracking
 
     from tqdm import tqdm
     pbar = tqdm(desc="Copying")
-    source.copy(dest, progress=lambda cur, tot: pbar.update(1))
+    source.copy_to(dest, progress=lambda cur, tot: pbar.update(1))
 
 Filter by Size
 ~~~~~~~~~~~~~~
@@ -484,7 +484,7 @@ Filter by Size
 .. code-block:: python
 
     # Copy only files smaller than 10MB
-    source.copy(dest, filter=lambda node, path: node.size < 10_000_000)
+    source.copy_to(dest, filter=lambda node, path: node.size < 10_000_000)
 
 Custom Skip Logic
 ~~~~~~~~~~~~~~~~~
@@ -497,7 +497,7 @@ Custom Skip Logic
             return False
         return dest.mtime > src.mtime
 
-    source.copy(dest, skip='custom', skip_fn=skip_if_newer)
+    source.copy_to(dest, skip='custom', skip_fn=skip_if_newer)
 
 Copy with Callbacks
 ~~~~~~~~~~~~~~~~~~~
@@ -511,7 +511,7 @@ Copy with Callbacks
     def log_skip(node, reason):
         print(f"Skipped {node.path}: {reason}")
 
-    source.copy(dest, skip='hash', on_file=log_file, on_skip=log_skip)
+    source.copy_to(dest, skip='hash', on_file=log_file, on_skip=log_skip)
 
 Lazy Concatenation
 ~~~~~~~~~~~~~~~~~~
@@ -521,7 +521,7 @@ Lazy Concatenation
     # Build document from parts
     builder = storage.iternode(header, body, footer)
     builder.append(appendix)
-    builder.copy(storage.node('result.txt'))
+    builder.copy_to(storage.node('result.txt'))
 
 Generate Diff
 ~~~~~~~~~~~~~
@@ -530,7 +530,7 @@ Generate Diff
 
     # Compare versions
     diff = storage.diffnode(version1, version2)
-    diff.copy(storage.node('changes.diff'))
+    diff.copy_to(storage.node('changes.diff'))
 
 Create ZIP Archive
 ~~~~~~~~~~~~~~~~~~

@@ -161,7 +161,7 @@ class TestAsyncStorageNode:
         test_content = 'content to copy'
         await source.write_text(test_content)
 
-        await source.copy(target)
+        await source.copy_to(target)
 
         result = await target.read_text()
         assert result == test_content
@@ -175,7 +175,7 @@ class TestAsyncStorageNode:
         test_content = 'content to move'
         await source.write_text(test_content)
 
-        await source.move(target)
+        await source.move_to(target)
 
         # Target should have the content (main requirement)
         result = await target.read_text()
@@ -225,7 +225,7 @@ class TestAsyncCrossStorage:
         test_content = 'cross-storage copy'
         await source.write_text(test_content)
 
-        await source.copy(target)
+        await source.copy_to(target)
 
         result = await target.read_text()
         assert result == test_content

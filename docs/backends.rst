@@ -169,7 +169,7 @@ Store data inline as base64-encoded strings, similar to data URIs.
     # Copy from other storage to base64 for inline use
     s3_image = storage.node('uploads:photo.jpg')
     b64_image = storage.node('data:')
-    s3_image.copy(b64_image)
+    s3_image.copy_to(b64_image)
     data_uri = f"data:image/jpeg;base64,{b64_image.path}"
 
 **Use cases:**

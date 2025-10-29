@@ -330,13 +330,13 @@ Create a virtual node that lazily concatenates multiple nodes:
     full_text = document.read_text()
 
     # Or copy to destination
-    document.copy(storage.node('output:full_document.txt'))
+    document.copy_to(storage.node('output:full_document.txt'))
 
 **How it works:**
 
 - Creates a virtual node with no physical storage
 - Stores references to source nodes
-- Content is read and concatenated only when accessed via ``read_text()``, ``read_bytes()``, or ``copy()``
+- Content is read and concatenated only when accessed via ``read_text()``, ``read_bytes()``, or ``copy_to()``
 - Fully lazy evaluation - changes to source files are reflected
 
 **Dynamic building:**
@@ -361,7 +361,7 @@ Create a virtual node that lazily concatenates multiple nodes:
 
     # Materialize final document
     final = storage.node('complete_document.txt')
-    builder.copy(final)
+    builder.copy_to(final)
 
 **Creating archives:**
 
@@ -400,7 +400,7 @@ Create a virtual node that generates unified diffs between two files:
     print(changes)
 
     # Or save to file
-    diff.copy(storage.node('changes.diff'))
+    diff.copy_to(storage.node('changes.diff'))
 
 **How it works:**
 
@@ -426,7 +426,7 @@ Create a virtual node that generates unified diffs between two files:
     previous = storage.node('s3:document.txt', version=-2)
 
     diff = storage.diffnode(previous, current)
-    diff.copy(storage.node('changelog.diff'))
+    diff.copy_to(storage.node('changelog.diff'))
 
 Virtual Node Properties
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -447,7 +447,7 @@ Virtual nodes have special characteristics:
     content = node.read_text()  # Works
 
     # Can copy (materializes and writes to destination)
-    node.copy(storage.node('output.txt'))  # Works
+    node.copy_to(storage.node('output.txt'))  # Works
 
     # iternode supports append/extend
     node.append(file3)  # Works for iternode
@@ -600,7 +600,7 @@ All copy/move operations support ``skip_if`` to control when to skip:
 
 .. code-block:: python
 
-    source.copy(destination, skip_if='exists')
+    source.copy_to(destination, skip_if='exists')
 
 **Built-in strategies:**
 
@@ -618,12 +618,12 @@ Strategy Details
 .. code-block:: python
 
     # Skip if file exists, regardless of content
-    source.copy(dest, skip_if='exists')
+    source.copy_to(dest, skip_if='exists')
 
     # Use case: first-time sync
     for file in source_dir.children():
         target = dest_dir.child(file.basename)
-        file.copy(target, skip_if='exists')
+        file.copy_to(target, skip_if='exists')
         # Only copies files that don't exist yet
 
 **Performance:** Fastest. Just checks ``dest.exists``.
@@ -633,12 +633,12 @@ Strategy Details
 .. code-block:: python
 
     # Skip if exists AND size matches
-    source.copy(dest, skip_if='size')
+    source.copy_to(dest, skip_if='size')
 
     # Use case: incremental backups
     for file in source_dir.children():
         target = backup_dir.child(file.basename)
-        file.copy(target, skip_if='size')
+        file.copy_to(target, skip_if='size')
         # Only copies if missing or size changed
 
 **Performance:** Fast. Checks ``exists`` + ``size`` (no file reads).
@@ -648,12 +648,12 @@ Strategy Details
 .. code-block:: python
 
     # Skip if exists AND MD5 hash matches (content-identical)
-    source.copy(dest, skip_if='hash')
+    source.copy_to(dest, skip_if='hash')
 
     # Use case: verify backups
     for file in source_dir.children():
         target = backup_dir.child(file.basename)
-        file.copy(target, skip_if='hash')
+        file.copy_to(target, skip_if='hash')
         # Guarantees destination content matches source
 
 **Performance:** Slow. Reads both files to compute MD5. Use for verification.
@@ -663,7 +663,7 @@ Strategy Details
 .. code-block:: python
 
     # Always copy, overwrite if exists
-    source.copy(dest, skip_if='never')  # or just source.copy(dest)
+    source.copy_to(dest, skip_if='never')  # or just source.copy_to(dest)
 
 Custom Skip Functions
 ~~~~~~~~~~~~~~~~~~~~~
@@ -681,7 +681,7 @@ Provide a callable for custom logic:
         age_seconds = time.time() - dest.mtime
         return age_seconds < 86400  # Skip if < 24 hours old
 
-    source.copy(dest, skip_if=skip_if_recent)
+    source.copy_to(dest, skip_if=skip_if_recent)
 
 **Function signature:**
 
@@ -735,7 +735,7 @@ Batch Operations with Skip Strategies
         for file in source_dir.children():
             if file.isfile:
                 dest_file = dest_dir.child(file.basename)
-                file.copy(dest_file, skip_if=strategy)
+                file.copy_to(dest_file, skip_if=strategy)
                 print(f"Synced: {file.basename}")
 
     # Usage
@@ -762,7 +762,7 @@ Batch Operations with Skip Strategies
                 stats['skipped'] += 1
                 continue
 
-            file.copy(backup_file)
+            file.copy_to(backup_file)
             stats['copied'] += 1
             stats['bytes'] += file.size
 
@@ -849,14 +849,14 @@ Copy Strategies
 .. code-block:: python
 
     # ✅ Good: Use appropriate strategy for use case
-    source.copy(dest, skip_if='size')  # Fast incremental sync
+    source.copy_to(dest, skip_if='size')  # Fast incremental sync
 
     # ✅ Good: Verify critical backups
-    source.copy(dest, skip_if='hash')  # Slower but guaranteed
+    source.copy_to(dest, skip_if='hash')  # Slower but guaranteed
 
     # ❌ Bad: No skip strategy for repeated syncs
     for file in directory.children():
-        file.copy(backup_dir.child(file.basename))
+        file.copy_to(backup_dir.child(file.basename))
         # Wastes time/bandwidth re-copying unchanged files
 
     # ✅ Good: Monitor what was skipped
@@ -867,7 +867,7 @@ Copy Strategies
         logger.info(f"Copying: {src.basename}")
         return False
 
-    source.copy(dest, skip_if=sync_with_logging)
+    source.copy_to(dest, skip_if=sync_with_logging)
 
 See Also
 --------

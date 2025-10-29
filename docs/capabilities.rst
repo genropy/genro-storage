@@ -249,7 +249,7 @@ Check before attempting operations:
             raise ValueError(f"{destination.fullpath} is read-only!")
 
         # Copy the file
-        source.copy(destination)
+        source.copy_to(destination)
 
         # Check if versioning is active
         if destination.capabilities.versioning:

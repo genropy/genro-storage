@@ -207,7 +207,7 @@ class TestBase64Backend:
 
         # Copy to memory
         dest = storage.node('mem:copied_file.txt')
-        src.copy(dest)
+        src.copy_to(dest)
 
         # Verify copy
         assert dest.exists
@@ -348,7 +348,7 @@ class TestBase64Backend:
         dest = storage.node('b64:')
 
         # Copy to base64
-        src.copy(dest)
+        src.copy_to(dest)
 
         # Destination should now have base64-encoded content in its path
         expected_b64 = base64.b64encode(b"Test data for base64").decode()

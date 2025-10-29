@@ -46,13 +46,13 @@ Synchronous Usage
     node = storage.node('uploads:users/123/avatar.jpg')
     if node.exists:
         # Copy from S3 to local
-        node.copy(storage.node('home:cache/avatar.jpg'))
+        node.copy_to(storage.node('home:cache/avatar.jpg'))
 
         # Read and process
         data = node.read_bytes()
 
         # Backup to GCS
-        node.copy(storage.node('backups:avatars/user_123.jpg'))
+        node.copy_to(storage.node('backups:avatars/user_123.jpg'))
 
 Async Usage (NEW in v0.3.0!)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

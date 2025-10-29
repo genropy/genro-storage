@@ -131,7 +131,7 @@ class TestIterNode:
         iternode = storage.iternode(n1, n2)
 
         dest = storage.node('mem:result.txt')
-        iternode.copy(dest)
+        iternode.copy_to(dest)
 
         assert dest.exists
         assert dest.read_text() == 'Part 1 Part 2'
@@ -246,7 +246,7 @@ class TestDiffNode:
         diffnode = storage.diffnode(n1, n2)
 
         dest = storage.node('mem:changes.diff')
-        diffnode.copy(dest)
+        diffnode.copy_to(dest)
 
         assert dest.exists
         content = dest.read_text()
@@ -407,7 +407,7 @@ class TestIntegration:
 
         # Write to destination
         report = storage.node('mem:report.txt')
-        report_builder.copy(report)
+        report_builder.copy_to(report)
 
         content = report.read_text()
         assert content == '# Report\n\nContent here.\n\nEnd of report.'
@@ -425,7 +425,7 @@ class TestIntegration:
 
         # Save diff to file
         diff_file = storage.node('mem:changes.diff')
-        changes.copy(diff_file)
+        changes.copy_to(diff_file)
 
         assert diff_file.exists
         assert 'setting2' in diff_file.read_text()
@@ -465,7 +465,7 @@ class TestIntegration:
 
         # Finalize
         final = storage.node('mem:document.txt')
-        builder.copy(final)
+        builder.copy_to(final)
 
         content = final.read_text()
         assert 'Introduction' in content

@@ -897,7 +897,7 @@ class StorageNode:
 
         return dest
 
-    def copy(self, dest: StorageNode | str,
+    def copy_to(self, dest: StorageNode | str,
              # Filtering (source-based)
              include: str | list[str] | None = None,
              exclude: str | list[str] | None = None,
@@ -1055,14 +1055,14 @@ class StorageNode:
 
         return dest
     
-    def move(self, dest: StorageNode | str) -> StorageNode:
+    def move_to(self, dest: StorageNode | str) -> StorageNode:
         """Move file/directory to destination."""
         # Convert string to StorageNode if needed
         if isinstance(dest, str):
             dest = self._manager.node(dest)
         
         # Copy then delete
-        self.copy(dest)
+        self.copy_to(dest)
         self.delete()
         
         # Update self to point to new location

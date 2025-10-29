@@ -127,7 +127,7 @@ vs. fsspec directly
         {'name': 's3', 'type': 's3', 'bucket': 'bucket'},
         {'name': 'local', 'type': 'local', 'path': '/tmp'}
     ])
-    storage.node('s3:file.txt').copy('local:file.txt')
+    storage.node('s3:file.txt').copy_to('local:file.txt')
 
 vs. boto3/google-cloud-storage
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

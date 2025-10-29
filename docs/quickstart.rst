@@ -100,7 +100,7 @@ First Steps
         print(f"File size: {node.size} bytes")
     
     # Copy
-    node.copy('temp:backup.pdf')
+    node.copy_to('temp:backup.pdf')
     
     # Delete
     node.delete()
@@ -137,7 +137,7 @@ Growth: +15%
 
     # Archive the report
     archive_node = storage.node('archive:reports/2024-q4.txt')
-    report.copy(archive_node)
+    report.copy_to(archive_node)
 
     # List all files in data/reports
     reports_dir = storage.node('data:reports')
@@ -262,7 +262,7 @@ Copy files between different storage backends:
 
     # Upload to S3
     s3_file = storage.node('s3:uploads/2024/image.jpg')
-    local_file.copy(s3_file)
+    local_file.copy_to(s3_file)
 
     # Cleanup
     local_file.delete()

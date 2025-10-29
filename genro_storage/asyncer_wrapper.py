@@ -221,7 +221,7 @@ class AsyncStorageNode:
         """
         await asyncify(self._node.delete)()
 
-    async def copy(self, target: AsyncStorageNode | StorageNode, **kwargs) -> None:
+    async def copy_to(self, target: AsyncStorageNode | StorageNode, **kwargs) -> None:
         """Copy file to target location (async).
 
         Args:
@@ -230,12 +230,12 @@ class AsyncStorageNode:
 
         Example:
             >>> target = storage.node('s3:backup/file.txt')
-            >>> await node.copy(target)
+            >>> await node.copy_to(target)
         """
         target_node = target._node if isinstance(target, AsyncStorageNode) else target
-        await asyncify(self._node.copy)(target_node, **kwargs)
+        await asyncify(self._node.copy_to)(target_node, **kwargs)
 
-    async def move(self, target: AsyncStorageNode | StorageNode) -> None:
+    async def move_to(self, target: AsyncStorageNode | StorageNode) -> None:
         """Move file to target location (async).
 
         Args:
@@ -243,10 +243,10 @@ class AsyncStorageNode:
 
         Example:
             >>> target = storage.node('s3:archive/file.txt')
-            >>> await node.move(target)
+            >>> await node.move_to(target)
         """
         target_node = target._node if isinstance(target, AsyncStorageNode) else target
-        await asyncify(self._node.move)(target_node)
+        await asyncify(self._node.move_to)(target_node)
 
     # Async property access (requires I/O)
 

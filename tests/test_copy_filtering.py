@@ -26,7 +26,7 @@ class TestCopyIncludePatterns:
         storage.node('src:readme.md').write_text('markdown')
 
         # Copy only Python files
-        storage.node('src:').copy(storage.node('dest:'), include='*.py')
+        storage.node('src:').copy_to(storage.node('dest:'), include='*.py')
 
         # Check results
         assert storage.node('dest:file1.py').exists
@@ -51,7 +51,7 @@ class TestCopyIncludePatterns:
         storage.node('src:readme.txt').write_text('text')
 
         # Copy only Python and JSON files
-        storage.node('src:').copy(
+        storage.node('src:').copy_to(
             storage.node('dest:'),
             include=['*.py', '*.json']
         )
@@ -78,7 +78,7 @@ class TestCopyIncludePatterns:
         storage.node('src:dir2/file3.py').write_text('python')
 
         # Copy only Python files
-        storage.node('src:').copy(storage.node('dest:'), include='*.py')
+        storage.node('src:').copy_to(storage.node('dest:'), include='*.py')
 
         # Check results - should match basename
         assert storage.node('dest:dir1/file1.py').exists
@@ -105,7 +105,7 @@ class TestCopyExcludePatterns:
         storage.node('src:data.txt').write_text('text')
 
         # Copy all except logs
-        storage.node('src:').copy(storage.node('dest:'), exclude='*.log')
+        storage.node('src:').copy_to(storage.node('dest:'), exclude='*.log')
 
         # Check results
         assert storage.node('dest:app.py').exists
@@ -129,7 +129,7 @@ class TestCopyExcludePatterns:
         storage.node('src:data.txt').write_text('text')
 
         # Exclude logs and temp files
-        storage.node('src:').copy(
+        storage.node('src:').copy_to(
             storage.node('dest:'),
             exclude=['*.log', '*.tmp']
         )
@@ -156,7 +156,7 @@ class TestCopyExcludePatterns:
         storage.node('src:tests/test.py').write_text('test')
 
         # Exclude cache directory
-        storage.node('src:').copy(
+        storage.node('src:').copy_to(
             storage.node('dest:'),
             exclude='__pycache__/*'
         )
@@ -187,7 +187,7 @@ class TestCopyIncludeAndExclude:
         storage.node('src:readme.txt').write_text('text')
 
         # Include Python files but exclude tests
-        storage.node('src:').copy(
+        storage.node('src:').copy_to(
             storage.node('dest:'),
             include='*.py',
             exclude='test_*.py'
@@ -219,7 +219,7 @@ class TestCopyCustomFilter:
         storage.node('src:large.txt').write_text('a' * 10000)  # 10KB
 
         # Copy only files smaller than 1KB
-        storage.node('src:').copy(
+        storage.node('src:').copy_to(
             storage.node('dest:'),
             filter=lambda node, path: node.size < 1000
         )
@@ -248,7 +248,7 @@ class TestCopyCustomFilter:
         cutoff_ts = cutoff.timestamp()
 
         # Copy only files modified recently (all should be recent in this test)
-        storage.node('src:').copy(
+        storage.node('src:').copy_to(
             storage.node('dest:'),
             filter=lambda node, path: node.mtime > cutoff_ts
         )
@@ -273,7 +273,7 @@ class TestCopyCustomFilter:
         storage.node('src:docs/readme.md').write_text('docs')
 
         # Copy only files NOT in tests directory
-        storage.node('src:').copy(
+        storage.node('src:').copy_to(
             storage.node('dest:'),
             filter=lambda node, relpath: 'tests/' not in relpath
         )
@@ -308,7 +308,7 @@ class TestCopyCombinedFiltering:
         # - Include: only .py and .json
         # - Exclude: no test files
         # - Filter: only files < 1KB
-        storage.node('src:').copy(
+        storage.node('src:').copy_to(
             storage.node('dest:'),
             include=['*.py', '*.json'],
             exclude='test_*.py',
@@ -341,7 +341,7 @@ class TestCopyCombinedFiltering:
         skipped = []
 
         # Copy with filtering and callbacks
-        storage.node('src:').copy(
+        storage.node('src:').copy_to(
             storage.node('dest:'),
             include='*.py',
             on_skip=lambda node, reason: skipped.append((node.basename, reason))
@@ -371,7 +371,7 @@ class TestCopyFilteringEdgeCases:
         storage.node('src:empty').mkdir()
 
         # Copy with filters - should not error
-        storage.node('src:').copy(storage.node('dest:'), include='*.py')
+        storage.node('src:').copy_to(storage.node('dest:'), include='*.py')
 
         # Destination should exist
         assert storage.node('dest:empty').exists
@@ -401,7 +401,7 @@ class TestCopyFilteringEdgeCases:
         skipped = []
 
         # Copy with bad filter
-        storage.node('src:').copy(
+        storage.node('src:').copy_to(
             storage.node('dest:'),
             filter=bad_filter,
             on_skip=lambda node, reason: skipped.append((node.basename, reason))
@@ -430,7 +430,7 @@ class TestCopyFilteringEdgeCases:
         storage.node('src:file2.md').write_text('markdown')
 
         # Copy with filter that matches nothing
-        storage.node('src:').copy(
+        storage.node('src:').copy_to(
             storage.node('dest:'),
             include='*.py'  # No Python files exist
         )

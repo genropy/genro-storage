@@ -312,7 +312,7 @@ class TestCopyMove:
         dest = storage.node('test:destination.txt')
         
         # Copy
-        result = src.copy(dest)
+        result = src.copy_to(dest)
         
         # Both should exist
         assert src.exists
@@ -328,7 +328,7 @@ class TestCopyMove:
         src.write_text("content")
         
         # Copy using string
-        dest = src.copy('test:destination.txt')
+        dest = src.copy_to('test:destination.txt')
         
         assert dest.exists
         assert dest.fullpath == 'test:destination.txt'
@@ -341,7 +341,7 @@ class TestCopyMove:
         dest = storage.node('test:destination.txt')
         
         # Move
-        result = src.move(dest)
+        result = src.move_to(dest)
         
         # Source should not exist, dest should
         assert not storage.node('test:source.txt').exists
@@ -359,7 +359,7 @@ class TestCopyMove:
         original_id = id(node)
         
         # Move
-        node.move('test:new.txt')
+        node.move_to('test:new.txt')
         
         # Same object, updated path
         assert id(node) == original_id
@@ -377,7 +377,7 @@ class TestCopyMove:
 
         # Copy
         dest = storage.node('test:dest_dir')
-        src.copy(dest)
+        src.copy_to(dest)
 
         # Check structure copied
         assert dest.exists

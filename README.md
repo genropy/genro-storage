@@ -88,13 +88,13 @@ storage.configure([
 node = storage.node('uploads:users/123/avatar.jpg')
 if node.exists:
     # Copy from S3 to local
-    node.copy(storage.node('home:cache/avatar.jpg'))
+    node.copy_to(storage.node('home:cache/avatar.jpg'))
 
     # Read and process
     data = node.read_bytes()
 
     # Backup to GCS
-    node.copy(storage.node('backups:avatars/user_123.jpg'))
+    node.copy_to(storage.node('backups:avatars/user_123.jpg'))
 
 # Base64 backend: embed data directly in URIs (data URI style)
 # Read inline data
@@ -112,7 +112,7 @@ print(node.path)  # "TmV3IGNvbnRlbnQ=" (base64 of "New content")
 # Copy from S3 to base64 for inline use
 s3_image = storage.node('uploads:photo.jpg')
 b64_image = storage.node('data:')
-s3_image.copy(b64_image)
+s3_image.copy_to(b64_image)
 data_uri = f"data:image/jpeg;base64,{b64_image.path}"
 
 # Advanced features
@@ -121,18 +121,18 @@ docs = storage.node('home:documents')
 s3_backup = storage.node('uploads:backup/documents')
 
 # Skip files that already exist (fastest)
-docs.copy(s3_backup, skip='exists')
+docs.copy_to(s3_backup, skip='exists')
 
 # Skip files with same size (fast, good accuracy)
-docs.copy(s3_backup, skip='size')
+docs.copy_to(s3_backup, skip='size')
 
 # Skip files with same content (accurate, uses S3 ETag - fast!)
-docs.copy(s3_backup, skip='hash')
+docs.copy_to(s3_backup, skip='hash')
 
 # With progress tracking
 from tqdm import tqdm
 pbar = tqdm(desc="Backing up", unit="file")
-docs.copy(s3_backup, skip='hash',
+docs.copy_to(s3_backup, skip='hash',
           progress=lambda cur, tot: pbar.update(1))
 pbar.close()
 

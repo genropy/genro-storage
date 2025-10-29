@@ -464,11 +464,11 @@ Complete Example
     
     # Save to S3
     final = storage.node('uploads:2024/images/photo.jpg')
-    upload.copy(final)
+    upload.copy_to(final)
     
     # Backup to GCS
     backup = storage.node('backups:daily/2024-10-26/photo.jpg')
-    final.copy(backup)
+    final.copy_to(backup)
     
     # Cleanup temp
     upload.delete()

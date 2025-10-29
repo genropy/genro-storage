@@ -105,7 +105,7 @@ class TestS3Storage:
         dest = storage_with_s3.node('test-s3:destination.txt')
         
         # Copy
-        src.copy(dest)
+        src.copy_to(dest)
         
         # Both should exist
         assert src.exists
@@ -120,7 +120,7 @@ class TestS3Storage:
         dest = storage_with_s3.node('test-s3:destination.txt')
         
         # Move
-        src.move(dest)
+        src.move_to(dest)
         
         # Only dest should exist
         assert not storage_with_s3.node('test-s3:source.txt').exists
@@ -178,7 +178,7 @@ class TestS3ToLocalCopy:
         
         # Copy to local
         local_node = storage.node('local:destination.txt')
-        s3_node.copy(local_node)
+        s3_node.copy_to(local_node)
         
         # Verify on local
         assert local_node.exists
@@ -200,7 +200,7 @@ class TestS3ToLocalCopy:
         
         # Copy to S3
         s3_node = storage.node('test-s3:destination.txt')
-        local_node.copy(s3_node)
+        local_node.copy_to(s3_node)
         
         # Verify on S3
         assert s3_node.exists
