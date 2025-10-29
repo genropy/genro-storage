@@ -88,8 +88,16 @@ Installation
     pip install genro-storage[s3]      # Amazon S3
     pip install genro-storage[gcs]     # Google Cloud Storage
     pip install genro-storage[azure]   # Azure Blob Storage
+
+    # With network protocols
+    pip install genro-storage[smb]     # SMB/CIFS (Windows shares)
+    pip install genro-storage[sftp]    # SFTP/SSH
+
+    # With async support
     pip install genro-storage[async]   # Async support (NEW in v0.3.0!)
-    pip install genro-storage[all]     # All backends + async
+
+    # All backends + async
+    pip install genro-storage[all]     # Everything
 
 Documentation Contents
 ----------------------

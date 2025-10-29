@@ -241,6 +241,84 @@ class FsspecBackend(StorageBackend):
                 temporary=False
             )
 
+        # SMB/CIFS
+        elif protocol == 'smb':
+            return BackendCapabilities(
+                read=True,
+                write=True,
+                delete=True,
+                mkdir=True,
+                list_dir=True,
+
+                versioning=False,
+                metadata=False,
+                presigned_urls=False,
+                public_urls=False,
+
+                atomic_operations=False,
+                symbolic_links=False,
+                copy_optimization=False,
+                hash_on_metadata=False,
+
+                append_mode=True,
+                seek_support=True,
+
+                readonly=False,
+                temporary=False
+            )
+
+        # ZIP archives
+        elif protocol == 'zip':
+            return BackendCapabilities(
+                read=True,
+                write=True,  # ZIP supports write/append
+                delete=True,
+                mkdir=True,
+                list_dir=True,
+
+                versioning=False,
+                metadata=False,
+                presigned_urls=False,
+                public_urls=False,
+
+                atomic_operations=False,
+                symbolic_links=False,
+                copy_optimization=False,
+                hash_on_metadata=False,
+
+                append_mode=False,  # Must rewrite entire archive
+                seek_support=True,
+
+                readonly=False,
+                temporary=False
+            )
+
+        # TAR archives
+        elif protocol == 'tar':
+            return BackendCapabilities(
+                read=True,
+                write=False,  # TAR is read-only in fsspec
+                delete=False,
+                mkdir=False,
+                list_dir=True,
+
+                versioning=False,
+                metadata=False,
+                presigned_urls=False,
+                public_urls=False,
+
+                atomic_operations=False,
+                symbolic_links=False,
+                copy_optimization=False,
+                hash_on_metadata=False,
+
+                append_mode=False,
+                seek_support=True,
+
+                readonly=True,  # TAR is read-only
+                temporary=False
+            )
+
         # Memory filesystem (testing)
         elif protocol == 'memory':
             return BackendCapabilities(

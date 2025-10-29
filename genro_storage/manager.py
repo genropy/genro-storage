@@ -360,6 +360,97 @@ class StorageManager:
                 )
             backend = FsspecBackend('http', base_path=config['base_url'])
 
+        elif backend_type == 'smb':
+            if 'host' not in config:
+                raise StorageConfigError(
+                    f"SMB storage '{mount_name}' missing required field: 'host'"
+                )
+            if 'share' not in config:
+                raise StorageConfigError(
+                    f"SMB storage '{mount_name}' missing required field: 'share'"
+                )
+
+            # Build SMB path: //host/share/path
+            base_path = f"//{config['host']}/{config['share']}"
+            if 'path' in config:
+                base_path = f"{base_path}/{config['path'].strip('/')}"
+
+            kwargs = {}
+            if 'username' in config:
+                kwargs['username'] = config['username']
+            if 'password' in config:
+                kwargs['password'] = config['password']
+            if 'domain' in config:
+                kwargs['domain'] = config['domain']
+            if 'port' in config:
+                kwargs['port'] = config['port']
+
+            backend = FsspecBackend('smb', base_path=base_path, **kwargs)
+
+        elif backend_type == 'sftp':
+            if 'host' not in config:
+                raise StorageConfigError(
+                    f"SFTP storage '{mount_name}' missing required field: 'host'"
+                )
+            if 'username' not in config:
+                raise StorageConfigError(
+                    f"SFTP storage '{mount_name}' missing required field: 'username'"
+                )
+
+            # Build SFTP path: host:/path
+            base_path = config.get('path', '/')
+
+            kwargs = {
+                'host': config['host'],
+                'username': config['username']
+            }
+            if 'password' in config:
+                kwargs['password'] = config['password']
+            if 'port' in config:
+                kwargs['port'] = config['port']
+            if 'key_filename' in config:
+                kwargs['key_filename'] = config['key_filename']
+            if 'passphrase' in config:
+                kwargs['passphrase'] = config['passphrase']
+            if 'timeout' in config:
+                kwargs['timeout'] = config['timeout']
+
+            backend = FsspecBackend('sftp', base_path=base_path, **kwargs)
+
+        elif backend_type == 'zip':
+            if 'file' not in config:
+                raise StorageConfigError(
+                    f"ZIP storage '{mount_name}' missing required field: 'file'"
+                )
+
+            # ZIP archives use 'fo' parameter for file path
+            kwargs = {'fo': config['file']}
+            if 'mode' in config:
+                kwargs['mode'] = config['mode']
+            if 'target_protocol' in config:
+                kwargs['target_protocol'] = config['target_protocol']
+            if 'target_options' in config:
+                kwargs['target_options'] = config['target_options']
+
+            backend = FsspecBackend('zip', base_path='', **kwargs)
+
+        elif backend_type == 'tar':
+            if 'file' not in config:
+                raise StorageConfigError(
+                    f"TAR storage '{mount_name}' missing required field: 'file'"
+                )
+
+            # TAR archives use 'fo' parameter for file path
+            kwargs = {'fo': config['file']}
+            if 'compression' in config:
+                kwargs['compression'] = config['compression']
+            if 'target_protocol' in config:
+                kwargs['target_protocol'] = config['target_protocol']
+            if 'target_options' in config:
+                kwargs['target_options'] = config['target_options']
+
+            backend = FsspecBackend('tar', base_path='', **kwargs)
+
         elif backend_type == 'base64':
             # Base64 backend has no configuration parameters
             backend = Base64Backend()
@@ -367,7 +458,7 @@ class StorageManager:
         else:
             raise StorageConfigError(
                 f"Unknown storage type '{backend_type}' for mount '{mount_name}'. "
-                f"Supported types: local, s3, gcs, azure, http, memory, base64"
+                f"Supported types: local, s3, gcs, azure, http, memory, base64, smb, sftp, zip, tar"
             )
         
         self._mounts[mount_name] = backend
