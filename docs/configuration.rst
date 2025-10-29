@@ -323,6 +323,107 @@ In-memory storage for testing and development.
     node.write("test data")
     assert node.read() == "test data"
 
+Permission Control
+------------------
+
+Configure access permissions for any storage backend to restrict operations.
+
+Permission Levels
+~~~~~~~~~~~~~~~~~
+
+Three permission levels are available:
+
+- ``readonly``: Only read operations (read, exists, list)
+- ``readwrite``: Read and write operations, but no delete
+- ``delete``: Full access including delete (default)
+
+**Example:**
+
+.. code-block:: python
+
+    storage.configure([
+        # Read-only access to public data
+        {'name': 'public', 'type': 'http', 'base_url': 'https://cdn.example.com',
+         'permissions': 'readonly'},
+
+        # Read-write but no delete for backups
+        {'name': 'backups', 'type': 'gcs', 'bucket': 'my-backups',
+         'permissions': 'readwrite'},
+
+        # Full access (default)
+        {'name': 'uploads', 'type': 's3', 'bucket': 'my-uploads'}
+    ])
+
+Using Permissions
+~~~~~~~~~~~~~~~~~
+
+Permissions are validated at configuration time and enforced at runtime:
+
+.. code-block:: python
+
+    # Read-only mount
+    storage.configure([
+        {'name': 'public', 'type': 's3', 'bucket': 'public-data',
+         'permissions': 'readonly'}
+    ])
+
+    node = storage.node('public:file.txt')
+
+    # Allowed operations
+    content = node.read()
+    exists = node.exists
+    files = node.children()
+
+    # Raises StoragePermissionError
+    node.write("data")
+    node.delete()
+    node.mkdir()
+
+YAML Configuration
+~~~~~~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+    # Read-only CDN
+    - name: cdn
+      type: http
+      base_url: https://cdn.example.com
+      permissions: readonly
+
+    # Read-write backups (no delete)
+    - name: backups
+      type: gcs
+      bucket: my-backups
+      permissions: readwrite
+
+    # Full access uploads
+    - name: uploads
+      type: s3
+      bucket: my-uploads
+      permissions: delete
+
+Permission Validation
+~~~~~~~~~~~~~~~~~~~~~
+
+Permissions are validated against backend capabilities:
+
+.. code-block:: python
+
+    # Invalid: HTTP is read-only, cannot request readwrite
+    storage.configure([
+        {'name': 'cdn', 'type': 'http', 'base_url': 'https://cdn.example.com',
+         'permissions': 'readwrite'}  # Error!
+    ])
+    # Raises: StorageConfigError: Backend is read-only
+
+Best Practices
+~~~~~~~~~~~~~~
+
+1. **Principle of least privilege** - Use ``readonly`` when possible
+2. **Protect backups** - Use ``readwrite`` to prevent accidental deletion
+3. **Validate at startup** - Permissions are checked at configuration time
+4. **Use for security** - Restrict access to sensitive storage locations
+
 Advanced Configuration
 ----------------------
 

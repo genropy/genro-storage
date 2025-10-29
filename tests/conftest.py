@@ -62,27 +62,28 @@ def minio_client(minio_config):
 
 @pytest.fixture
 def minio_bucket(minio_client):
-    """Create a temporary test bucket in MinIO.
-    
+    """Create a temporary test bucket in MinIO WITHOUT versioning.
+
     Args:
         minio_client: MinIO S3 client fixture
-    
+
     Yields:
-        str: Name of the created bucket
-    
+        str: Name of the created bucket (versioning NOT enabled)
+
     The bucket is automatically cleaned up after the test.
+    Note: For versioned buckets, use minio_versioned_bucket instead.
     """
     bucket_name = f"test-bucket-{int(time.time())}"
-    
-    # Create bucket
+
+    # Create bucket WITHOUT versioning
     try:
         minio_client.create_bucket(Bucket=bucket_name)
     except ClientError as e:
         if e.response['Error']['Code'] != 'BucketAlreadyExists':
             raise
-    
+
     yield bucket_name
-    
+
     # Cleanup: delete all objects then bucket
     try:
         # List and delete all objects
@@ -94,11 +95,71 @@ def minio_bucket(minio_client):
                     Bucket=bucket_name,
                     Delete={'Objects': objects}
                 )
-        
+
         # Delete bucket
         minio_client.delete_bucket(Bucket=bucket_name)
     except Exception as e:
         print(f"Warning: Failed to cleanup bucket {bucket_name}: {e}")
+
+
+@pytest.fixture
+def minio_versioned_bucket(minio_client):
+    """Create a temporary test bucket in MinIO WITH versioning enabled.
+
+    Args:
+        minio_client: MinIO S3 client fixture
+
+    Yields:
+        str: Name of the versioned bucket
+
+    The bucket and all versions are automatically cleaned up after the test.
+    """
+    bucket_name = f"test-versioned-{int(time.time())}"
+
+    # Create bucket
+    minio_client.create_bucket(Bucket=bucket_name)
+
+    # Enable versioning
+    minio_client.put_bucket_versioning(
+        Bucket=bucket_name,
+        VersioningConfiguration={'Status': 'Enabled'}
+    )
+
+    yield bucket_name
+
+    # Cleanup: delete all versions then bucket
+    try:
+        # List and delete all object versions
+        paginator = minio_client.get_paginator('list_object_versions')
+        for page in paginator.paginate(Bucket=bucket_name):
+            # Delete versions
+            if 'Versions' in page:
+                versions = [
+                    {'Key': v['Key'], 'VersionId': v['VersionId']}
+                    for v in page['Versions']
+                ]
+                if versions:
+                    minio_client.delete_objects(
+                        Bucket=bucket_name,
+                        Delete={'Objects': versions, 'Quiet': True}
+                    )
+
+            # Delete delete markers
+            if 'DeleteMarkers' in page:
+                markers = [
+                    {'Key': m['Key'], 'VersionId': m['VersionId']}
+                    for m in page['DeleteMarkers']
+                ]
+                if markers:
+                    minio_client.delete_objects(
+                        Bucket=bucket_name,
+                        Delete={'Objects': markers, 'Quiet': True}
+                    )
+
+        # Delete bucket
+        minio_client.delete_bucket(Bucket=bucket_name)
+    except Exception as e:
+        print(f"Warning: Failed to cleanup versioned bucket {bucket_name}: {e}")
 
 
 @pytest.fixture
