@@ -193,7 +193,7 @@ remote.fill_from_url('https://example.com/file.pdf')
 
 ### Async Usage (NEW in v0.3.0!)
 
-Built on [asyncer](https://github.com/tiangolo/asyncer) by Sebastián Ramírez (FastAPI author) for automatic sync→async conversion with no event loop blocking. Native async implementation planned for v0.4.0.
+Built on [asyncer](https://github.com/tiangolo/asyncer) by Sebastián Ramírez (FastAPI author) for automatic sync→async conversion with no event loop blocking.
 
 ```python
 from genro_storage import AsyncStorageManager
@@ -382,7 +382,7 @@ See [TESTING.md](TESTING.md) for detailed testing instructions with MinIO.
 ## Built With
 
 - [fsspec](https://filesystem-spec.readthedocs.io/) - Pythonic filesystem abstraction
-- [asyncer](https://github.com/tiangolo/asyncer) - Async wrapper (v0.3.0+, bridge to native async in v0.4.0)
+- [asyncer](https://github.com/tiangolo/asyncer) - Async wrapper (v0.3.0+)
 - Modern Python (3.9+) with full type hints
 - Optional backends: s3fs, gcsfs, adlfs, aiohttp
 
@@ -412,15 +412,13 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 - ✅ S3 versioning support
 - ✅ Full Documentation on ReadTheDocs
 - ✅ MinIO Integration Testing
-- 🚧 Async/await support (AsyncStorageManager, AsyncStorageNode) - v0.3.0 in development
+- ✅ Async/await support (AsyncStorageManager, AsyncStorageNode) - v0.3.0 released
 - 🎯 Ready for early adopters and production testing
 - ⏳ Extended GCS/Azure integration testing
 
-**Roadmap:**
-- v0.2.0 (October 2025) - Virtual nodes, tutorials, enhanced testing ✅ **RELEASED**
-- v0.3.0 (Q4 2025) - Async support via asyncer wrapper 🚧 **IN DEVELOPMENT**
-- v0.4.0 (Q1 2026) - Native async API, runtime mount management
-- v1.0.0 (2026) - Production-ready, stable API guarantee
+**Recent Releases:**
+- v0.2.0 (October 2025) - Virtual nodes, tutorials, enhanced testing ✅
+- v0.3.0 (October 2025) - Async support via asyncer wrapper, relative mounts, unified read/write API ✅
 
 ## Contributing
 
