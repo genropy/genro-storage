@@ -451,6 +451,81 @@ class StorageManager:
 
             backend = FsspecBackend('tar', base_path='', **kwargs)
 
+        elif backend_type == 'git':
+            if 'path' not in config:
+                raise StorageConfigError(
+                    f"Git storage '{mount_name}' missing required field: 'path'"
+                )
+
+            # Git backend accesses local Git repositories
+            kwargs = {'path': config['path']}
+            if 'ref' in config:
+                kwargs['ref'] = config['ref']  # commit, tag, or branch
+            if 'fo' in config:
+                kwargs['fo'] = config['fo']
+
+            backend = FsspecBackend('git', base_path='', **kwargs)
+
+        elif backend_type == 'github':
+            if 'org' not in config:
+                raise StorageConfigError(
+                    f"GitHub storage '{mount_name}' missing required field: 'org'"
+                )
+            if 'repo' not in config:
+                raise StorageConfigError(
+                    f"GitHub storage '{mount_name}' missing required field: 'repo'"
+                )
+
+            # GitHub backend accesses remote repositories via API
+            kwargs = {
+                'org': config['org'],
+                'repo': config['repo']
+            }
+            if 'sha' in config:
+                kwargs['sha'] = config['sha']  # commit, branch, or tag
+            if 'username' in config:
+                kwargs['username'] = config['username']  # GitHub username for auth
+            if 'token' in config:
+                kwargs['token'] = config['token']  # GitHub personal access token
+
+            backend = FsspecBackend('github', base_path='', **kwargs)
+
+        elif backend_type == 'webdav':
+            if 'base_url' not in config:
+                raise StorageConfigError(
+                    f"WebDAV storage '{mount_name}' missing required field: 'base_url'"
+                )
+
+            # WebDAV backend for Nextcloud, ownCloud, SharePoint, etc.
+            base_path = config['base_url']
+
+            kwargs = {}
+            if 'username' in config and 'password' in config:
+                kwargs['auth'] = (config['username'], config['password'])
+            if 'token' in config:
+                kwargs['token'] = config['token']
+            if 'cert' in config:
+                kwargs['cert'] = config['cert']
+            if 'verify_ssl' in config:
+                kwargs['verify_ssl'] = config['verify_ssl']
+
+            backend = FsspecBackend('webdav', base_path=base_path, **kwargs)
+
+        elif backend_type == 'libarchive':
+            if 'file' not in config:
+                raise StorageConfigError(
+                    f"LibArchive storage '{mount_name}' missing required field: 'file'"
+                )
+
+            # LibArchive backend for universal archive support (7z, rar, iso, etc.)
+            kwargs = {'fo': config['file']}
+            if 'target_protocol' in config:
+                kwargs['target_protocol'] = config['target_protocol']
+            if 'target_options' in config:
+                kwargs['target_options'] = config['target_options']
+
+            backend = FsspecBackend('libarchive', base_path='', **kwargs)
+
         elif backend_type == 'base64':
             # Base64 backend has no configuration parameters
             backend = Base64Backend()
@@ -458,7 +533,8 @@ class StorageManager:
         else:
             raise StorageConfigError(
                 f"Unknown storage type '{backend_type}' for mount '{mount_name}'. "
-                f"Supported types: local, s3, gcs, azure, http, memory, base64, smb, sftp, zip, tar"
+                f"Supported types: local, s3, gcs, azure, http, memory, base64, smb, sftp, zip, tar, "
+                f"git, github, webdav, libarchive"
             )
         
         self._mounts[mount_name] = backend
