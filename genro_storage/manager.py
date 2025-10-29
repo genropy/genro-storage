@@ -322,13 +322,15 @@ class StorageManager:
             base_path = config['bucket']
             if 'prefix' in config:
                 base_path = f"{base_path}/{config['prefix'].strip('/')}"
-            
+
             kwargs = {}
             if 'token' in config:
                 kwargs['token'] = config['token']
             if 'project' in config:
                 kwargs['project'] = config['project']
-            
+            if 'endpoint_url' in config:
+                kwargs['endpoint_url'] = config['endpoint_url']
+
             backend = FsspecBackend('gcs', base_path=base_path, **kwargs)
         
         elif backend_type == 'azure':
