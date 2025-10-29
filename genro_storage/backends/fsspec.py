@@ -345,6 +345,116 @@ class FsspecBackend(StorageBackend):
                 temporary=True  # Ephemeral!
             )
 
+        # Git local repositories (read-only)
+        elif protocol == 'git':
+            return BackendCapabilities(
+                read=True,
+                write=False,  # Git is read-only
+                delete=False,
+                mkdir=False,
+                list_dir=True,
+
+                versioning=True,  # Access any commit/tag/branch
+                version_listing=False,  # Can't list all versions
+                version_access=True,  # Can access specific versions via ref
+
+                metadata=False,
+                presigned_urls=False,
+                public_urls=False,
+
+                atomic_operations=False,
+                symbolic_links=False,
+                copy_optimization=False,
+                hash_on_metadata=False,
+
+                append_mode=False,
+                seek_support=True,
+
+                readonly=True,
+                temporary=False
+            )
+
+        # GitHub repositories (read-only, remote)
+        elif protocol == 'github':
+            return BackendCapabilities(
+                read=True,
+                write=False,  # GitHub is read-only via API
+                delete=False,
+                mkdir=False,
+                list_dir=True,
+
+                versioning=True,  # Access any commit/tag/branch
+                version_listing=False,
+                version_access=True,  # Can access specific versions via sha
+
+                metadata=False,
+                presigned_urls=False,
+                public_urls=True,  # GitHub URLs are public
+
+                atomic_operations=False,
+                symbolic_links=False,
+                copy_optimization=False,
+                hash_on_metadata=False,
+
+                append_mode=False,
+                seek_support=True,
+
+                readonly=True,
+                temporary=False
+            )
+
+        # WebDAV (Nextcloud, ownCloud, SharePoint)
+        elif protocol == 'webdav':
+            return BackendCapabilities(
+                read=True,
+                write=True,
+                delete=True,
+                mkdir=True,
+                list_dir=True,
+
+                versioning=False,  # Depends on server
+                metadata=False,
+                presigned_urls=False,
+                public_urls=False,
+
+                atomic_operations=False,
+                symbolic_links=False,
+                copy_optimization=False,
+                hash_on_metadata=False,
+
+                append_mode=True,
+                seek_support=True,
+
+                readonly=False,
+                temporary=False
+            )
+
+        # LibArchive (universal archive support: 7z, rar, iso, etc.)
+        elif protocol == 'libarchive':
+            return BackendCapabilities(
+                read=True,
+                write=False,  # LibArchive is read-only
+                delete=False,
+                mkdir=False,
+                list_dir=True,
+
+                versioning=False,
+                metadata=False,
+                presigned_urls=False,
+                public_urls=False,
+
+                atomic_operations=False,
+                symbolic_links=False,
+                copy_optimization=False,
+                hash_on_metadata=False,
+
+                append_mode=False,
+                seek_support=True,
+
+                readonly=True,
+                temporary=False
+            )
+
         # Default for unknown protocols (conservative)
         else:
             return BackendCapabilities(

@@ -1,0 +1,300 @@
+"""Tests for Git, GitHub, WebDAV, and LibArchive backends."""
+
+import pytest
+from genro_storage import StorageManager, StorageConfigError
+
+# Check for optional dependencies
+try:
+    import pygit2
+    HAS_PYGIT2 = True
+except ImportError:
+    HAS_PYGIT2 = False
+
+try:
+    import webdav4
+    HAS_WEBDAV = True
+except ImportError:
+    HAS_WEBDAV = False
+
+try:
+    import libarchive
+    HAS_LIBARCHIVE = True
+except ImportError:
+    HAS_LIBARCHIVE = False
+
+
+class TestGitBackend:
+    """Tests for Git backend."""
+
+    @pytest.mark.skipif(not HAS_PYGIT2, reason="pygit2 not installed")
+    def test_git_configuration_basic(self):
+        """Test basic Git configuration."""
+        storage = StorageManager()
+        storage.configure([{
+            'name': 'git_test',
+            'type': 'git',
+            'path': '/path/to/repo.git'
+        }])
+        assert 'git_test' in storage._mounts
+        backend = storage._mounts['git_test']
+        assert backend is not None
+
+    @pytest.mark.skipif(not HAS_PYGIT2, reason="pygit2 not installed")
+    def test_git_configuration_with_ref(self):
+        """Test Git configuration with ref (branch/tag/commit)."""
+        storage = StorageManager()
+        storage.configure([{
+            'name': 'git_test',
+            'type': 'git',
+            'path': '/path/to/repo.git',
+            'ref': 'main'
+        }])
+        assert 'git_test' in storage._mounts
+
+    def test_git_configuration_missing_path(self):
+        """Test Git configuration with missing path raises error."""
+        storage = StorageManager()
+        with pytest.raises(StorageConfigError, match="missing required field: 'path'"):
+            storage.configure([{
+                'name': 'git_test',
+                'type': 'git'
+            }])
+
+    @pytest.mark.skipif(not HAS_PYGIT2, reason="pygit2 not installed")
+    def test_git_capabilities(self):
+        """Test Git backend capabilities."""
+        storage = StorageManager()
+        storage.configure([{
+            'name': 'git_test',
+            'type': 'git',
+            'path': '/path/to/repo.git'
+        }])
+        backend = storage._mounts['git_test']
+        caps = backend.capabilities
+
+        # Git is read-only
+        assert caps.read is True
+        assert caps.write is False
+        assert caps.delete is False
+        assert caps.mkdir is False
+        assert caps.list_dir is True
+        assert caps.readonly is True
+        assert caps.versioning is True
+        assert caps.version_access is True
+
+
+class TestGitHubBackend:
+    """Tests for GitHub backend."""
+
+    def test_github_configuration_basic(self):
+        """Test basic GitHub configuration."""
+        storage = StorageManager()
+        storage.configure([{
+            'name': 'gh_test',
+            'type': 'github',
+            'org': 'genropy',
+            'repo': 'genro-storage'
+        }])
+        assert 'gh_test' in storage._mounts
+        backend = storage._mounts['gh_test']
+        assert backend is not None
+
+    def test_github_configuration_with_ref(self):
+        """Test GitHub configuration with ref (branch/tag/commit)."""
+        storage = StorageManager()
+        storage.configure([{
+            'name': 'gh_test',
+            'type': 'github',
+            'org': 'genropy',
+            'repo': 'genro-storage',
+            'ref': 'main'
+        }])
+        assert 'gh_test' in storage._mounts
+
+    def test_github_configuration_with_token(self):
+        """Test GitHub configuration with authentication token."""
+        storage = StorageManager()
+        storage.configure([{
+            'name': 'gh_test',
+            'type': 'github',
+            'org': 'genropy',
+            'repo': 'genro-storage',
+            'username': 'testuser',
+            'token': 'ghp_test_token'
+        }])
+        assert 'gh_test' in storage._mounts
+
+    def test_github_configuration_missing_org(self):
+        """Test GitHub configuration with missing org raises error."""
+        storage = StorageManager()
+        with pytest.raises(StorageConfigError, match="missing required field: 'org'"):
+            storage.configure([{
+                'name': 'gh_test',
+                'type': 'github',
+                'repo': 'genro-storage'
+            }])
+
+    def test_github_configuration_missing_repo(self):
+        """Test GitHub configuration with missing repo raises error."""
+        storage = StorageManager()
+        with pytest.raises(StorageConfigError, match="missing required field: 'repo'"):
+            storage.configure([{
+                'name': 'gh_test',
+                'type': 'github',
+                'org': 'genropy'
+            }])
+
+    def test_github_capabilities(self):
+        """Test GitHub backend capabilities."""
+        storage = StorageManager()
+        storage.configure([{
+            'name': 'gh_test',
+            'type': 'github',
+            'org': 'genropy',
+            'repo': 'genro-storage'
+        }])
+        backend = storage._mounts['gh_test']
+        caps = backend.capabilities
+
+        # GitHub is read-only
+        assert caps.read is True
+        assert caps.write is False
+        assert caps.delete is False
+        assert caps.mkdir is False
+        assert caps.list_dir is True
+        assert caps.readonly is True
+        assert caps.versioning is True
+        assert caps.version_access is True
+
+
+class TestWebDAVBackend:
+    """Tests for WebDAV backend."""
+
+    @pytest.mark.skipif(not HAS_WEBDAV, reason="webdav4 not installed")
+    def test_webdav_configuration_basic(self):
+        """Test basic WebDAV configuration."""
+        storage = StorageManager()
+        storage.configure([{
+            'name': 'webdav_test',
+            'type': 'webdav',
+            'url': 'https://webdav.example.com'
+        }])
+        assert 'webdav_test' in storage._mounts
+        backend = storage._mounts['webdav_test']
+        assert backend is not None
+
+    @pytest.mark.skipif(not HAS_WEBDAV, reason="webdav4 not installed")
+    def test_webdav_configuration_with_auth(self):
+        """Test WebDAV configuration with authentication."""
+        storage = StorageManager()
+        storage.configure([{
+            'name': 'webdav_test',
+            'type': 'webdav',
+            'url': 'https://webdav.example.com',
+            'username': 'user',
+            'password': 'secret'
+        }])
+        assert 'webdav_test' in storage._mounts
+
+    @pytest.mark.skipif(not HAS_WEBDAV, reason="webdav4 not installed")
+    def test_webdav_configuration_with_token(self):
+        """Test WebDAV configuration with bearer token."""
+        storage = StorageManager()
+        storage.configure([{
+            'name': 'webdav_test',
+            'type': 'webdav',
+            'url': 'https://webdav.example.com',
+            'token': 'bearer_token'
+        }])
+        assert 'webdav_test' in storage._mounts
+
+    @pytest.mark.skipif(not HAS_WEBDAV, reason="webdav4 not installed")
+    def test_webdav_configuration_missing_url(self):
+        """Test WebDAV configuration with missing URL raises error."""
+        storage = StorageManager()
+        with pytest.raises(StorageConfigError, match="missing required field: 'url'"):
+            storage.configure([{
+                'name': 'webdav_test',
+                'type': 'webdav'
+            }])
+
+    @pytest.mark.skipif(not HAS_WEBDAV, reason="webdav4 not installed")
+    def test_webdav_capabilities(self):
+        """Test WebDAV backend capabilities."""
+        storage = StorageManager()
+        storage.configure([{
+            'name': 'webdav_test',
+            'type': 'webdav',
+            'url': 'https://webdav.example.com'
+        }])
+        backend = storage._mounts['webdav_test']
+        caps = backend.capabilities
+
+        # WebDAV supports full read/write
+        assert caps.read is True
+        assert caps.write is True
+        assert caps.delete is True
+        assert caps.mkdir is True
+        assert caps.list_dir is True
+        assert caps.readonly is False
+        assert caps.versioning is False
+
+
+class TestLibArchiveBackend:
+    """Tests for LibArchive backend."""
+
+    @pytest.mark.skipif(not HAS_LIBARCHIVE, reason="libarchive-c not installed")
+    def test_libarchive_configuration_basic(self):
+        """Test basic LibArchive configuration."""
+        storage = StorageManager()
+        storage.configure([{
+            'name': 'archive_test',
+            'type': 'libarchive',
+            'file': '/path/to/archive.tar.gz'
+        }])
+        assert 'archive_test' in storage._mounts
+        backend = storage._mounts['archive_test']
+        assert backend is not None
+
+    @pytest.mark.skipif(not HAS_LIBARCHIVE, reason="libarchive-c not installed")
+    def test_libarchive_configuration_with_options(self):
+        """Test LibArchive configuration with additional options."""
+        storage = StorageManager()
+        storage.configure([{
+            'name': 'archive_test',
+            'type': 'libarchive',
+            'file': '/path/to/archive.zip',
+            'mode': 'r'
+        }])
+        assert 'archive_test' in storage._mounts
+
+    @pytest.mark.skipif(not HAS_LIBARCHIVE, reason="libarchive-c not installed")
+    def test_libarchive_configuration_missing_file(self):
+        """Test LibArchive configuration with missing file raises error."""
+        storage = StorageManager()
+        with pytest.raises(StorageConfigError, match="missing required field: 'file'"):
+            storage.configure([{
+                'name': 'archive_test',
+                'type': 'libarchive'
+            }])
+
+    @pytest.mark.skipif(not HAS_LIBARCHIVE, reason="libarchive-c not installed")
+    def test_libarchive_capabilities(self):
+        """Test LibArchive backend capabilities."""
+        storage = StorageManager()
+        storage.configure([{
+            'name': 'archive_test',
+            'type': 'libarchive',
+            'file': '/path/to/archive.tar.gz'
+        }])
+        backend = storage._mounts['archive_test']
+        caps = backend.capabilities
+
+        # LibArchive is read-only for existing archives
+        assert caps.read is True
+        assert caps.write is False  # Can't modify existing archives
+        assert caps.delete is False
+        assert caps.mkdir is False
+        assert caps.list_dir is True
+        assert caps.readonly is True
+        assert caps.temporary is False
