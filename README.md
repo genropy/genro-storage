@@ -20,7 +20,7 @@ A modern, elegant Python library that provides a unified interface for accessing
 
 ## Status: Beta - Ready for Production Testing
 
-**Current Version:** 0.4.2
+**Current Version:** 0.4.3
 **Last Updated:** October 2025
 
 - Core implementation complete
