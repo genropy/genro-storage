@@ -370,12 +370,14 @@ class StorageManager:
                     f"SMB storage '{mount_name}' missing required field: 'share'"
                 )
 
-            # Build SMB path: //host/share/path
-            base_path = f"//{config['host']}/{config['share']}"
+            # Build SMB path: /share/path
+            base_path = f"/{config['share']}"
             if 'path' in config:
                 base_path = f"{base_path}/{config['path'].strip('/')}"
 
-            kwargs = {}
+            kwargs = {
+                'host': config['host']
+            }
             if 'username' in config:
                 kwargs['username'] = config['username']
             if 'password' in config:
@@ -491,15 +493,15 @@ class StorageManager:
             backend = FsspecBackend('github', base_path='', **kwargs)
 
         elif backend_type == 'webdav':
-            if 'base_url' not in config:
+            if 'url' not in config:
                 raise StorageConfigError(
-                    f"WebDAV storage '{mount_name}' missing required field: 'base_url'"
+                    f"WebDAV storage '{mount_name}' missing required field: 'url'"
                 )
 
             # WebDAV backend for Nextcloud, ownCloud, SharePoint, etc.
-            base_path = config['base_url']
-
-            kwargs = {}
+            kwargs = {
+                'base_url': config['url']
+            }
             if 'username' in config and 'password' in config:
                 kwargs['auth'] = (config['username'], config['password'])
             if 'token' in config:
@@ -509,7 +511,7 @@ class StorageManager:
             if 'verify_ssl' in config:
                 kwargs['verify_ssl'] = config['verify_ssl']
 
-            backend = FsspecBackend('webdav', base_path=base_path, **kwargs)
+            backend = FsspecBackend('webdav', base_path='', **kwargs)
 
         elif backend_type == 'libarchive':
             if 'file' not in config:
