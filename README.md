@@ -13,13 +13,15 @@ A modern, elegant Python library that provides a unified interface for accessing
 
 ## Status: Beta - Ready for Production Testing
 
-**Current Version:** 0.4.0
+**Current Version:** 0.4.2
 **Last Updated:** October 2025
 
 ✅ Core implementation complete
-✅ All backends working (local, S3, GCS, Azure, HTTP, Memory, Base64)
+✅ 15 storage backends working (local, S3, GCS, Azure, HTTP, Memory, Base64, SMB, SFTP, ZIP, TAR, Git, GitHub, WebDAV, LibArchive)
+✅ **NEW in v0.4.2:** Git, GitHub, WebDAV, and LibArchive backends
+✅ **NEW in v0.4.1:** SMB, SFTP, ZIP, and TAR backends
 ✅ **NEW in v0.3.0:** Async/await support for FastAPI, asyncio applications (asyncer-based)
-✅ 274 tests passing on Python 3.9-3.12
+✅ 293 tests passing on Python 3.9-3.12
 ✅ Full documentation on ReadTheDocs
 ✅ Battle-tested code from Genropy (19+ years in production, storage abstraction since 2018)
 ✅ Available on PyPI
@@ -346,13 +348,36 @@ pip install -e ".[all,dev]"
 Install optional dependencies for specific backends:
 
 ```bash
-pip install genro-storage[s3]      # Amazon S3
-pip install genro-storage[gcs]     # Google Cloud Storage
-pip install genro-storage[azure]   # Azure Blob Storage
-pip install genro-storage[http]    # HTTP/HTTPS
-pip install genro-storage[async]   # Async support (NEW in v0.3.0!)
-pip install genro-storage[all]     # All backends + async
+# Cloud storage
+pip install genro-storage[s3]          # Amazon S3
+pip install genro-storage[gcs]         # Google Cloud Storage
+pip install genro-storage[azure]       # Azure Blob Storage
+
+# Network protocols
+pip install genro-storage[http]        # HTTP/HTTPS
+pip install genro-storage[smb]         # SMB/CIFS (Windows/Samba shares)
+pip install genro-storage[sftp]        # SFTP (SSH File Transfer)
+pip install genro-storage[webdav]      # WebDAV (Nextcloud, ownCloud, SharePoint)
+
+# Archive formats
+pip install genro-storage[libarchive]  # RAR, 7z, ISO, and 20+ formats
+
+# Version control
+# Git and GitHub are built-in to fsspec (no extra install needed)
+
+# Other
+pip install genro-storage[async]       # Async support
+pip install genro-storage[all]         # All backends + async
 ```
+
+**Built-in backends** (no extra dependencies):
+- Local filesystem
+- Memory (in-memory storage for testing)
+- Base64 (inline data URIs)
+- ZIP archives
+- TAR archives (with gzip, bzip2, xz compression)
+- Git repositories (requires system `pygit2`)
+- GitHub repositories
 
 ## Testing
 
@@ -384,7 +409,7 @@ See [TESTING.md](TESTING.md) for detailed testing instructions with MinIO.
 - [fsspec](https://filesystem-spec.readthedocs.io/) - Pythonic filesystem abstraction
 - [asyncer](https://github.com/tiangolo/asyncer) - Async wrapper (v0.3.0+)
 - Modern Python (3.9+) with full type hints
-- Optional backends: s3fs, gcsfs, adlfs, aiohttp
+- Optional backends: s3fs, gcsfs, adlfs, aiohttp, smbprotocol, paramiko, webdav4, libarchive-c
 
 ## Origins
 
@@ -396,8 +421,8 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 
 - ✅ API Design Complete and Stable
 - ✅ Core Implementation Complete
-- ✅ FsspecBackend (all 7 storage types working: local, S3, GCS, Azure, HTTP, Memory, Base64)
-- ✅ Comprehensive Test Suite (274 tests, 81% coverage)
+- ✅ FsspecBackend (15 storage backends: local, S3, GCS, Azure, HTTP, Memory, Base64, SMB, SFTP, ZIP, TAR, Git, GitHub, WebDAV, LibArchive)
+- ✅ Comprehensive Test Suite (293 tests, 81% coverage)
 - ✅ CI/CD with Python 3.9, 3.10, 3.11, 3.12
 - ✅ MD5 hashing and content-based equality
 - ✅ Base64 backend with writable mutable paths
@@ -417,6 +442,8 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 - ⏳ Extended GCS/Azure integration testing
 
 **Recent Releases:**
+- v0.4.2 (October 2025) - Git, GitHub, WebDAV, LibArchive backends ✅
+- v0.4.1 (October 2025) - SMB, SFTP, ZIP, TAR backends ✅
 - v0.4.0 (October 2025) - Relative mounts with permissions, unified read/write API ✅
 - v0.3.0 (October 2025) - Async support via asyncer wrapper ✅
 - v0.2.0 (October 2025) - Virtual nodes, tutorials, enhanced testing ✅
@@ -441,10 +468,11 @@ Contributions are welcome! We follow a **Git Flow** workflow with protected bran
 See [CONTRIBUTING.md](CONTRIBUTING.md) for complete workflow documentation.
 
 **Areas for contribution:**
-- Add tests for GCS and Azure backends
+- Add integration tests for GCS and Azure backends
 - Improve test coverage (target: 90%+)
-- Add integration tests for edge cases
-- Implement additional backends (WebDAV, Git, GitHub)
+- Add integration tests for new backends (SMB, SFTP, WebDAV, etc.)
+- Performance optimizations
+- Additional backend implementations
 
 ## License
 
