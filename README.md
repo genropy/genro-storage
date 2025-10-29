@@ -11,24 +11,29 @@
 
 A modern, elegant Python library that provides a unified interface for accessing files across local filesystems, cloud storage (S3, GCS, Azure), and remote protocols (HTTP). Built on top of **fsspec**, genro-storage adds an intuitive mount-point system and user-friendly API inspired by Unix filesystems.
 
+## Documentation
+
+- **[Full Documentation](https://genro-storage.readthedocs.io/)** - Complete API reference and guides
+- **[API Design](API_DESIGN.md)** - Detailed design specification
+- **[Testing Guide](TESTING.md)** - How to run tests with MinIO
+- **[Interactive Tutorials](notebooks/)** - Hands-on Jupyter notebooks
+
 ## Status: Beta - Ready for Production Testing
 
 **Current Version:** 0.4.2
 **Last Updated:** October 2025
 
-✅ Core implementation complete
-✅ 15 storage backends working (local, S3, GCS, Azure, HTTP, Memory, Base64, SMB, SFTP, ZIP, TAR, Git, GitHub, WebDAV, LibArchive)
-✅ **NEW in v0.4.2:** Git, GitHub, WebDAV, and LibArchive backends
-✅ **NEW in v0.4.1:** SMB, SFTP, ZIP, and TAR backends
-✅ **NEW in v0.3.0:** Async/await support for FastAPI, asyncio applications (asyncer-based)
-✅ 355 tests (345 passing, 10 skipped) with 82% coverage on Python 3.9-3.12
-✅ Full documentation on ReadTheDocs
-✅ Battle-tested code from Genropy (19+ years in production, storage abstraction since 2018)
-✅ Available on PyPI
+- Core implementation complete
+- 15 storage backends working (local, S3, GCS, Azure, HTTP, Memory, Base64, SMB, SFTP, ZIP, TAR, Git, GitHub, WebDAV, LibArchive)
+- 411 tests (401 passing, 10 skipped) with 85% coverage on Python 3.9-3.12
+- Full documentation on ReadTheDocs
+- Battle-tested code from Genropy (19+ years in production, storage abstraction since 2018)
+- Available on PyPI
 
 ## Key Features
 
-- **Async/await support** - Use in FastAPI, asyncio apps with AsyncStorageManager (NEW in v0.3.0!)
+- **Async/await support** - Use in FastAPI, asyncio apps with AsyncStorageManager
+- **Native permission control** - Configure readonly, readwrite, or delete permissions for any backend
 - **Powered by fsspec** - Leverage 20+ battle-tested storage backends
 - **Mount point system** - Organize storage with logical names like `home:`, `uploads:`, `s3:`
 - **Intuitive API** - Pathlib-inspired interface that feels natural and Pythonic
@@ -82,7 +87,8 @@ storage = StorageManager()
 storage.configure([
     {'name': 'home', 'type': 'local', 'path': '/home/user'},
     {'name': 'uploads', 'type': 's3', 'bucket': 'my-app-uploads'},
-    {'name': 'backups', 'type': 'gcs', 'bucket': 'my-backups'},
+    {'name': 'backups', 'type': 'gcs', 'bucket': 'my-backups', 'permissions': 'readwrite'},
+    {'name': 'public', 'type': 'http', 'base_url': 'https://cdn.example.com', 'permissions': 'readonly'},
     {'name': 'data', 'type': 'base64'}  # Inline base64 data
 ])
 
@@ -398,12 +404,6 @@ pytest tests/ -v --cov=genro_storage
 
 See [TESTING.md](TESTING.md) for detailed testing instructions with MinIO.
 
-## Documentation
-
-- **[Full Documentation](https://genro-storage.readthedocs.io/)** - Complete API reference and guides
-- **[API Design](API_DESIGN.md)** - Detailed design specification
-- **[Testing Guide](TESTING.md)** - How to run tests with MinIO
-
 ## Built With
 
 - [fsspec](https://filesystem-spec.readthedocs.io/) - Pythonic filesystem abstraction
@@ -419,34 +419,35 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 
 **Phase:** Beta - Production Testing
 
-- ✅ API Design Complete and Stable
-- ✅ Core Implementation Complete
-- ✅ FsspecBackend (15 storage backends: local, S3, GCS, Azure, HTTP, Memory, Base64, SMB, SFTP, ZIP, TAR, Git, GitHub, WebDAV, LibArchive)
-- ✅ Comprehensive Test Suite (349 tests, 79% coverage)
-- ✅ CI/CD with Python 3.9, 3.10, 3.11, 3.12
-- ✅ MD5 hashing and content-based equality
-- ✅ Base64 backend with writable mutable paths
-- ✅ Intelligent copy skip strategies (exists, size, hash, custom)
-- ✅ call() method for external tool integration (ffmpeg, imagemagick, etc.)
-- ✅ serve() method for WSGI file serving (Flask, Django, Pyramid)
-- ✅ mimetype property for automatic content-type detection
-- ✅ local_path() context manager for external tools
-- ✅ Callable path support for dynamic directories
-- ✅ Cloud metadata get/set (S3, GCS, Azure)
-- ✅ URL generation (presigned URLs, data URIs)
-- ✅ S3 versioning support
-- ✅ Full Documentation on ReadTheDocs
-- ✅ MinIO Integration Testing
-- ✅ Async/await support (AsyncStorageManager, AsyncStorageNode) - v0.3.0 released
-- 🎯 Ready for early adopters and production testing
-- ⏳ Extended GCS/Azure integration testing
+- API Design Complete and Stable
+- Core Implementation Complete
+- FsspecBackend (15 storage backends: local, S3, GCS, Azure, HTTP, Memory, Base64, SMB, SFTP, ZIP, TAR, Git, GitHub, WebDAV, LibArchive)
+- Comprehensive Test Suite (411 tests, 85% coverage)
+- CI/CD with Python 3.9, 3.10, 3.11, 3.12
+- MD5 hashing and content-based equality
+- Base64 backend with writable mutable paths
+- Intelligent copy skip strategies (exists, size, hash, custom)
+- call() method for external tool integration (ffmpeg, imagemagick, etc.)
+- serve() method for WSGI file serving (Flask, Django, Pyramid)
+- mimetype property for automatic content-type detection
+- local_path() context manager for external tools
+- Callable path support for dynamic directories
+- Native permission control (readonly, readwrite, delete)
+- Cloud metadata get/set (S3, GCS, Azure)
+- URL generation (presigned URLs, data URIs)
+- S3 versioning support
+- Full Documentation on ReadTheDocs
+- MinIO Integration Testing
+- Async/await support (AsyncStorageManager, AsyncStorageNode)
+- Ready for early adopters and production testing
+- Extended GCS/Azure integration testing in progress
 
 **Recent Releases:**
-- v0.4.2 (October 2025) - Git, GitHub, WebDAV, LibArchive backends ✅
-- v0.4.1 (October 2025) - SMB, SFTP, ZIP, TAR backends ✅
-- v0.4.0 (October 2025) - Relative mounts with permissions, unified read/write API ✅
-- v0.3.0 (October 2025) - Async support via asyncer wrapper ✅
-- v0.2.0 (October 2025) - Virtual nodes, tutorials, enhanced testing ✅
+- v0.4.2 (October 2025) - Git, GitHub, WebDAV, LibArchive backends
+- v0.4.1 (October 2025) - SMB, SFTP, ZIP, TAR backends
+- v0.4.0 (October 2025) - Relative mounts with permissions, unified read/write API
+- v0.3.0 (October 2025) - Async support via asyncer wrapper
+- v0.2.0 (October 2025) - Virtual nodes, tutorials, enhanced testing
 
 ## Contributing
 
