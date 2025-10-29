@@ -22,6 +22,42 @@ try:
 except ImportError:
     HAS_LIBARCHIVE = False
 
+try:
+    import adlfs
+    HAS_AZURE = True
+except ImportError:
+    HAS_AZURE = False
+
+
+# Azure/Azurite helper functions
+def create_azure_container_if_not_exists():
+    """Create test container in Azurite if it doesn't exist."""
+    if not HAS_AZURE:
+        return
+
+    try:
+        from azure.storage.blob import BlobServiceClient
+
+        # Azurite connection string
+        connection_string = (
+            'DefaultEndpointsProtocol=http;'
+            'AccountName=devstoreaccount1;'
+            'AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;'
+            'BlobEndpoint=http://localhost:10000/devstoreaccount1;'
+        )
+
+        blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+        container_name = 'test-container'
+
+        try:
+            blob_service_client.create_container(container_name)
+        except Exception:
+            # Container already exists, ignore
+            pass
+    except Exception:
+        # If we can't create the container, tests will fail anyway
+        pass
+
 
 class TestGitBackend:
     """Tests for Git backend."""
@@ -252,6 +288,104 @@ class TestWebDAVBackend:
         assert caps.list_dir is True
         assert caps.readonly is False
         assert caps.versioning is False
+
+
+class TestAzureBackend:
+    """Tests for Azure backend using Azurite emulator."""
+
+    @pytest.mark.skipif(not HAS_AZURE, reason="adlfs not installed")
+    @pytest.mark.integration
+    def test_azure_configuration_basic(self):
+        """Test basic Azure configuration with Azurite emulator."""
+        create_azure_container_if_not_exists()
+
+        storage = StorageManager()
+
+        # Azurite uses well-known credentials
+        storage.configure([{
+            'name': 'azure_test',
+            'type': 'azure',
+            'account_name': 'devstoreaccount1',
+            'account_key': 'Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==',
+            'container': 'test-container',
+            'connection_string': 'DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://localhost:10000/devstoreaccount1;'
+        }])
+
+        assert 'azure_test' in storage._mounts
+        backend = storage._mounts['azure_test']
+        assert backend is not None
+
+    @pytest.mark.skipif(not HAS_AZURE, reason="adlfs not installed")
+    @pytest.mark.integration
+    def test_azure_file_operations(self):
+        """Test Azure file operations with Azurite."""
+        create_azure_container_if_not_exists()
+
+        storage = StorageManager()
+
+        storage.configure([{
+            'name': 'azure_test',
+            'type': 'azure',
+            'account_name': 'devstoreaccount1',
+            'account_key': 'Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==',
+            'container': 'test-container',
+            'connection_string': 'DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://localhost:10000/devstoreaccount1;'
+        }])
+
+        # Test basic file operation
+        node = storage.node('azure_test:test.txt')
+        node.write('Hello Azure!', mode='w')
+        assert node.exists
+        content = node.read(mode='r')
+        assert content == 'Hello Azure!'
+
+    @pytest.mark.skipif(not HAS_AZURE, reason="adlfs not installed")
+    def test_azure_configuration_missing_account_name(self):
+        """Test Azure configuration with missing account_name raises error."""
+        storage = StorageManager()
+        with pytest.raises(StorageConfigError, match="missing required field: 'account_name'"):
+            storage.configure([{
+                'name': 'azure_test',
+                'type': 'azure',
+                'container': 'test-container'
+            }])
+
+    @pytest.mark.skipif(not HAS_AZURE, reason="adlfs not installed")
+    def test_azure_configuration_missing_container(self):
+        """Test Azure configuration with missing container raises error."""
+        storage = StorageManager()
+        with pytest.raises(StorageConfigError, match="missing required field: 'container'"):
+            storage.configure([{
+                'name': 'azure_test',
+                'type': 'azure',
+                'account_name': 'devstoreaccount1'
+            }])
+
+    @pytest.mark.skipif(not HAS_AZURE, reason="adlfs not installed")
+    @pytest.mark.integration
+    def test_azure_capabilities(self):
+        """Test Azure backend capabilities."""
+        create_azure_container_if_not_exists()
+
+        storage = StorageManager()
+        storage.configure([{
+            'name': 'azure_test',
+            'type': 'azure',
+            'account_name': 'devstoreaccount1',
+            'account_key': 'Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==',
+            'container': 'test-container',
+            'connection_string': 'DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://localhost:10000/devstoreaccount1;'
+        }])
+        backend = storage._mounts['azure_test']
+        caps = backend.capabilities
+
+        # Azure supports full read/write
+        assert caps.read is True
+        assert caps.write is True
+        assert caps.delete is True
+        assert caps.mkdir is True
+        assert caps.list_dir is True
+        assert caps.readonly is False
 
 
 class TestLibArchiveBackend:

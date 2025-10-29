@@ -340,17 +340,20 @@ class StorageManager:
                 raise StorageConfigError(
                     f"Azure storage '{mount_name}' missing required field: 'account_name'"
                 )
-            
-            base_path = f"{config['account_name']}/{config['container']}"
-            
-            kwargs = {}
+
+            # Base path is just the container name for Azure
+            base_path = config['container']
+
+            kwargs = {
+                'account_name': config['account_name']
+            }
             if 'account_key' in config:
                 kwargs['account_key'] = config['account_key']
             if 'sas_token' in config:
                 kwargs['sas_token'] = config['sas_token']
             if 'connection_string' in config:
                 kwargs['connection_string'] = config['connection_string']
-            
+
             backend = FsspecBackend('az', base_path=base_path, **kwargs)
         
         elif backend_type == 'http':
