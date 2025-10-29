@@ -13,7 +13,7 @@ A modern, elegant Python library that provides a unified interface for accessing
 
 ## Status: Beta - Ready for Production Testing
 
-**Current Version:** 0.3.0-dev
+**Current Version:** 0.4.0
 **Last Updated:** October 2025
 
 ✅ Core implementation complete
@@ -417,8 +417,9 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 - ⏳ Extended GCS/Azure integration testing
 
 **Recent Releases:**
+- v0.4.0 (October 2025) - Relative mounts with permissions, unified read/write API ✅
+- v0.3.0 (October 2025) - Async support via asyncer wrapper ✅
 - v0.2.0 (October 2025) - Virtual nodes, tutorials, enhanced testing ✅
-- v0.3.0 (October 2025) - Async support via asyncer wrapper, relative mounts, unified read/write API ✅
 
 ## Contributing
 
