@@ -6,69 +6,13 @@ Start it with: docker-compose up -d
 
 import pytest
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from genro_storage import StorageManager
 
 
 pytestmark = pytest.mark.integration
 
-
-@pytest.fixture
-def minio_versioned_bucket(minio_client):
-    """Create a bucket with versioning enabled.
-
-    Args:
-        minio_client: MinIO S3 client fixture
-
-    Yields:
-        str: Name of the versioned bucket
-    """
-    bucket_name = f"test-versioned-{int(time.time())}"
-
-    # Create bucket
-    minio_client.create_bucket(Bucket=bucket_name)
-
-    # Enable versioning
-    minio_client.put_bucket_versioning(
-        Bucket=bucket_name,
-        VersioningConfiguration={'Status': 'Enabled'}
-    )
-
-    yield bucket_name
-
-    # Cleanup: delete all versions then bucket
-    try:
-        # List and delete all object versions
-        paginator = minio_client.get_paginator('list_object_versions')
-        for page in paginator.paginate(Bucket=bucket_name):
-            # Delete versions
-            if 'Versions' in page:
-                versions = [
-                    {'Key': v['Key'], 'VersionId': v['VersionId']}
-                    for v in page['Versions']
-                ]
-                if versions:
-                    minio_client.delete_objects(
-                        Bucket=bucket_name,
-                        Delete={'Objects': versions, 'Quiet': True}
-                    )
-
-            # Delete delete markers
-            if 'DeleteMarkers' in page:
-                markers = [
-                    {'Key': m['Key'], 'VersionId': m['VersionId']}
-                    for m in page['DeleteMarkers']
-                ]
-                if markers:
-                    minio_client.delete_objects(
-                        Bucket=bucket_name,
-                        Delete={'Objects': markers, 'Quiet': True}
-                    )
-
-        # Delete bucket
-        minio_client.delete_bucket(Bucket=bucket_name)
-    except Exception as e:
-        print(f"Warning: Failed to cleanup versioned bucket {bucket_name}: {e}")
+# Note: minio_versioned_bucket fixture is now in conftest.py
 
 
 @pytest.fixture
@@ -448,6 +392,87 @@ class TestS3VersioningEdgeCases:
         # Should be sorted oldest to newest
         for i in range(len(versions) - 1):
             assert versions[i]['last_modified'] <= versions[i + 1]['last_modified']
+
+    def test_versioning_not_enabled_on_bucket(self, minio_bucket, minio_config):
+        """Bucket without versioning shows version_id as 'null'."""
+        # Use bucket without versioning
+        storage = StorageManager()
+        storage.configure([{
+            'name': 's3',
+            'type': 's3',
+            'bucket': minio_bucket,  # This bucket does NOT have versioning
+            'endpoint_url': minio_config['endpoint_url'],
+            'key': minio_config['aws_access_key_id'],
+            'secret': minio_config['aws_secret_access_key']
+        }])
+
+        node = storage.node('s3:test.txt')
+        node.write('content')
+
+        # S3 still returns a "version" even without versioning enabled,
+        # but version_id will be 'null' (standard S3 behavior)
+        versions = node.versions
+        assert len(versions) == 1
+        assert versions[0]['version_id'] == 'null'
+        assert node.version_count == 1
+
+        # Writing again should NOT create a new version (overwrites)
+        node.write('content2')
+        versions_after = node.versions
+        assert len(versions_after) == 1  # Still only one "version"
+        assert versions_after[0]['version_id'] == 'null'
+
+    def test_version_at_index_no_versions_raises_error(self, storage_with_versioning):
+        """_resolve_version_index() raises IndexError when no versions."""
+        node = storage_with_versioning.node('s3:nonexistent.txt')
+
+        # File doesn't exist, no versions
+        with pytest.raises(IndexError, match="No versions available"):
+            node._resolve_version_index(0)
+
+    def test_version_at_index_out_of_range_raises_error(self, storage_with_versioning):
+        """_resolve_version_index() raises IndexError when index out of range."""
+        node = storage_with_versioning.node('s3:file.txt')
+        node.write('v1')
+        node.write('v2')
+
+        # Only 2 versions, index 5 is out of range
+        with pytest.raises(IndexError, match="out of range"):
+            node._resolve_version_index(5)
+
+        # Negative index out of range
+        with pytest.raises(IndexError, match="out of range"):
+            node._resolve_version_index(-10)
+
+    def test_version_at_date_with_naive_datetime(self, storage_with_versioning):
+        """_resolve_version_at_date() handles naive datetime (no timezone)."""
+        node = storage_with_versioning.node('s3:file.txt')
+
+        # Create version
+        node.write('v1')
+        time.sleep(0.5)
+
+        # Use naive datetime (no timezone info)
+        target_date = datetime.now() + timedelta(hours=1)
+
+        # Should work - naive datetime converted to UTC
+        version_id = node._resolve_version_at_date(target_date)
+        assert version_id is not None
+
+    def test_version_at_date_before_all_versions_returns_none(self, storage_with_versioning):
+        """_resolve_version_at_date() returns None when date is before all versions."""
+        node = storage_with_versioning.node('s3:file.txt')
+
+        # Create version
+        time.sleep(0.5)
+        node.write('v1')
+
+        # Date before file was created
+        target_date = datetime.now(timezone.utc) - timedelta(days=1)
+
+        # Should return None (no versions before this date)
+        version_id = node._resolve_version_at_date(target_date)
+        assert version_id is None
 
 
 if __name__ == '__main__':

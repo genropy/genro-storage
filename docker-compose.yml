@@ -87,6 +87,25 @@ services:
       timeout: 3s
       retries: 5
 
+  # fake-gcs-server - Google Cloud Storage Emulator
+  fake-gcs:
+    image: fsouza/fake-gcs-server:latest
+    container_name: genro-storage-fake-gcs
+    ports:
+      - "4443:4443"
+    command: >
+      -scheme http
+      -port 4443
+      -public-host localhost:4443
+      -external-url http://localhost:4443
+    volumes:
+      - gcs-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4443/storage/v1/b"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 volumes:
   minio-data:
     driver: local
@@ -97,4 +116,6 @@ volumes:
   webdav-data:
     driver: local
   azurite-data:
+    driver: local
+  gcs-data:
     driver: local
