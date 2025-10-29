@@ -32,7 +32,7 @@ jobs:
     
     - name: Start Docker services
       run: |
-        docker-compose up -d
+        docker compose up -d
 
         # Wait for services to be ready
         echo "Waiting for services to be ready..."
@@ -73,7 +73,7 @@ jobs:
     - name: Stop Docker services
       if: always()
       run: |
-        docker-compose down -v
+        docker compose down -v
     
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.12'
