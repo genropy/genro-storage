@@ -30,103 +30,103 @@ class TestIterNode:
     def test_create_iternode_with_nodes(self, storage):
         """Can create iternode with multiple nodes."""
         n1 = storage.node('mem:file1.txt')
-        n1.write_text('Hello ')
+        n1.write('Hello ')
 
         n2 = storage.node('mem:file2.txt')
-        n2.write_text('World')
+        n2.write('World')
 
         iternode = storage.iternode(n1, n2)
         assert iternode is not None
 
     def test_iternode_read_text_concatenates(self, storage):
-        """iternode.read_text() concatenates all sources."""
+        """iternode.read() concatenates all sources."""
         n1 = storage.node('mem:f1.txt')
-        n1.write_text('One ')
+        n1.write('One ')
 
         n2 = storage.node('mem:f2.txt')
-        n2.write_text('Two ')
+        n2.write('Two ')
 
         n3 = storage.node('mem:f3.txt')
-        n3.write_text('Three')
+        n3.write('Three')
 
         iternode = storage.iternode(n1, n2, n3)
-        result = iternode.read_text()
+        result = iternode.read()
 
         assert result == 'One Two Three'
 
     def test_iternode_is_lazy(self, storage):
         """iternode doesn't read until materialized."""
         n1 = storage.node('mem:file1.txt')
-        n1.write_text('original')
+        n1.write('original')
 
         iternode = storage.iternode(n1)
 
         # Change source after creating iternode
-        n1.write_text('modified')
+        n1.write('modified')
 
         # Should read current content (lazy)
-        result = iternode.read_text()
+        result = iternode.read()
         assert result == 'modified'
 
     def test_iternode_append(self, storage):
         """Can append nodes to iternode after creation."""
         n1 = storage.node('mem:f1.txt')
-        n1.write_text('First ')
+        n1.write('First ')
 
         n2 = storage.node('mem:f2.txt')
-        n2.write_text('Second')
+        n2.write('Second')
 
         iternode = storage.iternode(n1)
         iternode.append(n2)
 
-        result = iternode.read_text()
+        result = iternode.read()
         assert result == 'First Second'
 
     def test_iternode_extend(self, storage):
         """Can extend iternode with multiple nodes."""
         n1 = storage.node('mem:f1.txt')
-        n1.write_text('A ')
+        n1.write('A ')
 
         n2 = storage.node('mem:f2.txt')
-        n2.write_text('B ')
+        n2.write('B ')
 
         n3 = storage.node('mem:f3.txt')
-        n3.write_text('C')
+        n3.write('C')
 
         iternode = storage.iternode(n1)
         iternode.extend(n2, n3)
 
-        result = iternode.read_text()
+        result = iternode.read()
         assert result == 'A B C'
 
     def test_iternode_append_and_extend(self, storage):
         """Can mix append and extend."""
         n1 = storage.node('mem:f1.txt')
-        n1.write_text('1 ')
+        n1.write('1 ')
 
         n2 = storage.node('mem:f2.txt')
-        n2.write_text('2 ')
+        n2.write('2 ')
 
         n3 = storage.node('mem:f3.txt')
-        n3.write_text('3 ')
+        n3.write('3 ')
 
         n4 = storage.node('mem:f4.txt')
-        n4.write_text('4')
+        n4.write('4')
 
         iternode = storage.iternode(n1)
         iternode.append(n2)
         iternode.extend(n3, n4)
 
-        result = iternode.read_text()
+        result = iternode.read()
         assert result == '1 2 3 4'
 
     def test_iternode_copy_to_destination(self, storage):
         """Can copy iternode content to destination."""
         n1 = storage.node('mem:f1.txt')
-        n1.write_text('Part 1 ')
+        n1.write('Part 1 ')
 
         n2 = storage.node('mem:f2.txt')
-        n2.write_text('Part 2')
+        n2.write('Part 2')
 
         iternode = storage.iternode(n1, n2)
 
@@ -134,19 +134,19 @@ class TestIterNode:
         iternode.copy_to(dest)
 
         assert dest.exists
-        assert dest.read_text() == 'Part 1 Part 2'
+        assert dest.read() == 'Part 1 Part 2'
 
     def test_iternode_empty(self, storage):
         """Can create empty iternode."""
         iternode = storage.iternode()
 
-        result = iternode.read_text()
+        result = iternode.read()
         assert result == ''
 
     def test_iternode_exists_is_false(self, storage):
         """iternode.exists returns False (virtual)."""
         n1 = storage.node('mem:f1.txt')
-        n1.write_text('content')
+        n1.write('content')
 
         iternode = storage.iternode(n1)
 
@@ -157,18 +157,18 @@ class TestIterNode:
         iternode = storage.iternode()
 
         with pytest.raises(ValueError, match='[Cc]annot write|virtual|no path'):
-            iternode.write_text('content')
+            iternode.write('content')
 
     def test_iternode_read_bytes(self, storage):
-        """iternode.read_bytes() concatenates binary content."""
+        """iternode.read(mode='rb') concatenates binary content."""
         n1 = storage.node('mem:f1.bin')
-        n1.write_bytes(b'Hello ')
+        n1.write(b'Hello ', mode='wb')
 
         n2 = storage.node('mem:f2.bin')
-        n2.write_bytes(b'World')
+        n2.write(b'World', mode='wb')
 
         iternode = storage.iternode(n1, n2)
-        result = iternode.read_bytes()
+        result = iternode.read(mode='rb')
 
         assert result == b'Hello World'
 
@@ -179,24 +179,24 @@ class TestDiffNode:
     def test_create_diffnode(self, storage):
         """Can create diffnode with two nodes."""
         n1 = storage.node('mem:v1.txt')
-        n1.write_text('content 1')
+        n1.write('content 1')
 
         n2 = storage.node('mem:v2.txt')
-        n2.write_text('content 2')
+        n2.write('content 2')
 
         diffnode = storage.diffnode(n1, n2)
         assert diffnode is not None
 
     def test_diffnode_generates_diff(self, storage):
-        """diffnode.read_text() generates unified diff."""
+        """diffnode.read() generates unified diff."""
         n1 = storage.node('mem:v1.txt')
-        n1.write_text('line 1\nline 2\nline 3\n')
+        n1.write('line 1\nline 2\nline 3\n')
 
         n2 = storage.node('mem:v2.txt')
-        n2.write_text('line 1\nline 2 modified\nline 3\n')
+        n2.write('line 1\nline 2 modified\nline 3\n')
 
         diffnode = storage.diffnode(n1, n2)
-        diff = diffnode.read_text()
+        diff = diffnode.read()
 
         assert isinstance(diff, str)
         assert 'line 2' in diff
@@ -207,13 +207,13 @@ class TestDiffNode:
     def test_diffnode_identical_files(self, storage):
         """Diff of identical files is empty or minimal."""
         n1 = storage.node('mem:f1.txt')
-        n1.write_text('same content\n')
+        n1.write('same content\n')
 
         n2 = storage.node('mem:f2.txt')
-        n2.write_text('same content\n')
+        n2.write('same content\n')
 
         diffnode = storage.diffnode(n1, n2)
-        diff = diffnode.read_text()
+        diff = diffnode.read()
 
         # Empty diff or only header
         assert len(diff) == 0 or diff.count('\n') <= 2
@@ -221,27 +221,27 @@ class TestDiffNode:
     def test_diffnode_is_lazy(self, storage):
         """diffnode doesn't read until materialized."""
         n1 = storage.node('mem:v1.txt')
-        n1.write_text('original')
+        n1.write('original')
 
         n2 = storage.node('mem:v2.txt')
-        n2.write_text('different')
+        n2.write('different')
 
         diffnode = storage.diffnode(n1, n2)
 
         # Change source after creating diffnode
-        n1.write_text('modified')
+        n1.write('modified')
 
         # Should read current content
-        diff = diffnode.read_text()
+        diff = diffnode.read()
         assert 'modified' in diff or 'different' in diff
 
     def test_diffnode_copy_to_destination(self, storage):
         """Can copy diff to destination file."""
         n1 = storage.node('mem:v1.txt')
-        n1.write_text('line 1\nline 2\n')
+        n1.write('line 1\nline 2\n')
 
         n2 = storage.node('mem:v2.txt')
-        n2.write_text('line 1\nline 2 changed\n')
+        n2.write('line 1\nline 2 changed\n')
 
         diffnode = storage.diffnode(n1, n2)
 
@@ -249,16 +249,16 @@ class TestDiffNode:
         diffnode.copy_to(dest)
 
         assert dest.exists
-        content = dest.read_text()
+        content = dest.read()
         assert 'line 2' in content
 
     def test_diffnode_exists_is_false(self, storage):
         """diffnode.exists returns False (virtual)."""
         n1 = storage.node('mem:f1.txt')
-        n1.write_text('content 1')
+        n1.write('content 1')
 
         n2 = storage.node('mem:f2.txt')
-        n2.write_text('content 2')
+        n2.write('content 2')
 
         diffnode = storage.diffnode(n1, n2)
 
@@ -267,28 +267,28 @@ class TestDiffNode:
     def test_diffnode_write_raises_error(self, storage):
         """Cannot write to diffnode (virtual)."""
         n1 = storage.node('mem:f1.txt')
-        n1.write_text('content')
+        n1.write('content')
 
         n2 = storage.node('mem:f2.txt')
-        n2.write_text('content')
+        n2.write('content')
 
         diffnode = storage.diffnode(n1, n2)
 
         with pytest.raises(ValueError, match='[Cc]annot write|virtual|no path'):
-            diffnode.write_text('content')
+            diffnode.write('content')
 
     def test_diffnode_binary_raises_error(self, storage):
         """Diffing binary files raises ValueError."""
         n1 = storage.node('mem:file1.bin')
-        n1.write_bytes(b'\x00\x01')
+        n1.write(b'\x00\x01', mode='wb')
 
         n2 = storage.node('mem:file2.bin')
-        n2.write_bytes(b'\x02\x03')
+        n2.write(b'\x02\x03', mode='wb')
 
         diffnode = storage.diffnode(n1, n2)
 
         with pytest.raises(ValueError, match='[Cc]annot diff.*binary'):
-            diffnode.read_text()
+            diffnode.read()
 
 
 class TestZipMethod:
@@ -297,7 +297,7 @@ class TestZipMethod:
     def test_zip_single_file(self, temp_storage):
         """zip() of single file creates ZIP with that file."""
         node = temp_storage.node('local:file.txt')
-        node.write_text('content')
+        node.write('content')
 
         zip_bytes = node.zip()
 
@@ -311,12 +311,12 @@ class TestZipMethod:
         dir_node = temp_storage.node('local:mydir')
         dir_node.mkdir()
 
-        dir_node.child('file1.txt').write_text('content1')
-        dir_node.child('file2.txt').write_text('content2')
+        dir_node.child('file1.txt').write('content1')
+        dir_node.child('file2.txt').write('content2')
 
         subdir = dir_node.child('subdir')
         subdir.mkdir()
-        subdir.child('file3.txt').write_text('content3')
+        subdir.child('file3.txt').write('content3')
 
         zip_bytes = dir_node.zip()
 
@@ -336,10 +336,10 @@ class TestZipMethod:
     def test_zip_iternode(self, storage):
         """zip() of iternode creates ZIP with all accumulated files."""
         n1 = storage.node('mem:file1.txt')
-        n1.write_text('content1')
+        n1.write('content1')
 
         n2 = storage.node('mem:file2.txt')
-        n2.write_text('content2')
+        n2.write('content2')
 
         iternode = storage.iternode(n1, n2)
         zip_bytes = iternode.zip()
@@ -360,18 +360,18 @@ class TestZipMethod:
     def test_zip_and_write(self, storage):
         """Can write ZIP to another node."""
         n1 = storage.node('mem:f1.txt')
-        n1.write_text('data1')
+        n1.write('data1')
 
         n2 = storage.node('mem:f2.txt')
-        n2.write_text('data2')
+        n2.write('data2')
 
         iternode = storage.iternode(n1, n2)
 
         zip_node = storage.node('mem:archive.zip')
-        zip_node.write_bytes(iternode.zip())
+        zip_node.write(iternode.zip(), mode='wb')
 
         assert zip_node.exists
-        assert zip_node.read_bytes()[:2] == b'PK'
+        assert zip_node.read(mode='rb')[:2] == b'PK'
 
     def test_zip_empty_iternode(self, storage):
         """zip() of empty iternode creates empty ZIP."""
@@ -394,13 +394,13 @@ class TestIntegration:
     def test_iternode_workflow(self, storage):
         """Build document using iternode."""
         header = storage.node('mem:header.txt')
-        header.write_text('# Report\n\n')
+        header.write('# Report\n\n')
 
         body = storage.node('mem:body.txt')
-        body.write_text('Content here.\n\n')
+        body.write('Content here.\n\n')
 
         footer = storage.node('mem:footer.txt')
-        footer.write_text('End of report.')
+        footer.write('End of report.')
 
         # Build report
         report_builder = storage.iternode(header, body, footer)
@@ -409,16 +409,16 @@ class TestIntegration:
         report = storage.node('mem:report.txt')
         report_builder.copy_to(report)
 
-        content = report.read_text()
+        content = report.read()
         assert content == '# Report\n\nContent here.\n\nEnd of report.'
 
     def test_diffnode_workflow(self, storage):
         """Generate diff and save it."""
         v1 = storage.node('mem:config_v1.txt')
-        v1.write_text('setting1=value1\nsetting2=value2\n')
+        v1.write('setting1=value1\nsetting2=value2\n')
 
         v2 = storage.node('mem:config_v2.txt')
-        v2.write_text('setting1=value1\nsetting2=new_value\n')
+        v2.write('setting1=value1\nsetting2=new_value\n')
 
         # Generate diff
         changes = storage.diffnode(v1, v2)
@@ -428,14 +428,14 @@ class TestIntegration:
         changes.copy_to(diff_file)
 
         assert diff_file.exists
-        assert 'setting2' in diff_file.read_text()
+        assert 'setting2' in diff_file.read()
 
     def test_zip_iternode_and_save(self, storage):
         """Create ZIP from multiple files and save."""
         files = []
         for i in range(3):
             node = storage.node(f'mem:file{i}.txt')
-            node.write_text(f'Content {i}')
+            node.write(f'Content {i}')
             files.append(node)
 
         # Create ZIP
@@ -443,7 +443,7 @@ class TestIntegration:
 
         # Save ZIP
         zip_file = storage.node('mem:backup.zip')
-        zip_file.write_bytes(archive_builder.zip())
+        zip_file.write(archive_builder.zip(), mode='wb')
 
         assert zip_file.exists
         assert zip_file.size > 0
@@ -454,20 +454,20 @@ class TestIntegration:
 
         # Add sections progressively
         intro = storage.node('mem:intro.txt')
-        intro.write_text('Introduction\n')
+        intro.write('Introduction\n')
         builder.append(intro)
 
         # Add more sections
         for i in range(1, 4):
             section = storage.node(f'mem:section{i}.txt')
-            section.write_text(f'Section {i}\n')
+            section.write(f'Section {i}\n')
             builder.append(section)
 
         # Finalize
         final = storage.node('mem:document.txt')
         builder.copy_to(final)
 
-        content = final.read_text()
+        content = final.read()
         assert 'Introduction' in content
         assert 'Section 1' in content
         assert 'Section 3' in content

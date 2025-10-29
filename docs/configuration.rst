@@ -147,7 +147,7 @@ Access files on the local filesystem.
 .. code-block:: python
 
     node = storage.node('home:documents/report.pdf')
-    content = node.read_text()
+    content = node.read()
 
 Amazon S3
 ~~~~~~~~~
@@ -200,7 +200,7 @@ Access files in Amazon S3 buckets.
 
     # Upload file
     node = storage.node('uploads:2024/report.pdf')
-    node.write_bytes(pdf_data)
+    node.write(pdf_data, mode='wb')
     
     # List directory
     folder = storage.node('uploads:2024')
@@ -300,7 +300,7 @@ Access files via HTTP/HTTPS (read-only).
     
     # Read-only access
     node = storage.node('cdn:assets/logo.png')
-    image_data = node.read_bytes()
+    image_data = node.read(mode='rb')
 
 Memory Storage (Testing)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -318,10 +318,10 @@ In-memory storage for testing and development.
 
     # Perfect for unit tests
     storage.configure([{'name': 'test', 'type': 'memory'}])
-    
+
     node = storage.node('test:temp.txt')
-    node.write_text("test data")
-    assert node.read_text() == "test data"
+    node.write("test data")
+    assert node.read() == "test data"
 
 Advanced Configuration
 ----------------------
@@ -460,7 +460,7 @@ Complete Example
     
     # Process upload
     upload = storage.node('temp:processing/image.jpg')
-    upload.write_bytes(uploaded_data)
+    upload.write(uploaded_data, mode='wb')
     
     # Save to S3
     final = storage.node('uploads:2024/images/photo.jpg')
@@ -475,7 +475,7 @@ Complete Example
     
     # Access CDN asset
     logo = storage.node('cdn:assets/logo.png')
-    logo_data = logo.read_bytes()
+    logo_data = logo.read(mode='rb')
 
 Best Practices
 --------------

@@ -22,7 +22,7 @@ class TestServeMethod:
     def test_serve_basic_file(self, storage):
         """Basic file serving."""
         file = storage.node('data:test.txt')
-        file.write_text("Hello World")
+        file.write("Hello World")
 
         # Mock WSGI environ and start_response
         environ = {}
@@ -49,7 +49,7 @@ class TestServeMethod:
     def test_serve_with_etag_match(self, storage):
         """ETag match returns 304 Not Modified."""
         file = storage.node('data:test.txt')
-        file.write_text("Hello World")
+        file.write("Hello World")
 
         # First request to get ETag
         environ1 = {}
@@ -80,7 +80,7 @@ class TestServeMethod:
     def test_serve_with_etag_mismatch(self, storage):
         """ETag mismatch returns full file."""
         file = storage.node('data:test.txt')
-        file.write_text("Hello World")
+        file.write("Hello World")
 
         # Request with wrong ETag
         environ = {'HTTP_IF_NONE_MATCH': '"wrong-etag"'}
@@ -98,7 +98,7 @@ class TestServeMethod:
     def test_serve_with_download(self, storage):
         """Download mode sets Content-Disposition."""
         file = storage.node('data:report.pdf')
-        file.write_bytes(b'PDF content')
+        file.write(b'PDF content', mode='wb')
 
         environ = {}
         response_headers = []
@@ -117,7 +117,7 @@ class TestServeMethod:
     def test_serve_with_custom_download_name(self, storage):
         """Custom download name."""
         file = storage.node('data:file.pdf')
-        file.write_bytes(b'PDF content')
+        file.write(b'PDF content', mode='wb')
 
         environ = {}
         response_headers = []
@@ -134,7 +134,7 @@ class TestServeMethod:
     def test_serve_with_cache_control(self, storage):
         """Cache-Control header."""
         file = storage.node('data:test.txt')
-        file.write_text("Hello World")
+        file.write("Hello World")
 
         environ = {}
         response_headers = []
@@ -168,7 +168,7 @@ class TestServeMethod:
         file = storage.node('data:image.png')
         binary_data = b'\x89PNG\r\n\x1a\n' + b'\x00' * 100
 
-        file.write_bytes(binary_data)
+        file.write(binary_data, mode='wb')
 
         environ = {}
         response_headers = []
@@ -191,7 +191,7 @@ class TestServeMethod:
 
         # Create 1MB file
         large_data = b'X' * (1024 * 1024)
-        file.write_bytes(large_data)
+        file.write(large_data, mode='wb')
 
         environ = {}
         response_headers = []
@@ -223,7 +223,7 @@ class TestServeMethod:
 
         for filename, content, expected_mime in test_cases:
             file = storage.node(f'data:{filename}')
-            file.write_bytes(content)
+            file.write(content, mode='wb')
 
             environ = {}
             response_headers = []
@@ -240,7 +240,7 @@ class TestServeMethod:
     def test_serve_empty_file(self, storage):
         """Empty file serving."""
         file = storage.node('data:empty.txt')
-        file.write_text("")
+        file.write("")
 
         environ = {}
         response_headers = []
@@ -257,7 +257,7 @@ class TestServeMethod:
     def test_serve_with_all_options(self, storage):
         """All options combined."""
         file = storage.node('data:report.pdf')
-        file.write_bytes(b'PDF content')
+        file.write(b'PDF content', mode='wb')
 
         environ = {}
         response_headers = []
@@ -284,7 +284,7 @@ class TestServeMethod:
     def test_serve_etag_changes_on_modification(self, storage):
         """ETag changes when file is modified."""
         file = storage.node('data:test.txt')
-        file.write_text("Version 1")
+        file.write("Version 1")
 
         # Get first ETag
         environ1 = {}
@@ -299,7 +299,7 @@ class TestServeMethod:
         # Modify file
         import time
         time.sleep(0.01)  # Ensure mtime changes
-        file.write_text("Version 2")
+        file.write("Version 2")
 
         # Get second ETag
         environ2 = {}
@@ -317,7 +317,7 @@ class TestServeMethod:
     def test_serve_with_subdirectory(self, storage):
         """Serve file from subdirectory."""
         file = storage.node('data:subdir/nested/file.txt')
-        file.write_text("Nested content")
+        file.write("Nested content")
 
         environ = {}
         response_status = []

@@ -17,10 +17,10 @@ Basic File Operations
 
     # Write a file
     node = storage.node('data:report.txt')
-    node.write_text("Q4 Report: Sales increased by 15%")
+    node.write("Q4 Report: Sales increased by 15%")
 
     # Read the file
-    content = node.read_text()
+    content = node.read()
     print(content)
 
     # Check file properties
@@ -41,7 +41,7 @@ Multi-Cloud Setup
 
     # Process locally
     local = storage.node('local:processing/data.json')
-    local.write_text('{"result": "processed"}')
+    local.write('{"result": "processed"}')
 
     # Upload to S3
     local.copy_to('s3:results/data.json')

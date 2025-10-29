@@ -20,10 +20,10 @@ class TestCopyIncludePatterns:
         ])
 
         # Create test files
-        storage.node('src:file1.py').write_text('python')
-        storage.node('src:file2.txt').write_text('text')
-        storage.node('src:file3.py').write_text('python')
-        storage.node('src:readme.md').write_text('markdown')
+        storage.node('src:file1.py').write('python')
+        storage.node('src:file2.txt').write('text')
+        storage.node('src:file3.py').write('python')
+        storage.node('src:readme.md').write('markdown')
 
         # Copy only Python files
         storage.node('src:').copy_to(storage.node('dest:'), include='*.py')
@@ -45,10 +45,10 @@ class TestCopyIncludePatterns:
         ])
 
         # Create test files
-        storage.node('src:script.py').write_text('python')
-        storage.node('src:data.json').write_text('json')
-        storage.node('src:config.yaml').write_text('yaml')
-        storage.node('src:readme.txt').write_text('text')
+        storage.node('src:script.py').write('python')
+        storage.node('src:data.json').write('json')
+        storage.node('src:config.yaml').write('yaml')
+        storage.node('src:readme.txt').write('text')
 
         # Copy only Python and JSON files
         storage.node('src:').copy_to(
@@ -73,9 +73,9 @@ class TestCopyIncludePatterns:
         ])
 
         # Create nested structure
-        storage.node('src:dir1/file1.py').write_text('python')
-        storage.node('src:dir1/file2.txt').write_text('text')
-        storage.node('src:dir2/file3.py').write_text('python')
+        storage.node('src:dir1/file1.py').write('python')
+        storage.node('src:dir1/file2.txt').write('text')
+        storage.node('src:dir2/file3.py').write('python')
 
         # Copy only Python files
         storage.node('src:').copy_to(storage.node('dest:'), include='*.py')
@@ -100,9 +100,9 @@ class TestCopyExcludePatterns:
         ])
 
         # Create test files
-        storage.node('src:app.py').write_text('code')
-        storage.node('src:app.log').write_text('log')
-        storage.node('src:data.txt').write_text('text')
+        storage.node('src:app.py').write('code')
+        storage.node('src:app.log').write('log')
+        storage.node('src:data.txt').write('text')
 
         # Copy all except logs
         storage.node('src:').copy_to(storage.node('dest:'), exclude='*.log')
@@ -123,10 +123,10 @@ class TestCopyExcludePatterns:
         ])
 
         # Create test files
-        storage.node('src:app.py').write_text('code')
-        storage.node('src:debug.log').write_text('log')
-        storage.node('src:cache.tmp').write_text('temp')
-        storage.node('src:data.txt').write_text('text')
+        storage.node('src:app.py').write('code')
+        storage.node('src:debug.log').write('log')
+        storage.node('src:cache.tmp').write('temp')
+        storage.node('src:data.txt').write('text')
 
         # Exclude logs and temp files
         storage.node('src:').copy_to(
@@ -151,9 +151,9 @@ class TestCopyExcludePatterns:
         ])
 
         # Create nested structure
-        storage.node('src:src/main.py').write_text('code')
-        storage.node('src:__pycache__/main.pyc').write_text('cached')
-        storage.node('src:tests/test.py').write_text('test')
+        storage.node('src:src/main.py').write('code')
+        storage.node('src:__pycache__/main.pyc').write('cached')
+        storage.node('src:tests/test.py').write('test')
 
         # Exclude cache directory
         storage.node('src:').copy_to(
@@ -181,10 +181,10 @@ class TestCopyIncludeAndExclude:
         ])
 
         # Create test files
-        storage.node('src:main.py').write_text('code')
-        storage.node('src:test_main.py').write_text('test')
-        storage.node('src:utils.py').write_text('code')
-        storage.node('src:readme.txt').write_text('text')
+        storage.node('src:main.py').write('code')
+        storage.node('src:test_main.py').write('test')
+        storage.node('src:utils.py').write('code')
+        storage.node('src:readme.txt').write('text')
 
         # Include Python files but exclude tests
         storage.node('src:').copy_to(
@@ -214,9 +214,9 @@ class TestCopyCustomFilter:
         ])
 
         # Create files of different sizes
-        storage.node('src:small.txt').write_text('a')  # 1 byte
-        storage.node('src:medium.txt').write_text('a' * 100)  # 100 bytes
-        storage.node('src:large.txt').write_text('a' * 10000)  # 10KB
+        storage.node('src:small.txt').write('a')  # 1 byte
+        storage.node('src:medium.txt').write('a' * 100)  # 100 bytes
+        storage.node('src:large.txt').write('a' * 10000)  # 10KB
 
         # Copy only files smaller than 1KB
         storage.node('src:').copy_to(
@@ -240,8 +240,8 @@ class TestCopyCustomFilter:
         ])
 
         # Create files
-        storage.node('src:old.txt').write_text('old')
-        storage.node('src:new.txt').write_text('new')
+        storage.node('src:old.txt').write('old')
+        storage.node('src:new.txt').write('new')
 
         # Get current time and create cutoff
         cutoff = datetime.now() - timedelta(hours=1)
@@ -268,9 +268,9 @@ class TestCopyCustomFilter:
         ])
 
         # Create nested structure
-        storage.node('src:src/main.py').write_text('code')
-        storage.node('src:tests/test.py').write_text('test')
-        storage.node('src:docs/readme.md').write_text('docs')
+        storage.node('src:src/main.py').write('code')
+        storage.node('src:tests/test.py').write('test')
+        storage.node('src:docs/readme.md').write('docs')
 
         # Copy only files NOT in tests directory
         storage.node('src:').copy_to(
@@ -298,11 +298,11 @@ class TestCopyCombinedFiltering:
         ])
 
         # Create diverse file structure
-        storage.node('src:main.py').write_text('a' * 10)  # Small Python
-        storage.node('src:large.py').write_text('a' * 10000)  # Large Python
-        storage.node('src:test_main.py').write_text('a' * 10)  # Test Python
-        storage.node('src:data.json').write_text('a' * 10)  # JSON
-        storage.node('src:debug.log').write_text('a' * 10)  # Log
+        storage.node('src:main.py').write('a' * 10)  # Small Python
+        storage.node('src:large.py').write('a' * 10000)  # Large Python
+        storage.node('src:test_main.py').write('a' * 10)  # Test Python
+        storage.node('src:data.json').write('a' * 10)  # JSON
+        storage.node('src:debug.log').write('a' * 10)  # Log
 
         # Copy:
         # - Include: only .py and .json
@@ -333,9 +333,9 @@ class TestCopyCombinedFiltering:
         ])
 
         # Create files
-        storage.node('src:file1.py').write_text('code')
-        storage.node('src:file2.txt').write_text('text')
-        storage.node('src:file3.log').write_text('log')
+        storage.node('src:file1.py').write('code')
+        storage.node('src:file2.txt').write('text')
+        storage.node('src:file3.log').write('log')
 
         # Track skipped files
         skipped = []
@@ -388,8 +388,8 @@ class TestCopyFilteringEdgeCases:
         ])
 
         # Create files
-        storage.node('src:file1.txt').write_text('content1')
-        storage.node('src:file2.txt').write_text('content2')
+        storage.node('src:file1.txt').write('content1')
+        storage.node('src:file2.txt').write('content2')
 
         # Filter that raises exception for specific file
         def bad_filter(node, relpath):
@@ -426,8 +426,8 @@ class TestCopyFilteringEdgeCases:
         ])
 
         # Create files that won't match
-        storage.node('src:file1.txt').write_text('text')
-        storage.node('src:file2.md').write_text('markdown')
+        storage.node('src:file1.txt').write('text')
+        storage.node('src:file2.md').write('markdown')
 
         # Copy with filter that matches nothing
         storage.node('src:').copy_to(

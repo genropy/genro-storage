@@ -199,7 +199,7 @@ Write code that adapts to the available backend:
 
     def save_with_metadata(node, data, author, tags):
         """Save file with metadata if supported"""
-        node.write_bytes(data)
+        node.write(data, mode='wb')
 
         # Add metadata only if supported
         if node.capabilities.metadata:

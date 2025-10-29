@@ -96,8 +96,8 @@ class TestAsyncStorageNode:
         node = storage.node('memory:test.bin')
         test_data = b'Hello async world'
 
-        await node.write_bytes(test_data)
-        result = await node.read_bytes()
+        await node.write(test_data, mode='wb')
+        result = await node.read(mode='rb')
 
         assert result == test_data
 
@@ -107,8 +107,8 @@ class TestAsyncStorageNode:
         node = storage.node('memory:test.txt')
         test_text = 'Hello async text'
 
-        await node.write_text(test_text)
-        result = await node.read_text()
+        await node.write(test_text)
+        result = await node.read()
 
         assert result == test_text
 
@@ -121,7 +121,7 @@ class TestAsyncStorageNode:
         assert not await node.exists()
 
         # Create file
-        await node.write_text('content')
+        await node.write('content')
 
         # Now it exists
         assert await node.exists()
@@ -132,7 +132,7 @@ class TestAsyncStorageNode:
         node = storage.node('memory:delete_test.txt')
 
         # Create file
-        await node.write_text('to be deleted')
+        await node.write('to be deleted')
         assert await node.exists()
 
         # Delete it
@@ -147,7 +147,7 @@ class TestAsyncStorageNode:
         node = storage.node('memory:size_test.txt')
         test_data = b'12345'
 
-        await node.write_bytes(test_data)
+        await node.write(test_data, mode='wb')
         size = await node.size()
 
         assert size == len(test_data)
@@ -159,11 +159,11 @@ class TestAsyncStorageNode:
         target = storage.node('memory:target.txt')
 
         test_content = 'content to copy'
-        await source.write_text(test_content)
+        await source.write(test_content)
 
         await source.copy_to(target)
 
-        result = await target.read_text()
+        result = await target.read()
         assert result == test_content
 
     @pytest.mark.asyncio
@@ -173,12 +173,12 @@ class TestAsyncStorageNode:
         target = storage.node('memory:move_target.txt')
 
         test_content = 'content to move'
-        await source.write_text(test_content)
+        await source.write(test_content)
 
         await source.move_to(target)
 
         # Target should have the content (main requirement)
-        result = await target.read_text()
+        result = await target.read()
         assert result == test_content
 
         # Note: Source deletion behavior varies by backend
@@ -189,7 +189,7 @@ class TestAsyncStorageNode:
         """Test async isfile and isdir checks."""
         file_node = storage.node('memory:test_file.txt')
 
-        await file_node.write_text('content')
+        await file_node.write('content')
 
         assert await file_node.isfile()
         assert not await file_node.isdir()
@@ -223,11 +223,11 @@ class TestAsyncCrossStorage:
         target = storage.node('local:target.txt')
 
         test_content = 'cross-storage copy'
-        await source.write_text(test_content)
+        await source.write(test_content)
 
         await source.copy_to(target)
 
-        result = await target.read_text()
+        result = await target.read()
         assert result == test_content
 
         # Verify file actually exists on disk
@@ -245,7 +245,7 @@ class TestAsyncConcurrency:
 
         async def write_file(n):
             node = storage.node(f'memory:file_{n}.txt')
-            await node.write_text(f'content {n}')
+            await node.write(f'content {n}')
             return n
 
         # Write 10 files concurrently
@@ -257,7 +257,7 @@ class TestAsyncConcurrency:
         for i in range(10):
             node = storage.node(f'memory:file_{i}.txt')
             assert await node.exists()
-            content = await node.read_text()
+            content = await node.read()
             assert content == f'content {i}'
 
     @pytest.mark.asyncio
@@ -268,12 +268,12 @@ class TestAsyncConcurrency:
         # Create test files
         for i in range(5):
             node = storage.node(f'memory:read_{i}.txt')
-            await node.write_text(f'data {i}')
+            await node.write(f'data {i}')
 
         # Read concurrently
         async def read_file(n):
             node = storage.node(f'memory:read_{n}.txt')
-            return await node.read_text()
+            return await node.read()
 
         results = await asyncio.gather(*[read_file(i) for i in range(5)])
 
@@ -291,7 +291,7 @@ class TestAsyncErrors:
         node = storage.node('memory:nonexistent.txt')
 
         with pytest.raises(Exception):  # Will raise FileNotFoundError or similar
-            await node.read_bytes()
+            await node.read(mode='rb')
 
     @pytest.mark.asyncio
     async def test_invalid_mount(self):

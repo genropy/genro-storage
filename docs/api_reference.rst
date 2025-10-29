@@ -54,17 +54,11 @@ File I/O
    * - Method
      - Description
      - Capabilities Required
-   * - ``read_text(encoding='utf-8')``
-     - Read entire file as string
+   * - ``read(mode='r', encoding='utf-8')``
+     - Read entire file as string (mode='r') or bytes (mode='rb')
      - ``read``
-   * - ``read_bytes()``
-     - Read entire file as bytes
-     - ``read``
-   * - ``write_text(text, encoding='utf-8', skip_if_unchanged=False)``
-     - Write string to file
-     - ``write``
-   * - ``write_bytes(data, skip_if_unchanged=False)``
-     - Write bytes to file
+   * - ``write(data, mode='w', encoding='utf-8', skip_if_unchanged=False)``
+     - Write string (mode='w') or bytes (mode='wb') to file
      - ``write``
    * - ``open(mode='r', version=None, as_of=None)``
      - Open file for reading/writing (context manager)
@@ -540,7 +534,7 @@ Create ZIP Archive
     # Zip a single file
     file = storage.node('data:report.pdf')
     zip_bytes = file.zip()
-    storage.node('data:report.zip').write_bytes(zip_bytes)
+    storage.node('data:report.zip').write(zip_bytes, mode='wb')
 
     # Zip entire directory (recursive)
     folder = storage.node('data:documents/')
@@ -605,17 +599,11 @@ Async I/O Operations
    * - Method
      - Description
      - Return Type
-   * - ``await read_text(encoding='utf-8')``
-     - Read entire file as string
-     - ``str``
-   * - ``await read_bytes()``
-     - Read entire file as bytes
-     - ``bytes``
-   * - ``await write_text(text, encoding='utf-8')``
-     - Write string to file
-     - ``None``
-   * - ``await write_bytes(data)``
-     - Write bytes to file
+   * - ``await read(mode='r', encoding='utf-8')``
+     - Read entire file as string (mode='r') or bytes (mode='rb')
+     - ``str`` or ``bytes``
+   * - ``await write(data, mode='w', encoding='utf-8')``
+     - Write string (mode='w') or bytes (mode='wb') to file
      - ``None``
    * - ``await exists()``
      - Check if file exists
@@ -691,8 +679,8 @@ Basic Usage
 
         # Async I/O
         if await node.exists():
-            data = await node.read_bytes()
-            await node.write_bytes(b'new data')
+            data = await node.read(mode='rb')
+            await node.write(b'new data', mode='wb')
 
         # Sync properties
         print(node.path)
@@ -723,7 +711,7 @@ FastAPI Integration
             raise HTTPException(status_code=404)
 
         return {
-            "data": await node.read_bytes(),
+            "data": await node.read(mode='rb'),
             "size": await node.size(),
             "mime_type": node.mimetype  # Sync property
         }
@@ -739,7 +727,7 @@ Concurrent Operations
         async def process_one(filepath):
             node = storage.node(f'uploads:{filepath}')
             if await node.exists():
-                data = await node.read_bytes()
+                data = await node.read(mode='rb')
                 return len(data)
             return 0
 

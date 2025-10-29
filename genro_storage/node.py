@@ -163,7 +163,7 @@ class StorageNode:
         
         Examples:
             >>> if node.isfile:
-            ...     data = node.read_bytes()
+            ...     data = node._read_bytes()
         """
         return self._backend.is_file(self._path)
     
@@ -487,9 +487,9 @@ class StorageNode:
 
         # Accesso normale (latest)
         return self._backend.open(self._path, mode)
-    
-    def read_bytes(self) -> bytes:
-        """Read entire file as bytes.
+
+    def _read_bytes(self) -> bytes:
+        """Internal method: Read entire file as bytes.
 
         If node has a fixed version, reads that version.
         For virtual nodes, materializes content.
@@ -498,10 +498,10 @@ class StorageNode:
         if self._is_virtual:
             if self._virtual_type == 'iter':
                 # Concatenate all sources as bytes
-                return b''.join(node.read_bytes() for node in self._sources)
+                return b''.join(node._read_bytes() for node in self._sources)
             elif self._virtual_type == 'diff':
                 # Diff as bytes (encode UTF-8)
-                return self.read_text().encode('utf-8')
+                return self._read_text().encode('utf-8')
             else:
                 raise ValueError(f"Unknown virtual type: {self._virtual_type}")
 
@@ -513,8 +513,8 @@ class StorageNode:
         # Normal node
         return self._backend.read_bytes(self._path)
 
-    def read_text(self, encoding: str = 'utf-8') -> str:
-        """Read entire file as string.
+    def _read_text(self, encoding: str = 'utf-8') -> str:
+        """Internal method: Read entire file as string.
 
         If node has a fixed version, reads that version.
         For virtual nodes, materializes content.
@@ -523,7 +523,7 @@ class StorageNode:
         if self._is_virtual:
             if self._virtual_type == 'iter':
                 # Concatenate all sources as text
-                return ''.join(node.read_text(encoding) for node in self._sources)
+                return ''.join(node._read_text(encoding) for node in self._sources)
             elif self._virtual_type == 'diff':
                 # Generate unified diff
                 if len(self._sources) != 2:
@@ -532,8 +532,8 @@ class StorageNode:
                 node1, node2 = self._sources
 
                 # Check if binary by reading bytes first
-                bytes1 = node1.read_bytes()
-                bytes2 = node2.read_bytes()
+                bytes1 = node1._read_bytes()
+                bytes2 = node2._read_bytes()
 
                 # Check for null bytes (binary indicator)
                 if b'\x00' in bytes1 or b'\x00' in bytes2:
@@ -570,9 +570,38 @@ class StorageNode:
 
         # Normal node
         return self._backend.read_text(self._path, encoding)
-    
-    def write_bytes(self, data: bytes, skip_if_unchanged: bool = False) -> bool:
-        """Write bytes to file.
+
+    def read(self, mode: str = 'r', encoding: str = 'utf-8') -> str | bytes:
+        """Read file content in text or binary mode.
+
+        Args:
+            mode: Read mode - 'r' for text (default), 'rb' for binary
+            encoding: Text encoding (used only for text mode)
+
+        Returns:
+            str | bytes: File content as text or bytes depending on mode
+
+        Raises:
+            FileNotFoundError: If file doesn't exist
+            ValueError: If mode is invalid
+
+        Examples:
+            >>> # Read as text (default)
+            >>> content = node.read()
+            >>> content = node.read(mode='r')
+            >>>
+            >>> # Read as binary
+            >>> data = node.read(mode='rb')
+        """
+        if mode == 'r':
+            return self._read_text(encoding)
+        elif mode == 'rb':
+            return self._read_bytes()
+        else:
+            raise ValueError(f"Invalid read mode '{mode}'. Use 'r' for text or 'rb' for binary")
+
+    def _write_bytes(self, data: bytes, skip_if_unchanged: bool = False) -> bool:
+        """Internal method: Write bytes to file.
 
         Args:
             data: Bytes to write
@@ -635,7 +664,7 @@ class StorageNode:
             elif self.exists:
                 # Non-versioned backend: compare with current content
                 try:
-                    current_data = self.read_bytes()
+                    current_data = self._read_bytes()
                     if current_data == data:
                         return False  # Skip: content identical
                 except Exception:
@@ -650,8 +679,8 @@ class StorageNode:
 
         return True
 
-    def write_text(self, text: str, encoding: str = 'utf-8', skip_if_unchanged: bool = False) -> bool:
-        """Write string to file.
+    def _write_text(self, text: str, encoding: str = 'utf-8', skip_if_unchanged: bool = False) -> bool:
+        """Internal method: Write string to file.
 
         Args:
             text: String to write
@@ -675,10 +704,48 @@ class StorageNode:
             >>> if not written:
             ...     print("Content unchanged, skipped")
         """
-        return self.write_bytes(text.encode(encoding), skip_if_unchanged=skip_if_unchanged)
+        return self._write_bytes(text.encode(encoding), skip_if_unchanged=skip_if_unchanged)
+
+    def write(self, data: str | bytes, mode: str = 'w', encoding: str = 'utf-8', skip_if_unchanged: bool = False) -> bool:
+        """Write data to file in text or binary mode.
+
+        Args:
+            data: Data to write (str for text mode, bytes for binary mode)
+            mode: Write mode - 'w' for text (default), 'wb' for binary
+            encoding: Text encoding (used only for text mode)
+            skip_if_unchanged: If True, skip writing if content identical
+
+        Returns:
+            bool: True if written, False if skipped
+
+        Raises:
+            TypeError: If data type doesn't match mode
+            ValueError: If mode is invalid
+
+        Examples:
+            >>> # Write text (default)
+            >>> node.write('Hello World')
+            >>> node.write('Hello', mode='w')
+            >>>
+            >>> # Write binary
+            >>> node.write(b'binary data', mode='wb')
+            >>>
+            >>> # Skip if unchanged
+            >>> written = node.write('content', skip_if_unchanged=True)
+        """
+        if mode == 'w':
+            if not isinstance(data, str):
+                raise TypeError(f"Text mode 'w' requires str, got {type(data).__name__}")
+            return self._write_text(data, encoding, skip_if_unchanged)
+        elif mode == 'wb':
+            if not isinstance(data, bytes):
+                raise TypeError(f"Binary mode 'wb' requires bytes, got {type(data).__name__}")
+            return self._write_bytes(data, skip_if_unchanged)
+        else:
+            raise ValueError(f"Invalid write mode '{mode}'. Use 'w' for text or 'wb' for binary")
 
     # ==================== File Operations ====================
-    
+
     def delete(self) -> None:
         """Delete file or directory."""
         self._backend.delete(self._path, recursive=True)
@@ -1006,8 +1073,8 @@ class StorageNode:
         # Virtual node: copy materialized content
         if self._is_virtual:
             # Read content and write to destination
-            content = self.read_bytes()
-            dest.write_bytes(content)
+            content = self._read_bytes()
+            dest._write_bytes(content)
             return dest
 
         if not self.exists:
@@ -1158,11 +1225,11 @@ class StorageNode:
                 for node in self._sources:
                     # Use basename as filename in ZIP
                     filename = node.basename if node.basename else 'file'
-                    zf.writestr(filename, node.read_bytes())
+                    zf.writestr(filename, node._read_bytes())
 
             elif self.isfile:
                 # Single file: add to ZIP
-                zf.writestr(self.basename, self.read_bytes())
+                zf.writestr(self.basename, self._read_bytes())
 
             elif self.isdir:
                 # Directory: recursively add all files
@@ -1187,7 +1254,7 @@ class StorageNode:
 
             if child.isfile:
                 # Add file to ZIP
-                zf.writestr(arc_path, child.read_bytes())
+                zf.writestr(arc_path, child._read_bytes())
             elif child.isdir:
                 # Recurse into subdirectory
                 self._zip_directory(zf, child, arc_path)
@@ -1854,7 +1921,7 @@ class StorageNode:
             raise IOError(f"Error downloading from {url}: {e}") from e
 
         # Write to storage
-        self.write_bytes(data)
+        self._write_bytes(data)
 
     def to_base64(self, mime: str | None = None, include_uri: bool = True) -> str:
         """Encode file content as base64 string.
@@ -1904,7 +1971,7 @@ class StorageNode:
             raise ValueError(f"Cannot encode directory as base64: {self.fullpath}")
 
         # Read file content
-        data = self.read_bytes()
+        data = self._read_bytes()
 
         # Encode to base64
         b64_data = base64.b64encode(data).decode('ascii')

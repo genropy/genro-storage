@@ -93,47 +93,47 @@ class TestFileOperations:
     def test_write_and_read_text(self, storage):
         """Test writing and reading text files."""
         node = storage.node('test:file.txt')
-        
+
         # Write
-        node.write_text("Hello World")
-        
+        node.write("Hello World")
+
         # Read
-        content = node.read_text()
+        content = node.read()
         assert content == "Hello World"
     
     def test_write_and_read_bytes(self, storage):
         """Test writing and reading binary files."""
         node = storage.node('test:file.bin')
         data = b'\x00\x01\x02\x03\x04'
-        
+
         # Write
-        node.write_bytes(data)
-        
+        node.write(data, mode='wb')
+
         # Read
-        read_data = node.read_bytes()
+        read_data = node.read(mode='rb')
         assert read_data == data
     
     def test_file_exists(self, storage):
         """Test checking if file exists."""
         node = storage.node('test:file.txt')
-        
+
         # Initially doesn't exist
         assert not node.exists
-        
+
         # After writing, exists
-        node.write_text("content")
+        node.write("content")
         assert node.exists
     
     def test_is_file_is_dir(self, storage):
         """Test isfile and isdir properties."""
         file_node = storage.node('test:file.txt')
         dir_node = storage.node('test:directory')
-        
+
         # Create file
-        file_node.write_text("content")
+        file_node.write("content")
         assert file_node.isfile
         assert not file_node.isdir
-        
+
         # Create directory
         dir_node.mkdir()
         assert dir_node.isdir
@@ -143,9 +143,9 @@ class TestFileOperations:
         """Test getting file size."""
         node = storage.node('test:file.txt')
         content = "Hello World"
-        
-        node.write_text(content)
-        
+
+        node.write(content)
+
         assert node.size == len(content.encode('utf-8'))
     
     def test_file_mtime(self, storage):
@@ -153,7 +153,7 @@ class TestFileOperations:
         node = storage.node('test:file.txt')
 
         before = datetime.now().timestamp()
-        node.write_text("content")
+        node.write("content")
 
         mtime = node.mtime
         # Allow small timing tolerance (filesystem may round timestamps)
@@ -186,15 +186,15 @@ class TestFileOperations:
     def test_file_delete(self, storage):
         """Test deleting a file."""
         node = storage.node('test:file.txt')
-        
+
         # Create file
-        node.write_text("content")
+        node.write("content")
         assert node.exists
-        
+
         # Delete
         node.delete()
         assert not node.exists
-        
+
         # Delete again (idempotent)
         node.delete()  # Should not raise error
 
@@ -242,8 +242,8 @@ class TestDirectoryOperations:
         dir_node.mkdir()
 
         # Create some files
-        dir_node.child('file1.txt').write_text("content1")
-        dir_node.child('file2.txt').write_text("content2")
+        dir_node.child('file1.txt').write("content1")
+        dir_node.child('file2.txt').write("content2")
         dir_node.child('subdir').mkdir()
 
         # List children
@@ -262,7 +262,7 @@ class TestDirectoryOperations:
 
         # Single component
         child = parent.child('report.pdf')
-        child.write_text("content")
+        child.write("content")
 
         assert child.fullpath == 'test:documents/report.pdf'
         assert child.exists
@@ -291,9 +291,9 @@ class TestDirectoryOperations:
         dir_node.mkdir()
 
         # Create files inside
-        dir_node.child('file1.txt').write_text("content")
+        dir_node.child('file1.txt').write("content")
         dir_node.child('subdir').mkdir()
-        dir_node.child('subdir', 'file2.txt').write_text("content")
+        dir_node.child('subdir', 'file2.txt').write("content")
 
         # Delete recursively
         dir_node.delete()
@@ -307,60 +307,60 @@ class TestCopyMove:
     def test_copy_file(self, storage):
         """Test copying a file."""
         src = storage.node('test:source.txt')
-        src.write_text("Hello World")
-        
+        src.write("Hello World")
+
         dest = storage.node('test:destination.txt')
-        
+
         # Copy
         result = src.copy_to(dest)
-        
+
         # Both should exist
         assert src.exists
         assert dest.exists
         assert result.fullpath == dest.fullpath
-        
+
         # Content should be the same
-        assert dest.read_text() == "Hello World"
+        assert dest.read() == "Hello World"
     
     def test_copy_with_string_dest(self, storage):
         """Test copying with string destination."""
         src = storage.node('test:source.txt')
-        src.write_text("content")
-        
+        src.write("content")
+
         # Copy using string
         dest = src.copy_to('test:destination.txt')
-        
+
         assert dest.exists
         assert dest.fullpath == 'test:destination.txt'
     
     def test_move_file(self, storage):
         """Test moving a file."""
         src = storage.node('test:source.txt')
-        src.write_text("Hello World")
-        
+        src.write("Hello World")
+
         dest = storage.node('test:destination.txt')
-        
+
         # Move
         result = src.move_to(dest)
-        
+
         # Source should not exist, dest should
         assert not storage.node('test:source.txt').exists
         assert dest.exists
         assert result.fullpath == dest.fullpath
-        
+
         # Content preserved
-        assert dest.read_text() == "Hello World"
+        assert dest.read() == "Hello World"
     
     def test_move_updates_self(self, storage):
         """Test that move updates the node itself."""
         node = storage.node('test:old.txt')
-        node.write_text("content")
-        
+        node.write("content")
+
         original_id = id(node)
-        
+
         # Move
         node.move_to('test:new.txt')
-        
+
         # Same object, updated path
         assert id(node) == original_id
         assert node.fullpath == 'test:new.txt'
@@ -371,9 +371,9 @@ class TestCopyMove:
         # Create source directory with contents
         src = storage.node('test:src_dir')
         src.mkdir()
-        src.child('file1.txt').write_text("content1")
+        src.child('file1.txt').write("content1")
         src.child('subdir').mkdir()
-        src.child('subdir', 'file2.txt').write_text("content2")
+        src.child('subdir', 'file2.txt').write("content2")
 
         # Copy
         dest = storage.node('test:dest_dir')
@@ -386,8 +386,8 @@ class TestCopyMove:
         assert dest.child('subdir', 'file2.txt').exists
 
         # Check content
-        assert dest.child('file1.txt').read_text() == "content1"
-        assert dest.child('subdir', 'file2.txt').read_text() == "content2"
+        assert dest.child('file1.txt').read() == "content1"
+        assert dest.child('subdir', 'file2.txt').read() == "content2"
 
 
 class TestPathNormalization:
@@ -424,17 +424,17 @@ class TestEncodings:
         """Test UTF-8 encoding (default)."""
         node = storage.node('test:utf8.txt')
         content = "Hello 世界 🌍"
-        
-        node.write_text(content)
-        assert node.read_text() == content
+
+        node.write(content)
+        assert node.read() == content
     
     def test_latin1_encoding(self, storage):
         """Test Latin-1 encoding."""
         node = storage.node('test:latin1.txt')
         content = "Héllo Wørld"
-        
-        node.write_text(content, encoding='latin-1')
-        assert node.read_text(encoding='latin-1') == content
+
+        node.write(content, mode='w', encoding='latin-1')
+        assert node.read(mode='r', encoding='latin-1') == content
 
 
 class TestEdgeCases:
@@ -443,9 +443,9 @@ class TestEdgeCases:
     def test_read_nonexistent_file(self, storage):
         """Test reading a file that doesn't exist."""
         node = storage.node('test:missing.txt')
-        
+
         with pytest.raises(FileNotFoundError):
-            node.read_text()
+            node.read()
     
     def test_size_of_nonexistent_file(self, storage):
         """Test getting size of nonexistent file."""
@@ -465,11 +465,11 @@ class TestEdgeCases:
     def test_empty_file(self, storage):
         """Test working with empty files."""
         node = storage.node('test:empty.txt')
-        
-        node.write_text("")
+
+        node.write("")
         assert node.exists
         assert node.size == 0
-        assert node.read_text() == ""
+        assert node.read() == ""
     
     def test_nested_directory_creation(self, storage):
         """Test creating deeply nested directories."""

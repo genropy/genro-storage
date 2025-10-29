@@ -25,10 +25,10 @@ class TestS3Storage:
         node = storage_with_s3.node('test-s3:test.txt')
         
         # Write
-        node.write_text("Hello S3 World!")
+        node.write("Hello S3 World!")
         
         # Read
-        content = node.read_text()
+        content = node.read()
         assert content == "Hello S3 World!"
     
     def test_write_and_read_bytes(self, storage_with_s3):
@@ -37,10 +37,10 @@ class TestS3Storage:
         data = b'\x00\x01\x02\x03\x04'
         
         # Write
-        node.write_bytes(data)
+        node.write(data, mode='wb')
         
         # Read
-        read_data = node.read_bytes()
+        read_data = node.read(mode='rb')
         assert read_data == data
     
     def test_file_exists(self, storage_with_s3):
@@ -51,7 +51,7 @@ class TestS3Storage:
         assert not node.exists
         
         # After writing, exists
-        node.write_text("content")
+        node.write("content")
         assert node.exists
     
     def test_file_properties(self, storage_with_s3):
@@ -59,7 +59,7 @@ class TestS3Storage:
         node = storage_with_s3.node('test-s3:documents/report.pdf')
         content = "Test content"
         
-        node.write_text(content)
+        node.write(content)
         
         assert node.exists
         assert node.isfile
@@ -73,7 +73,7 @@ class TestS3Storage:
         node = storage_with_s3.node('test-s3:test.txt')
         
         # Create file
-        node.write_text("content")
+        node.write("content")
         assert node.exists
         
         # Delete
@@ -83,9 +83,9 @@ class TestS3Storage:
     def test_list_directory(self, storage_with_s3):
         """Test listing directory contents on S3."""
         # Create files with same prefix
-        storage_with_s3.node('test-s3:mydir/file1.txt').write_text("content1")
-        storage_with_s3.node('test-s3:mydir/file2.txt').write_text("content2")
-        storage_with_s3.node('test-s3:mydir/subdir/file3.txt').write_text("content3")
+        storage_with_s3.node('test-s3:mydir/file1.txt').write("content1")
+        storage_with_s3.node('test-s3:mydir/file2.txt').write("content2")
+        storage_with_s3.node('test-s3:mydir/subdir/file3.txt').write("content3")
         
         # List directory
         dir_node = storage_with_s3.node('test-s3:mydir')
@@ -100,7 +100,7 @@ class TestS3Storage:
     def test_copy_file(self, storage_with_s3):
         """Test copying a file on S3."""
         src = storage_with_s3.node('test-s3:source.txt')
-        src.write_text("Hello World")
+        src.write("Hello World")
         
         dest = storage_with_s3.node('test-s3:destination.txt')
         
@@ -110,12 +110,12 @@ class TestS3Storage:
         # Both should exist
         assert src.exists
         assert dest.exists
-        assert dest.read_text() == "Hello World"
+        assert dest.read() == "Hello World"
     
     def test_move_file(self, storage_with_s3):
         """Test moving a file on S3."""
         src = storage_with_s3.node('test-s3:source.txt')
-        src.write_text("Hello World")
+        src.write("Hello World")
         
         dest = storage_with_s3.node('test-s3:destination.txt')
         
@@ -125,17 +125,17 @@ class TestS3Storage:
         # Only dest should exist
         assert not storage_with_s3.node('test-s3:source.txt').exists
         assert dest.exists
-        assert dest.read_text() == "Hello World"
+        assert dest.read() == "Hello World"
     
     def test_nested_paths(self, storage_with_s3):
         """Test working with nested paths on S3."""
         node = storage_with_s3.node('test-s3:a/b/c/d/file.txt')
         
         # S3 doesn't require mkdir, just write
-        node.write_text("nested content")
+        node.write("nested content")
         
         assert node.exists
-        assert node.read_text() == "nested content"
+        assert node.read() == "nested content"
     
     def test_path_with_prefix(self, minio_bucket, minio_config):
         """Test S3 storage with path prefix."""
@@ -152,11 +152,11 @@ class TestS3Storage:
         
         # Write file
         node = storage.node('test-s3-prefix:test.txt')
-        node.write_text("prefixed content")
+        node.write("prefixed content")
         
         # Should exist under prefix
         assert node.exists
-        assert node.read_text() == "prefixed content"
+        assert node.read() == "prefixed content"
 
 
 class TestS3ToLocalCopy:
@@ -174,7 +174,7 @@ class TestS3ToLocalCopy:
         
         # Create file on S3
         s3_node = storage.node('test-s3:source.txt')
-        s3_node.write_text("S3 content")
+        s3_node.write("S3 content")
         
         # Copy to local
         local_node = storage.node('local:destination.txt')
@@ -182,7 +182,7 @@ class TestS3ToLocalCopy:
         
         # Verify on local
         assert local_node.exists
-        assert local_node.read_text() == "S3 content"
+        assert local_node.read() == "S3 content"
     
     def test_copy_local_to_s3(self, storage_with_s3, temp_dir):
         """Test copying file from local to S3."""
@@ -196,7 +196,7 @@ class TestS3ToLocalCopy:
         
         # Create file locally
         local_node = storage.node('local:source.txt')
-        local_node.write_text("Local content")
+        local_node.write("Local content")
         
         # Copy to S3
         s3_node = storage.node('test-s3:destination.txt')
@@ -204,7 +204,7 @@ class TestS3ToLocalCopy:
         
         # Verify on S3
         assert s3_node.exists
-        assert s3_node.read_text() == "Local content"
+        assert s3_node.read() == "Local content"
 
 
 class TestMemoryStorage:
@@ -228,25 +228,25 @@ class TestMemoryStorage:
         """Test writing and reading text in memory."""
         node = memory_storage.node('memory:test.txt')
         
-        node.write_text("Hello Memory!")
-        assert node.read_text() == "Hello Memory!"
+        node.write("Hello Memory!")
+        assert node.read() == "Hello Memory!"
     
     def test_file_isolation(self, memory_storage):
         """Test that files are isolated in memory."""
         node1 = memory_storage.node('memory:file1.txt')
         node2 = memory_storage.node('memory:file2.txt')
         
-        node1.write_text("Content 1")
-        node2.write_text("Content 2")
+        node1.write("Content 1")
+        node2.write("Content 2")
         
-        assert node1.read_text() == "Content 1"
-        assert node2.read_text() == "Content 2"
+        assert node1.read() == "Content 1"
+        assert node2.read() == "Content 2"
     
     def test_memory_delete(self, memory_storage):
         """Test deleting files in memory."""
         node = memory_storage.node('memory:test.txt')
         
-        node.write_text("content")
+        node.write("content")
         assert node.exists
         
         node.delete()
@@ -255,8 +255,8 @@ class TestMemoryStorage:
     def test_memory_directory_operations(self, memory_storage):
         """Test directory operations in memory."""
         # Create files
-        memory_storage.node('memory:dir/file1.txt').write_text("c1")
-        memory_storage.node('memory:dir/file2.txt').write_text("c2")
+        memory_storage.node('memory:dir/file1.txt').write("c1")
+        memory_storage.node('memory:dir/file2.txt').write("c2")
         
         # List directory
         dir_node = memory_storage.node('memory:dir')

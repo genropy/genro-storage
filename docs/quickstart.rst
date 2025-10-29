@@ -90,10 +90,10 @@ First Steps
 .. code-block:: python
 
     # Write
-    node.write_text("Hello World")
-    
+    node.write("Hello World")
+
     # Read
-    content = node.read_text()
+    content = node.read()
     
     # Check existence
     if node.exists:
@@ -123,7 +123,7 @@ Here's a complete working example:
 
     # Create and write a file
     report = storage.node('data:reports/2024-q4.txt')
-    report.write_text(\"\"\"
+    report.write(\"\"\"
 Q4 2024 Sales Report
 ---------------------
 Total Sales: $1,234,567
@@ -131,7 +131,7 @@ Growth: +15%
 \"\"\")
 
     # Read and process
-    content = report.read_text()
+    content = report.read()
     print(f"Report size: {report.size} bytes")
     print(f"Modified: {report.mtime}")
 
@@ -258,7 +258,7 @@ Copy files between different storage backends:
 
     # Process locally
     local_file = storage.node('local:processing/image.jpg')
-    local_file.write_bytes(processed_data)
+    local_file.write(processed_data, mode='wb')
 
     # Upload to S3
     s3_file = storage.node('s3:uploads/2024/image.jpg')
@@ -298,7 +298,7 @@ Async File Operations
 
         # All I/O operations are async
         if await node.exists():
-            data = await node.read_bytes()
+            data = await node.read(mode='rb')
             size = await node.size()
             return data
 
@@ -321,7 +321,7 @@ FastAPI Integration
             raise HTTPException(status_code=404)
 
         return {
-            "data": await node.read_bytes(),
+            "data": await node.read(mode='rb'),
             "size": await node.size()
         }
 
@@ -336,8 +336,8 @@ Concurrent Operations
         async def backup_one(filepath):
             source = storage.node(f'uploads:{filepath}')
             target = storage.node(f'backups:{filepath}')
-            data = await source.read_bytes()
-            await target.write_bytes(data)
+            data = await source.read(mode='rb')
+            await target.write(data, mode='wb')
 
         # Process all files in parallel
         await asyncio.gather(*[backup_one(f) for f in file_list])

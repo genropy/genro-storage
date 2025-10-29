@@ -159,11 +159,11 @@ Store data inline as base64-encoded strings, similar to data URIs.
 
     # Read inline base64 data
     node = storage.node('data:SGVsbG8gV29ybGQ=')  # "Hello World" encoded
-    content = node.read_text()  # Returns "Hello World"
+    content = node.read()  # Returns "Hello World"
 
     # Write creates/updates the base64 path (writable with mutable paths)
     node = storage.node('data:')
-    node.write_text("New content")
+    node.write("New content")
     print(node.path)  # TmV3IGNvbnRlbnQ= (base64 encoded)
 
     # Copy from other storage to base64 for inline use

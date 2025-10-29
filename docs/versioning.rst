@@ -106,12 +106,12 @@ You can restore a previous version by reading it and writing it back as a new ve
         old_content = f.read()
 
     # Write it back (creates new version)
-    node.write_bytes(old_content)
+    node.write(old_content, mode='wb')
 
     # Or restore a specific version by ID
     with node.open(version='version-id-here') as f:
         content = f.read()
-    node.write_bytes(content)
+    node.write(content, mode='wb')
 
 .. note::
    Restoring **creates a new version**, it doesn't delete anything.
@@ -126,14 +126,14 @@ and skip writing:
 .. code-block:: python
 
     # Writes only if content is different
-    changed = node.write_bytes(new_data, skip_if_unchanged=True)
+    changed = node.write(new_data, mode='wb', skip_if_unchanged=True)
     if changed:
         print("File updated - new version created")
     else:
         print("Content identical - no new version")
 
     # Same for text files
-    changed = node.write_text(text, skip_if_unchanged=True)
+    changed = node.write(text, skip_if_unchanged=True)
 
 This is useful for:
 
@@ -218,11 +218,11 @@ You can read different versions and compare them:
 
     # Write previous content to temp node
     prev_node = storage.node('mem:prev.txt')
-    prev_node.write_bytes(prev_content)
+    prev_node.write(prev_content, mode='wb')
 
     # Generate diff
     diff = storage.diffnode(prev_node, current_node)
-    print(diff.read_text())
+    print(diff.read())
 
 .. note::
    For binary files, compare the raw bytes. For text files, you can

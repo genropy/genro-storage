@@ -21,7 +21,7 @@ class TestLocalPath:
         ])
 
         node = storage.node('local:test.txt')
-        node.write_text('Hello World')
+        node.write('Hello World')
 
         with node.local_path() as local_path:
             # Should be the actual path
@@ -37,7 +37,7 @@ class TestLocalPath:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_text('Original')
+        node.write('Original')
 
         # Read mode
         with node.local_path(mode='r') as local_path:
@@ -54,7 +54,7 @@ class TestLocalPath:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_text('Original')
+        node.write('Original')
 
         # Read-write mode
         with node.local_path(mode='rw') as local_path:
@@ -68,7 +68,7 @@ class TestLocalPath:
                 f.write('Modified')
 
         # Changes should be uploaded
-        assert node.read_text() == 'Modified'
+        assert node.read() == 'Modified'
 
     def test_local_path_memory_write_mode(self):
         """Memory storage local_path with w mode only uploads."""
@@ -84,7 +84,7 @@ class TestLocalPath:
 
         # Should be uploaded
         assert node.exists
-        assert node.read_text() == 'New content'
+        assert node.read() == 'New content'
 
     def test_local_path_base64_read_only(self):
         """Base64 backend local_path creates temp file with decoded content."""
@@ -119,7 +119,7 @@ class TestLocalPath:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:video.mp4')
-        node.write_bytes(b'fake video data')
+        node.write(b'fake video data', mode='wb')
 
         with node.local_path(mode='r') as local_path:
             # Extension should be preserved
@@ -148,13 +148,13 @@ class TestCallablePaths:
         # User 1
         context['user_id'] = 123
         node1 = storage.node('user:prefs.json')
-        node1.write_text('{"theme": "dark"}')
+        node1.write('{"theme": "dark"}')
         path1 = str(node1._backend.base_path)
 
         # User 2
         context['user_id'] = 456
         node2 = storage.node('user:prefs.json')
-        node2.write_text('{"theme": "light"}')
+        node2.write('{"theme": "light"}')
         path2 = str(node2._backend.base_path)
 
         # Different paths
@@ -165,11 +165,11 @@ class TestCallablePaths:
         # Different content
         context['user_id'] = 123
         node1_read = storage.node('user:prefs.json')
-        assert '"dark"' in node1_read.read_text()
+        assert '"dark"' in node1_read.read()
 
         context['user_id'] = 456
         node2_read = storage.node('user:prefs.json')
-        assert '"light"' in node2_read.read_text()
+        assert '"light"' in node2_read.read()
 
     def test_callable_path_validation_deferred(self):
         """Callable path validation deferred until first access."""
@@ -206,7 +206,7 @@ class TestMetadata:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_text('test')
+        node.write('test')
 
         metadata = node.get_metadata()
         assert metadata == {}
@@ -220,7 +220,7 @@ class TestMetadata:
         ])
 
         node = storage.node('local:test.txt')
-        node.write_text('test')
+        node.write('test')
 
         metadata = node.get_metadata()
         assert metadata == {}
@@ -231,7 +231,7 @@ class TestMetadata:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_text('test')
+        node.write('test')
 
         with pytest.raises(PermissionError, match='does not support metadata'):
             node.set_metadata({'key': 'value'})
@@ -245,7 +245,7 @@ class TestMetadata:
         ])
 
         node = storage.node('local:test.txt')
-        node.write_text('test')
+        node.write('test')
 
         with pytest.raises(PermissionError, match='does not support metadata'):
             node.set_metadata({'key': 'value'})
@@ -256,7 +256,7 @@ class TestMetadata:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_text('test')
+        node.write('test')
 
         # Would raise PermissionError, but validation happens first
         # (we can't test validation without a backend that supports metadata)
@@ -271,7 +271,7 @@ class TestURLGeneration:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_text('test')
+        node.write('test')
 
         url = node.url()
         assert url is None
@@ -285,7 +285,7 @@ class TestURLGeneration:
         ])
 
         node = storage.node('local:test.txt')
-        node.write_text('test')
+        node.write('test')
 
         url = node.url()
         assert url is None
@@ -296,7 +296,7 @@ class TestURLGeneration:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_text('test')
+        node.write('test')
 
         url = node.internal_url()
         assert url is None
@@ -307,7 +307,7 @@ class TestURLGeneration:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_text('test')
+        node.write('test')
 
         # Should not raise
         url = node.internal_url(nocache=True)
@@ -326,7 +326,7 @@ class TestBase64Encoding:
         ])
 
         node = storage.node('local:test.txt')
-        node.write_text('Hello World')
+        node.write('Hello World')
 
         data_uri = node.to_base64()
 
@@ -344,7 +344,7 @@ class TestBase64Encoding:
         ])
 
         node = storage.node('local:test.txt')
-        node.write_text('Hello World')
+        node.write('Hello World')
 
         b64 = node.to_base64(include_uri=False)
 
@@ -361,7 +361,7 @@ class TestBase64Encoding:
         ])
 
         node = storage.node('local:data.json')
-        node.write_text('{"key": "value"}')
+        node.write('{"key": "value"}')
 
         data_uri = node.to_base64(mime='application/custom')
         assert data_uri.startswith('data:application/custom;base64,')
@@ -376,7 +376,7 @@ class TestBase64Encoding:
 
         # JSON file
         node = storage.node('local:data.json')
-        node.write_text('{}')
+        node.write('{}')
         data_uri = node.to_base64()
         assert 'application/json' in data_uri or 'text/plain' in data_uri
 
@@ -431,7 +431,7 @@ class TestFillFromURL:
         node.fill_from_url('https://example.com/file.txt')
 
         assert node.exists
-        assert node.read_bytes() == b'Downloaded content'
+        assert node.read(mode='rb') == b'Downloaded content'
         mock_urlopen.assert_called_once()
 
     @patch('urllib.request.urlopen')
@@ -500,7 +500,7 @@ class TestS3Versioning:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_text('test')
+        node.write('test')
 
         versions = node.versions
         assert versions == []
@@ -514,7 +514,7 @@ class TestS3Versioning:
         ])
 
         node = storage.node('local:test.txt')
-        node.write_text('test')
+        node.write('test')
 
         versions = node.versions
         assert versions == []
@@ -525,7 +525,7 @@ class TestS3Versioning:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_text('test')
+        node.write('test')
 
         with pytest.raises(PermissionError, match='does not support versioning'):
             node.open(version='dummy_version_id')
@@ -539,7 +539,7 @@ class TestS3Versioning:
         ])
 
         node = storage.node('local:test.txt')
-        node.write_text('test')
+        node.write('test')
 
         with pytest.raises(PermissionError, match='does not support versioning'):
             node.open(version='v123')

@@ -26,7 +26,7 @@ class TestCallMethod:
         """Simple command execution."""
         # Create test file
         file = storage.node('data:test.txt')
-        file.write_text("Hello World")
+        file.write("Hello World")
 
         # Use 'cat' to read file (Unix) or 'type' on Windows
         import platform
@@ -42,7 +42,7 @@ class TestCallMethod:
         input_file = storage.node('data:input.txt')
         output_file = storage.node('data:output.txt')
 
-        input_file.write_text("Test content")
+        input_file.write("Test content")
 
         # Use 'cp' on Unix or 'copy' on Windows
         import platform
@@ -52,12 +52,12 @@ class TestCallMethod:
             input_file.call('cp', input_file, output_file)
 
         assert output_file.exists
-        assert output_file.read_text() == "Test content"
+        assert output_file.read() == "Test content"
 
     def test_call_modifies_file(self, storage):
         """File modifications are uploaded after command."""
         file = storage.node('data:file.txt')
-        file.write_text("line 1\n")
+        file.write("line 1\n")
 
         # Append to file using echo (platform-specific)
         import platform
@@ -71,14 +71,14 @@ class TestCallMethod:
                 import subprocess
                 subprocess.run(['sh', '-c', f'echo "line 2" >> "{local_path}"'], check=True)
 
-        content = file.read_text()
+        content = file.read()
         assert "line 1" in content
         assert "line 2" in content
 
     def test_call_return_output(self, storage):
         """Return command output when return_output=True."""
         file = storage.node('data:test.txt')
-        file.write_text("Hello\nWorld\n")
+        file.write("Hello\nWorld\n")
 
         # Count lines
         import platform
@@ -99,7 +99,7 @@ class TestCallMethod:
             callback_called.append(True)
 
         file = storage.node('data:test.txt')
-        file.write_text("test")
+        file.write("test")
 
         import platform
         if platform.system() == 'Windows':
@@ -112,7 +112,7 @@ class TestCallMethod:
     def test_call_async_mode(self, storage):
         """Async mode runs in background."""
         file = storage.node('data:test.txt')
-        file.write_text("test")
+        file.write("test")
 
         callback_called = []
 
@@ -138,7 +138,7 @@ class TestCallMethod:
     def test_call_with_subprocess_kwargs(self, storage):
         """subprocess_kwargs are passed through."""
         file = storage.node('data:test.txt')
-        file.write_text("test")
+        file.write("test")
 
         # Set timeout
         import platform
@@ -154,7 +154,7 @@ class TestCallMethod:
     def test_call_command_not_found(self, storage):
         """Raises error if command not found."""
         file = storage.node('data:test.txt')
-        file.write_text("test")
+        file.write("test")
 
         with pytest.raises((FileNotFoundError, subprocess.CalledProcessError)):
             file.call('nonexistent_command_xyz', file)
@@ -162,7 +162,7 @@ class TestCallMethod:
     def test_call_command_fails(self, storage):
         """Raises error if command exits non-zero."""
         file = storage.node('data:test.txt')
-        file.write_text("test")
+        file.write("test")
 
         # 'false' command always fails on Unix
         import platform
@@ -176,8 +176,8 @@ class TestCallMethod:
         file2 = storage.node('data:file2.txt')
         output = storage.node('data:output.txt')
 
-        file1.write_text("Content1")
-        file2.write_text("Content2")
+        file1.write("Content1")
+        file2.write("Content2")
 
         # Concatenate files using call() which auto-converts StorageNodes to paths
         import platform
@@ -191,14 +191,14 @@ class TestCallMethod:
                         import subprocess
                         subprocess.run(['sh', '-c', f'cat "{path1}" "{path2}" > "{out_path}"'], check=True)
 
-        result = output.read_text()
+        result = output.read()
         assert "Content1" in result
         assert "Content2" in result
 
     def test_call_mixed_arguments(self, storage):
         """Mix StorageNode and string arguments."""
         file = storage.node('data:test.txt')
-        file.write_text("Hello World")
+        file.write("Hello World")
 
         # grep with pattern (string) and file (StorageNode)
         import platform

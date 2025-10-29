@@ -34,7 +34,7 @@ class TestBase64Backend:
         b64_data = base64.b64encode(b"Hello World").decode()
 
         node = storage.node(f'b64:{b64_data}')
-        content = node.read_text()
+        content = node.read()
 
         assert content == "Hello World"
 
@@ -44,7 +44,7 @@ class TestBase64Backend:
         b64_data = base64.b64encode(data).decode()
 
         node = storage.node(f'b64:{b64_data}')
-        result = node.read_bytes()
+        result = node.read(mode='rb')
 
         assert result == data
 
@@ -110,7 +110,7 @@ class TestBase64Backend:
         b64_data = base64.b64encode(text.encode('utf-8')).decode()
         node = storage.node(f'b64:{b64_data}')
 
-        content = node.read_text(encoding='utf-8')
+        content = node.read(encoding='utf-8')
         assert content == text
 
     def test_write_text_updates_path(self, storage):
@@ -119,14 +119,14 @@ class TestBase64Backend:
         node = storage.node('b64:')
 
         # Write new content
-        node.write_text("Hello World")
+        node.write("Hello World")
 
         # Path should be updated to new base64
         expected_b64 = base64.b64encode(b"Hello World").decode()
         assert node.path == expected_b64
 
         # Reading should return the new content
-        assert node.read_text() == "Hello World"
+        assert node.read() == "Hello World"
 
     def test_write_bytes_updates_path(self, storage):
         """Test that write_bytes updates the node's path."""
@@ -134,14 +134,14 @@ class TestBase64Backend:
         node = storage.node('b64:')
 
         data = b"\x00\x01\x02\xff"
-        node.write_bytes(data)
+        node.write(data, mode='wb')
 
         # Path should be updated to new base64
         expected_b64 = base64.b64encode(data).decode()
         assert node.path == expected_b64
 
         # Reading should return the new content
-        assert node.read_bytes() == data
+        assert node.read(mode='rb') == data
 
     def test_delete_raises_permission_error(self, storage):
         """Test that delete raises PermissionError."""
@@ -174,14 +174,14 @@ class TestBase64Backend:
         node = storage.node('b64:not-valid-base64!!!')
 
         with pytest.raises(FileNotFoundError, match="Invalid base64"):
-            node.read_text()
+            node.read()
 
     def test_empty_path_raises_file_not_found(self, storage):
         """Test that empty path raises FileNotFoundError."""
         node = storage.node('b64:')
 
         with pytest.raises(FileNotFoundError, match="cannot be empty"):
-            node.read_bytes()
+            node.read(mode='rb')
 
     def test_base64_with_whitespace(self, storage):
         """Test base64 with whitespace is handled correctly."""
@@ -191,7 +191,7 @@ class TestBase64Backend:
         b64_with_spaces = f"  {b64_data}  \n"
 
         node = storage.node(f'b64:{b64_with_spaces}')
-        result = node.read_bytes()
+        result = node.read(mode='rb')
 
         assert result == data
 
@@ -211,7 +211,7 @@ class TestBase64Backend:
 
         # Verify copy
         assert dest.exists
-        assert dest.read_bytes() == data
+        assert dest.read(mode='rb') == data
 
     def test_equality_between_base64_nodes(self, storage):
         """Test content-based equality between base64 nodes."""
@@ -244,7 +244,7 @@ class TestBase64Backend:
         formatted = '\n'.join(b64_data[i:i+64] for i in range(0, len(b64_data), 64))
 
         node = storage.node(f'b64:{formatted}')
-        result = node.read_bytes()
+        result = node.read(mode='rb')
 
         assert result == data
 
@@ -289,7 +289,7 @@ class TestBase64Backend:
         b64_data = base64.b64encode(text.encode('utf-8')).decode()
         node = storage.node(f'b64:{b64_data}')
 
-        result = node.read_text()
+        result = node.read()
         assert result == text
 
     def test_readme_example(self, storage):
@@ -300,7 +300,7 @@ class TestBase64Backend:
 
         # Access it
         node = storage.node(f'b64:{b64_encoded}')
-        content = node.read_text()
+        content = node.read()
 
         assert content == text
         assert node.exists
@@ -313,7 +313,7 @@ class TestBase64Backend:
         b64_data = base64.b64encode(png_header).decode()
 
         node = storage.node(f'b64:{b64_data}')
-        data = node.read_bytes()
+        data = node.read(mode='rb')
 
         assert data == png_header
         assert len(data) == 8
@@ -323,17 +323,17 @@ class TestBase64Backend:
         node = storage.node('b64:')
 
         # First write
-        node.write_text("First")
+        node.write("First")
         first_path = node.path
         assert first_path == base64.b64encode(b"First").decode()
-        assert node.read_text() == "First"
+        assert node.read() == "First"
 
         # Second write - path should change
-        node.write_text("Second")
+        node.write("Second")
         second_path = node.path
         assert second_path == base64.b64encode(b"Second").decode()
         assert second_path != first_path
-        assert node.read_text() == "Second"
+        assert node.read() == "Second"
 
     def test_copy_from_memory_to_base64(self, storage):
         """Test copying from memory backend to base64 (the main use case)."""
@@ -342,7 +342,7 @@ class TestBase64Backend:
 
         # Create source file in memory
         src = storage.node('mem:test.txt')
-        src.write_text("Test data for base64")
+        src.write("Test data for base64")
 
         # Create empty base64 destination
         dest = storage.node('b64:')
@@ -353,7 +353,7 @@ class TestBase64Backend:
         # Destination should now have base64-encoded content in its path
         expected_b64 = base64.b64encode(b"Test data for base64").decode()
         assert dest.path == expected_b64
-        assert dest.read_text() == "Test data for base64"
+        assert dest.read() == "Test data for base64"
 
     def test_multiple_writes_maintain_reference(self, storage):
         """Test that node reference remains valid after multiple writes."""
@@ -361,9 +361,9 @@ class TestBase64Backend:
 
         # Multiple writes
         for i in range(5):
-            node.write_text(f"Content {i}")
-            assert node.read_text() == f"Content {i}"
+            node.write(f"Content {i}")
+            assert node.read() == f"Content {i}"
             assert node.exists
 
         # Final check
-        assert node.read_text() == "Content 4"
+        assert node.read() == "Content 4"

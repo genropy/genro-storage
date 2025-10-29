@@ -17,7 +17,7 @@ class TestMD5Hash:
         expected_md5 = "65a8e27d8879283831b664bd8b7f0ad4"  # Pre-computed
         
         node = storage_manager.node('local:test.txt')
-        node.write_bytes(test_content)
+        node.write(test_content, mode='wb')
         
         # Get hash
         hash_value = node.md5hash
@@ -43,7 +43,7 @@ class TestMD5Hash:
         expected_md5 = "c5b5e0e0e0f5d5e5c5b5e0e0e0f5d5e5"  # Will be computed by S3
         
         node = storage_manager.node('s3:test-bucket/md5test.txt')
-        node.write_bytes(test_content)
+        node.write(test_content, mode='wb')
         
         # Get hash - should use ETag from S3, not compute
         hash_value = node.md5hash
@@ -85,7 +85,7 @@ class TestMD5Hash:
         large_content = b"x" * (1024 * 1024)
         
         node = storage_manager.node('local:large.bin')
-        node.write_bytes(large_content)
+        node.write(large_content, mode='wb')
         
         # Compute hash
         hash_value = node.md5hash
@@ -100,7 +100,7 @@ class TestMD5Hash:
         storage_manager.configure([{'name': 'local', 'type': 'local', 'path': str(tmp_path)}])
         
         node = storage_manager.node('local:empty.txt')
-        node.write_bytes(b"")
+        node.write(b"", mode='wb')
         
         # MD5 of empty string
         expected = "d41d8cd98f00b204e9800998ecf8427e"
@@ -118,10 +118,10 @@ class TestNodeEquality:
         content = b"Same content"
         
         node1 = storage_manager.node('local:file1.txt')
-        node1.write_bytes(content)
+        node1.write(content, mode='wb')
         
         node2 = storage_manager.node('local:file2.txt')
-        node2.write_bytes(content)
+        node2.write(content, mode='wb')
         
         assert node1 == node2
         assert not (node1 != node2)
@@ -131,10 +131,10 @@ class TestNodeEquality:
         storage_manager.configure([{'name': 'local', 'type': 'local', 'path': str(tmp_path)}])
         
         node1 = storage_manager.node('local:file1.txt')
-        node1.write_bytes(b"Content A")
+        node1.write(b"Content A", mode='wb')
         
         node2 = storage_manager.node('local:file2.txt')
-        node2.write_bytes(b"Content B")
+        node2.write(b"Content B", mode='wb')
         
         assert node1 != node2
         assert not (node1 == node2)
@@ -144,7 +144,7 @@ class TestNodeEquality:
         storage_manager.configure([{'name': 'local', 'type': 'local', 'path': str(tmp_path)}])
         
         node1 = storage_manager.node('local:file.txt')
-        node1.write_bytes(b"Content")
+        node1.write(b"Content", mode='wb')
         
         node2 = storage_manager.node('local:file.txt')
         
@@ -165,10 +165,10 @@ class TestNodeEquality:
         content = b"Cross-backend content"
         
         node1 = storage_manager.node('local:file.txt')
-        node1.write_bytes(content)
+        node1.write(content, mode='wb')
         
         node2 = storage_manager.node('backup:file.txt')
-        node2.write_bytes(content)
+        node2.write(content, mode='wb')
         
         assert node1 == node2
     
@@ -188,10 +188,10 @@ class TestNodeEquality:
         content = b"S3 and local same content"
         
         local_node = storage_manager.node('local:file.txt')
-        local_node.write_bytes(content)
+        local_node.write(content, mode='wb')
         
         s3_node = storage_manager.node('s3:test-bucket/file.txt')
-        s3_node.write_bytes(content)
+        s3_node.write(content, mode='wb')
         
         # Should be equal (one uses computed MD5, one uses ETag)
         assert local_node == s3_node
@@ -201,7 +201,7 @@ class TestNodeEquality:
         storage_manager.configure([{'name': 'local', 'type': 'local', 'path': str(tmp_path)}])
         
         node = storage_manager.node('local:file.txt')
-        node.write_bytes(b"Content")
+        node.write(b"Content", mode='wb')
         
         # Comparing with string should not raise, but return False
         assert (node == "local:file.txt") is False
@@ -241,7 +241,7 @@ class TestNodeEquality:
         storage_manager.configure([{'name': 'local', 'type': 'local', 'path': str(tmp_path)}])
         
         file_node = storage_manager.node('local:file.txt')
-        file_node.write_bytes(b"Content")
+        file_node.write(b"Content", mode='wb')
         
         dir_node = storage_manager.node('local:dir')
         dir_node.mkdir()
@@ -268,7 +268,7 @@ class TestMD5Performance:
         large_content = b"x" * (10 * 1024 * 1024)  # 10MB
         
         node = storage_manager.node('s3:test-bucket/large.bin')
-        node.write_bytes(large_content)
+        node.write(large_content, mode='wb')
         
         # Getting hash should be fast (uses ETag, no download)
         import time
@@ -286,7 +286,7 @@ class TestMD5Performance:
         storage_manager.configure([{'name': 'local', 'type': 'local', 'path': str(tmp_path)}])
         
         node = storage_manager.node('local:file.txt')
-        node.write_bytes(b"Test content")
+        node.write(b"Test content", mode='wb')
         
         hash1 = node.md5hash
         hash2 = node.md5hash

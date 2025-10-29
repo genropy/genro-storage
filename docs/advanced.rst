@@ -27,7 +27,7 @@ Many workflows require external tools (ffmpeg, imagemagick, pandoc, etc.) that:
     s3_node = storage.node('s3:video.mp4')
     local_temp = tempfile.mktemp(suffix='.mp4')
     with open(local_temp, 'wb') as f:
-        f.write(s3_node.read_bytes())
+        f.write(s3_node.read(mode='rb'))
 
     # Process
     output_temp = tempfile.mktemp(suffix='.mp4')
@@ -36,7 +36,7 @@ Many workflows require external tools (ffmpeg, imagemagick, pandoc, etc.) that:
     # Upload back
     output_node = storage.node('s3:processed.mp4')
     with open(output_temp, 'rb') as f:
-        output_node.write_bytes(f.read())
+        output_node.write(f.read(), mode='wb')
 
     # Cleanup
     os.unlink(local_temp)
@@ -327,7 +327,7 @@ Create a virtual node that lazily concatenates multiple nodes:
     document = storage.iternode(header, body, footer)
 
     # Content is only read when materialized
-    full_text = document.read_text()
+    full_text = document.read()
 
     # Or copy to destination
     document.copy_to(storage.node('output:full_document.txt'))
@@ -379,7 +379,7 @@ Create a virtual node that lazily concatenates multiple nodes:
 
     # Save ZIP
     archive = storage.node('backup.zip')
-    archive.write_bytes(zip_bytes)
+    archive.write(zip_bytes, mode='wb')
 
 The ``diffnode()`` Method
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -396,7 +396,7 @@ Create a virtual node that generates unified diffs between two files:
     diff = storage.diffnode(version1, version2)
 
     # Generate diff output
-    changes = diff.read_text()
+    changes = diff.read()
     print(changes)
 
     # Or save to file
@@ -418,8 +418,8 @@ Create a virtual node that generates unified diffs between two files:
     new_config = storage.node('s3:staging/config.json')
 
     changes = storage.diffnode(old_config, new_config)
-    if changes.read_text():
-        notify_admins(changes.read_text())
+    if changes.read():
+        notify_admins(changes.read())
 
     # Compare file versions (with versioning)
     current = storage.node('s3:document.txt')
@@ -441,10 +441,10 @@ Virtual nodes have special characteristics:
     print(node.exists)  # False
 
     # Cannot write to virtual nodes
-    node.write_text('data')  # Raises ValueError
+    node.write('data')  # Raises ValueError
 
     # Can read (materializes content)
-    content = node.read_text()  # Works
+    content = node.read()  # Works
 
     # Can copy (materializes and writes to destination)
     node.copy_to(storage.node('output.txt'))  # Works
@@ -837,7 +837,7 @@ Web Serving
     return node.serve(as_attachment=True, attachment_filename='secure.pdf')
 
     # ❌ Bad: Loading entire file into memory
-    data = node.read_bytes()  # Could be GBs!
+    data = node.read(mode='rb')  # Could be GBs!
     return Response(data, mimetype='video/mp4')
 
     # ✅ Good: Use streaming

@@ -250,10 +250,10 @@ Limitations and Gotchas
 
     # ❌ Assuming atomic operations
     node.delete()
-    node.write_text("new")  # Not atomic! Use move() for atomic replace
+    node.write("new")  # Not atomic! Use move() for atomic replace
 
     # ❌ Large files in memory
-    data = node.read_bytes()  # Loads entire file! Use open() for streaming
+    data = node.read(mode='rb')  # Loads entire file! Use open() for streaming
 
 When NOT to Use genro-storage
 ------------------------------
@@ -294,7 +294,7 @@ Easy migration. Most operations have 1:1 equivalents:
     # After (genro-storage)
     node = storage.node('local:file.txt')
     if node.exists:
-        content = node.read_text()
+        content = node.read()
 
 **From boto3:**
 
@@ -308,7 +308,7 @@ Moderate effort. Basic operations are simpler, advanced features need refactorin
     content = obj['Body'].read()
 
     # After (genro-storage)
-    content = storage.node('s3:file.txt').read_bytes()
+    content = storage.node('s3:file.txt').read(mode='rb')
 
     # Advanced features still available via backend
     backend = storage.get_backend('s3')

@@ -15,8 +15,8 @@ Example:
     ... }])
     >>>
     >>> node = storage.node('s3:file.txt')
-    >>> data = await node.read_bytes()
-    >>> await node.write_bytes(b'new data')
+    >>> data = await node.read(mode='rb')
+    >>> await node.write(b'new data', mode='wb')
 """
 
 from __future__ import annotations
@@ -53,7 +53,7 @@ class AsyncStorageManager:
         >>>
         >>> # In async context
         >>> node = storage.node('local:test.txt')
-        >>> await node.write_text('Hello async world')
+        >>> await node.write('Hello async world')
     """
 
     def __init__(self):
@@ -165,53 +165,47 @@ class AsyncStorageNode:
 
     # Async I/O operations
 
-    async def read_bytes(self) -> bytes:
-        """Read file content as bytes (async).
+    async def read(self, mode: str = 'r', encoding: str = 'utf-8') -> str | bytes:
+        """Read file content in text or binary mode (async).
+
+        Args:
+            mode: Read mode - 'r' for text (default), 'rb' for binary
+            encoding: Text encoding (used only for text mode)
 
         Returns:
-            bytes: File content
+            str | bytes: File content as text or bytes depending on mode
 
         Example:
-            >>> data = await node.read_bytes()
+            >>> # Read as text (default)
+            >>> content = await node.read()
+            >>> content = await node.read(mode='r')
+            >>>
+            >>> # Read as binary
+            >>> data = await node.read(mode='rb')
         """
-        return await asyncify(self._node.read_bytes)()
+        return await asyncify(self._node.read)(mode, encoding)
 
-    async def read_text(self, encoding: str = 'utf-8') -> str:
-        """Read file content as text (async).
+    async def write(self, data: str | bytes, mode: str = 'w', encoding: str = 'utf-8', skip_if_unchanged: bool = False) -> bool:
+        """Write data to file in text or binary mode (async).
 
         Args:
-            encoding: Text encoding (default: utf-8)
+            data: Data to write (str for text mode, bytes for binary mode)
+            mode: Write mode - 'w' for text (default), 'wb' for binary
+            encoding: Text encoding (used only for text mode)
+            skip_if_unchanged: If True, skip writing if content identical
 
         Returns:
-            str: File content as text
+            bool: True if written, False if skipped
 
         Example:
-            >>> text = await node.read_text()
+            >>> # Write text (default)
+            >>> await node.write('Hello World')
+            >>> await node.write('Hello', mode='w')
+            >>>
+            >>> # Write binary
+            >>> await node.write(b'binary data', mode='wb')
         """
-        return await asyncify(self._node.read_text)(encoding)
-
-    async def write_bytes(self, data: bytes) -> None:
-        """Write bytes to file (async).
-
-        Args:
-            data: Bytes to write
-
-        Example:
-            >>> await node.write_bytes(b'Hello world')
-        """
-        await asyncify(self._node.write_bytes)(data)
-
-    async def write_text(self, text: str, encoding: str = 'utf-8') -> None:
-        """Write text to file (async).
-
-        Args:
-            text: Text to write
-            encoding: Text encoding (default: utf-8)
-
-        Example:
-            >>> await node.write_text('Hello world')
-        """
-        await asyncify(self._node.write_text)(text, encoding)
+        return await asyncify(self._node.write)(data, mode, encoding, skip_if_unchanged)
 
     async def delete(self) -> None:
         """Delete file or directory (async).

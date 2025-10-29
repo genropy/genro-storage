@@ -49,7 +49,7 @@ Synchronous Usage
         node.copy_to(storage.node('home:cache/avatar.jpg'))
 
         # Read and process
-        data = node.read_bytes()
+        data = node.read(mode='rb')
 
         # Backup to GCS
         node.copy_to(storage.node('backups:avatars/user_123.jpg'))
@@ -72,7 +72,7 @@ Async Usage (NEW in v0.3.0!)
         node = storage.node(f'uploads:{filepath}')
 
         if await node.exists():
-            data = await node.read_bytes()
+            data = await node.read(mode='rb')
             size = await node.size()
             return data
 

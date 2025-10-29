@@ -27,42 +27,42 @@ class TestCopySkipStrategies:
         """Default behavior (skip='never') always copies."""
         # Create source file
         src = storage.node('src:file.txt')
-        src.write_text("version 1")
+        src.write("version 1")
 
         # First copy
         dest = storage.node('dest:file.txt')
         src.copy_to(dest)
-        assert dest.read_text() == "version 1"
+        assert dest.read() == "version 1"
 
         # Modify source
-        src.write_text("version 2")
+        src.write("version 2")
 
         # Copy again (should overwrite)
         src.copy_to(dest)
-        assert dest.read_text() == "version 2"
+        assert dest.read() == "version 2"
 
     def test_copy_skip_exists(self, storage):
         """skip='exists' skips if destination exists."""
         # Create source
         src = storage.node('src:file.txt')
-        src.write_text("version 1")
+        src.write("version 1")
 
         # First copy
         dest = storage.node('dest:file.txt')
         src.copy_to(dest, skip='exists')
-        assert dest.read_text() == "version 1"
+        assert dest.read() == "version 1"
 
         # Modify source
-        src.write_text("version 2")
+        src.write("version 2")
 
         # Copy again with skip='exists' (should NOT copy)
         src.copy_to(dest, skip='exists')
-        assert dest.read_text() == "version 1"  # Still old version
+        assert dest.read() == "version 1"  # Still old version
 
     def test_copy_skip_exists_string_and_enum(self, storage):
         """skip='exists' works with both string and enum."""
         src = storage.node('src:file.txt')
-        src.write_text("content")
+        src.write("content")
         dest = storage.node('dest:file.txt')
 
         # Test with string
@@ -71,7 +71,7 @@ class TestCopySkipStrategies:
 
         # Test with enum
         src2 = storage.node('src:file2.txt')
-        src2.write_text("content")
+        src2.write("content")
         dest2 = storage.node('dest:file2.txt')
         src2.copy_to(dest2, skip=SkipStrategy.EXISTS)
         assert dest2.exists
@@ -80,60 +80,60 @@ class TestCopySkipStrategies:
         """skip='size' skips if same size."""
         # Create source
         src = storage.node('src:file.txt')
-        src.write_text("12345")  # 5 bytes
+        src.write("12345")  # 5 bytes
 
         # First copy
         dest = storage.node('dest:file.txt')
         src.copy_to(dest, skip='size')
-        assert dest.read_text() == "12345"
+        assert dest.read() == "12345"
 
         # Modify source with SAME SIZE
-        src.write_text("abcde")  # Still 5 bytes
+        src.write("abcde")  # Still 5 bytes
 
         # Copy with skip='size' (should skip because same size)
         src.copy_to(dest, skip='size')
-        assert dest.read_text() == "12345"  # Still old content
+        assert dest.read() == "12345"  # Still old content
 
         # Modify source with DIFFERENT SIZE
-        src.write_text("123456")  # 6 bytes
+        src.write("123456")  # 6 bytes
 
         # Copy with skip='size' (should copy because different size)
         src.copy_to(dest, skip='size')
-        assert dest.read_text() == "123456"  # New content
+        assert dest.read() == "123456"  # New content
 
     def test_copy_skip_hash(self, storage):
         """skip='hash' skips if same content (MD5)."""
         # Create source
         src = storage.node('src:file.txt')
-        src.write_text("content")
+        src.write("content")
 
         # First copy
         dest = storage.node('dest:file.txt')
         src.copy_to(dest, skip='hash')
-        assert dest.read_text() == "content"
+        assert dest.read() == "content"
 
         # Modify source with SAME CONTENT (same MD5)
-        src.write_text("content")
+        src.write("content")
 
         # Copy with skip='hash' (should skip)
         src.copy_to(dest, skip='hash')
-        assert dest.read_text() == "content"
+        assert dest.read() == "content"
 
         # Modify source with DIFFERENT CONTENT
-        src.write_text("new content")
+        src.write("new content")
 
         # Copy with skip='hash' (should copy)
         src.copy_to(dest, skip='hash')
-        assert dest.read_text() == "new content"
+        assert dest.read() == "new content"
 
     def test_copy_skip_custom(self, storage):
         """skip='custom' uses custom skip function."""
         # Create files with different mtimes
         src = storage.node('src:file.txt')
-        src.write_text("new")
+        src.write("new")
 
         dest = storage.node('dest:file.txt')
-        dest.write_text("old")
+        dest.write("old")
 
         # Custom function: skip if dest is newer
         def skip_if_dest_newer(src_node, dest_node):
@@ -142,15 +142,15 @@ class TestCopySkipStrategies:
         # Dest is newer, should skip
         import time
         time.sleep(0.01)  # Ensure different mtime
-        dest.write_text("newer")
+        dest.write("newer")
 
         src.copy_to(dest, skip='custom', skip_fn=skip_if_dest_newer)
-        assert dest.read_text() == "newer"  # Not copied
+        assert dest.read() == "newer"  # Not copied
 
     def test_copy_skip_custom_requires_function(self, storage):
         """skip='custom' without skip_fn raises ValueError."""
         src = storage.node('src:file.txt')
-        src.write_text("content")
+        src.write("content")
         dest = storage.node('dest:file.txt')
 
         with pytest.raises(ValueError, match="skip='custom' requires skip_fn"):
@@ -159,34 +159,34 @@ class TestCopySkipStrategies:
     def test_copy_directory_skip_exists(self, storage):
         """Directory copy with skip='exists'."""
         # Create source directory structure
-        (storage.node('src:dir/file1.txt')).write_text("file1")
-        (storage.node('src:dir/file2.txt')).write_text("file2")
-        (storage.node('src:dir/sub/file3.txt')).write_text("file3")
+        (storage.node('src:dir/file1.txt')).write("file1")
+        (storage.node('src:dir/file2.txt')).write("file2")
+        (storage.node('src:dir/sub/file3.txt')).write("file3")
 
         # First copy
         src_dir = storage.node('src:dir')
         dest_dir = storage.node('dest:dir')
         src_dir.copy_to(dest_dir, skip='exists')
 
-        assert storage.node('dest:dir/file1.txt').read_text() == "file1"
-        assert storage.node('dest:dir/file2.txt').read_text() == "file2"
-        assert storage.node('dest:dir/sub/file3.txt').read_text() == "file3"
+        assert storage.node('dest:dir/file1.txt').read() == "file1"
+        assert storage.node('dest:dir/file2.txt').read() == "file2"
+        assert storage.node('dest:dir/sub/file3.txt').read() == "file3"
 
         # Modify sources
-        storage.node('src:dir/file1.txt').write_text("modified1")
-        storage.node('src:dir/file2.txt').write_text("modified2")
+        storage.node('src:dir/file1.txt').write("modified1")
+        storage.node('src:dir/file2.txt').write("modified2")
 
         # Copy again with skip='exists' (should skip existing)
         src_dir.copy_to(dest_dir, skip='exists')
 
-        assert storage.node('dest:dir/file1.txt').read_text() == "file1"  # Old
-        assert storage.node('dest:dir/file2.txt').read_text() == "file2"  # Old
+        assert storage.node('dest:dir/file1.txt').read() == "file1"  # Old
+        assert storage.node('dest:dir/file2.txt').read() == "file2"  # Old
 
     def test_copy_directory_skip_hash(self, storage):
         """Directory copy with skip='hash' skips identical files."""
         # Create source structure
-        storage.node('src:dir/unchanged.txt').write_text("same")
-        storage.node('src:dir/changed.txt').write_text("old")
+        storage.node('src:dir/unchanged.txt').write("same")
+        storage.node('src:dir/changed.txt').write("old")
 
         # First copy
         src_dir = storage.node('src:dir')
@@ -194,7 +194,7 @@ class TestCopySkipStrategies:
         src_dir.copy_to(dest_dir)
 
         # Modify only one file
-        storage.node('src:dir/changed.txt').write_text("new")
+        storage.node('src:dir/changed.txt').write("new")
 
         # Copy with skip='hash'
         copied = []
@@ -207,13 +207,13 @@ class TestCopySkipStrategies:
         # Only changed file should be copied
         assert 'changed.txt' in copied
         assert 'unchanged.txt' in skipped
-        assert storage.node('dest:dir/changed.txt').read_text() == "new"
+        assert storage.node('dest:dir/changed.txt').read() == "new"
 
     def test_copy_with_progress_callback(self, storage):
         """Progress callback is called for each file."""
         # Create directory with multiple files
         for i in range(5):
-            storage.node(f'src:dir/file{i}.txt').write_text(f"content{i}")
+            storage.node(f'src:dir/file{i}.txt').write(f"content{i}")
 
         progress_calls = []
 
@@ -231,8 +231,8 @@ class TestCopySkipStrategies:
 
     def test_copy_with_on_file_callback(self, storage):
         """on_file callback is called after each copy."""
-        storage.node('src:dir/file1.txt').write_text("a")
-        storage.node('src:dir/file2.txt').write_text("b")
+        storage.node('src:dir/file1.txt').write("a")
+        storage.node('src:dir/file2.txt').write("b")
 
         copied_files = []
 
@@ -248,8 +248,8 @@ class TestCopySkipStrategies:
     def test_copy_with_on_skip_callback(self, storage):
         """on_skip callback is called when files are skipped."""
         # Create and copy
-        storage.node('src:file1.txt').write_text("a")
-        storage.node('src:file2.txt').write_text("b")
+        storage.node('src:file1.txt').write("a")
+        storage.node('src:file2.txt').write("b")
 
         src = storage.node('src:file1.txt')
         dest = storage.node('dest:file1.txt')
@@ -270,10 +270,10 @@ class TestCopySkipStrategies:
     def test_copy_skip_hash_with_directory_tracking(self, storage):
         """Full directory sync with detailed tracking."""
         # Create source structure
-        storage.node('src:dir/unchanged1.txt').write_text("same1")
-        storage.node('src:dir/unchanged2.txt').write_text("same2")
-        storage.node('src:dir/changed.txt').write_text("old")
-        storage.node('src:dir/new.txt').write_text("new")
+        storage.node('src:dir/unchanged1.txt').write("same1")
+        storage.node('src:dir/unchanged2.txt').write("same2")
+        storage.node('src:dir/changed.txt').write("old")
+        storage.node('src:dir/new.txt').write("new")
 
         # First copy (without new.txt)
         src_dir = storage.node('src:dir')
@@ -285,7 +285,7 @@ class TestCopySkipStrategies:
             src.copy_to(dst)
 
         # Modify one file
-        storage.node('src:dir/changed.txt').write_text("new content")
+        storage.node('src:dir/changed.txt').write("new content")
 
         # Track what happens
         copied = []
@@ -310,7 +310,7 @@ class TestCopySkipStrategies:
     def test_copy_single_file_with_callbacks(self, storage):
         """Callbacks work with single file copy too."""
         src = storage.node('src:file.txt')
-        src.write_text("content")
+        src.write("content")
         dest = storage.node('dest:file.txt')
 
         # First copy
@@ -334,13 +334,13 @@ class TestCopySkipStrategies:
     def test_backward_compatibility_simple_copy(self, storage):
         """Simple copy without skip still works (backward compatible)."""
         src = storage.node('src:file.txt')
-        src.write_text("content")
+        src.write("content")
         dest = storage.node('dest:file.txt')
 
         # Old-style copy (no parameters)
         result = src.copy_to(dest)
 
-        assert dest.read_text() == "content"
+        assert dest.read() == "content"
         assert result is dest
 
     def test_skip_strategy_enum_values(self):
@@ -373,18 +373,18 @@ class TestCopySkipEdgeCases:
     def test_skip_size_handles_missing_dest(self, storage):
         """skip='size' doesn't fail if dest doesn't exist."""
         src = storage.node('src:file.txt')
-        src.write_text("content")
+        src.write("content")
         dest = storage.node('dest:file.txt')
 
         # Should copy (not skip) because dest doesn't exist
         src.copy_to(dest, skip='size')
         assert dest.exists
-        assert dest.read_text() == "content"
+        assert dest.read() == "content"
 
     def test_skip_hash_handles_missing_dest(self, storage):
         """skip='hash' doesn't fail if dest doesn't exist."""
         src = storage.node('src:file.txt')
-        src.write_text("content")
+        src.write("content")
         dest = storage.node('dest:file.txt')
 
         # Should copy because dest doesn't exist
@@ -406,11 +406,11 @@ class TestCopySkipEdgeCases:
     def test_nested_directory_copy_with_skip(self, storage):
         """Deep nested directories with skip strategies."""
         # Create deep structure
-        storage.node('src:a/b/c/d/file.txt').write_text("deep")
+        storage.node('src:a/b/c/d/file.txt').write("deep")
 
         src = storage.node('src:a')
         dest = storage.node('dest:a')
 
         src.copy_to(dest, skip='hash')
 
-        assert storage.node('dest:a/b/c/d/file.txt').read_text() == "deep"
+        assert storage.node('dest:a/b/c/d/file.txt').read() == "deep"

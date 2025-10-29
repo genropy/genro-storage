@@ -252,23 +252,30 @@ class StorageManager:
     
     def _configure_mount(self, config: dict[str, Any]) -> None:
         """Configure a single mount point.
-        
+
         Args:
             config: Mount configuration dictionary
-        
+
         Raises:
             StorageConfigError: If configuration is invalid
         """
         # Validate required fields
         if 'name' not in config:
             raise StorageConfigError("Mount configuration missing required field: 'name'")
-        
+
+        mount_name = config['name']
+
+        # Check for relative mount (child mount referencing a parent)
+        # Only check if path is a string (not callable)
+        if 'path' in config and isinstance(config['path'], str) and ':' in config['path']:
+            self._configure_relative_mount(mount_name, config)
+            return
+
         if 'type' not in config:
             raise StorageConfigError(
                 f"Mount configuration for '{config['name']}' missing required field: 'type'"
             )
-        
-        mount_name = config['name']
+
         backend_type = config['type']
         
         # Create appropriate backend
@@ -364,7 +371,67 @@ class StorageManager:
             )
         
         self._mounts[mount_name] = backend
-    
+
+    def _configure_relative_mount(self, mount_name: str, config: dict[str, Any]) -> None:
+        """Configure a relative mount point that references a parent mount.
+
+        A relative mount is a child mount that inherits the backend type and
+        configuration from a parent mount, but adds a relative path prefix
+        and optional permission restrictions.
+
+        Args:
+            mount_name: Name for the new child mount
+            config: Configuration dict with 'path' and optional 'permissions'
+
+        Raises:
+            StorageConfigError: If path format is invalid or parent mount not found
+
+        Examples:
+            >>> # After configuring parent:
+            >>> # {'name': 'data', 'type': 's3', 'bucket': 'my-bucket'}
+            >>> # Configure child with permissions:
+            >>> # {'name': 'public', 'path': 'data:public', 'permissions': 'readonly'}
+            >>> # Now 'public:file.txt' can only read from 'data:public/file.txt'
+        """
+        mount_path = config['path']
+
+        # Parse parent mount and relative path
+        if ':' not in mount_path:
+            raise StorageConfigError(
+                f"Relative mount path must contain ':' separator (got '{mount_path}')"
+            )
+
+        parent_mount_name, relative_path = mount_path.split(':', 1)
+
+        # Validate parent mount exists
+        if parent_mount_name not in self._mounts:
+            available = ', '.join(f"'{m}'" for m in self._mounts.keys()) if self._mounts else 'none'
+            raise StorageConfigError(
+                f"Parent mount '{parent_mount_name}' not found for relative mount '{mount_name}'. "
+                f"Available mounts: {available}"
+            )
+
+        # Get parent backend and create relative wrapper
+        parent_backend = self._mounts[parent_mount_name]
+
+        # Get permissions (default: 'delete' = full access)
+        permissions = config.get('permissions', 'delete')
+
+        # Validate permissions value
+        valid_permissions = ('readonly', 'readwrite', 'delete')
+        if permissions not in valid_permissions:
+            raise StorageConfigError(
+                f"Invalid permissions '{permissions}' for mount '{mount_name}'. "
+                f"Valid values: {', '.join(valid_permissions)}"
+            )
+
+        # Import here to avoid circular dependency
+        from .backends.relative import RelativeMountBackend
+
+        relative_backend = RelativeMountBackend(parent_backend, relative_path, permissions)
+
+        self._mounts[mount_name] = relative_backend
+
     def node(self, mount_or_path: str | None = None, *path_parts: str, version: int | str | None = None) -> StorageNode:
         """Create a StorageNode pointing to a file or directory.
 

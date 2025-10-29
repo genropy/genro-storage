@@ -85,7 +85,7 @@ class TestVersionCount:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_text('content')
+        node.write('content')
 
         assert node.version_count == 0
 
@@ -98,7 +98,7 @@ class TestVersionCount:
         ])
 
         node = storage.node('local:test.txt')
-        node.write_text('content')
+        node.write('content')
 
         assert node.version_count == 0
 
@@ -114,10 +114,10 @@ class TestWriteIfChanged:
         node = storage.node('mem:test.txt')
 
         # First write should succeed
-        changed = node.write_bytes(b'Hello', skip_if_unchanged=True)
+        changed = node.write(b'Hello', skip_if_unchanged=True, mode='wb')
         assert changed is True
         assert node.exists
-        assert node.read_bytes() == b'Hello'
+        assert node.read(mode='rb') == b'Hello'
 
     def test_write_bytes_skip_if_unchanged_skips_duplicate(self):
         """write_bytes(skip_if_unchanged=True) skips if content is identical."""
@@ -125,13 +125,13 @@ class TestWriteIfChanged:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_bytes(b'Hello')
+        node.write(b'Hello', mode='wb')
 
         # Second write with same content should be skipped
         # Memory backend will read and compare content
-        changed = node.write_bytes(b'Hello', skip_if_unchanged=True)
+        changed = node.write(b'Hello', skip_if_unchanged=True, mode='wb')
         assert changed is False  # Content is identical, should skip
-        assert node.read_bytes() == b'Hello'
+        assert node.read(mode='rb') == b'Hello'
 
     def test_write_bytes_skip_if_unchanged_updates_different_content(self):
         """write_bytes(skip_if_unchanged=True) writes if content is different."""
@@ -139,12 +139,12 @@ class TestWriteIfChanged:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_bytes(b'Hello')
+        node.write(b'Hello', mode='wb')
 
         # Write different content
-        changed = node.write_bytes(b'World', skip_if_unchanged=True)
+        changed = node.write(b'World', skip_if_unchanged=True, mode='wb')
         assert changed is True
-        assert node.read_bytes() == b'World'
+        assert node.read(mode='rb') == b'World'
 
     def test_write_text_skip_if_unchanged_creates_file(self):
         """write_text(skip_if_unchanged=True) creates file if it doesn't exist."""
@@ -153,9 +153,9 @@ class TestWriteIfChanged:
 
         node = storage.node('mem:test.txt')
 
-        changed = node.write_text('Hello', skip_if_unchanged=True)
+        changed = node.write('Hello', skip_if_unchanged=True)
         assert changed is True
-        assert node.read_text() == 'Hello'
+        assert node.read() == 'Hello'
 
     def test_write_text_skip_if_unchanged_updates_different_content(self):
         """write_text(skip_if_unchanged=True) writes if content is different."""
@@ -163,11 +163,11 @@ class TestWriteIfChanged:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_text('Hello')
+        node.write('Hello')
 
-        changed = node.write_text('World', skip_if_unchanged=True)
+        changed = node.write('World', skip_if_unchanged=True)
         assert changed is True
-        assert node.read_text() == 'World'
+        assert node.read() == 'World'
 
 
 class TestOpenWithVersion:
@@ -179,7 +179,7 @@ class TestOpenWithVersion:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_text('content')
+        node.write('content')
 
         with pytest.raises(PermissionError, match='does not support versioning'):
             with node.open(version=-2):
@@ -191,7 +191,7 @@ class TestOpenWithVersion:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_text('content')
+        node.write('content')
 
         yesterday = datetime.now() - timedelta(days=1)
 
@@ -220,7 +220,7 @@ class TestCompactVersions:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_text('content')
+        node.write('content')
 
         with pytest.raises(PermissionError, match='does not support versioning'):
             node.compact_versions()
@@ -231,7 +231,7 @@ class TestCompactVersions:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_text('content')
+        node.write('content')
 
         with pytest.raises(PermissionError, match='does not support versioning'):
             node.compact_versions(dry_run=True)
@@ -246,7 +246,7 @@ class TestDeleteVersion:
         storage.configure([{'name': 'mem', 'type': 'memory'}])
 
         node = storage.node('mem:test.txt')
-        node.write_text('content')
+        node.write('content')
 
         with pytest.raises(PermissionError, match='does not support version deletion'):
             node._backend.delete_version('test.txt', 'dummy_version_id')
@@ -260,7 +260,7 @@ class TestDeleteVersion:
         ])
 
         node = storage.node('local:test.txt')
-        node.write_text('content')
+        node.write('content')
 
         with pytest.raises(PermissionError, match='does not support version deletion'):
             node._backend.delete_version('test.txt', 'dummy_version_id')
