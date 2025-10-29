@@ -423,18 +423,28 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 
 ## Contributing
 
-Contributions welcome! The library is in beta with a stable API.
+Contributions are welcome! We follow a **Git Flow** workflow with protected branches for code quality.
 
-**How to contribute:**
-1. Review the [API Design Document](API_DESIGN.md)
-2. Check existing [tests](tests/) to understand behavior
-3. Open an issue to discuss major changes
-4. Submit PRs with tests
+**Quick Start:**
+1. Read our [Contributing Guide](CONTRIBUTING.md) for detailed workflow and guidelines
+2. Fork the repository and create a feature branch from `develop`
+3. Make your changes with tests and documentation
+4. Submit a Pull Request to the `develop` branch
 
-**Testing contributions:**
+**Branch Structure:**
+- `main` - Production releases (protected, requires PR review)
+- `develop` - Integration branch (protected, requires PR review)
+- `feature/*` - Feature development branches
+- `bugfix/*` - Bug fixes
+- `hotfix/*` - Critical production fixes
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for complete workflow documentation.
+
+**Areas for contribution:**
 - Add tests for GCS and Azure backends
 - Improve test coverage (target: 90%+)
 - Add integration tests for edge cases
+- Implement additional backends (WebDAV, Git, GitHub)
 
 ## License
 
