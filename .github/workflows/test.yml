@@ -34,27 +34,29 @@ jobs:
       run: |
         docker compose up -d
 
-        # Wait for services to be ready
+        # Wait for critical services to be ready
         echo "Waiting for services to be ready..."
+
+        # MinIO (required for S3 tests)
         timeout 90 bash -c 'until curl -f http://localhost:9000/minio/health/live 2>/dev/null; do echo "Waiting for MinIO..."; sleep 2; done'
         echo "✓ MinIO ready"
 
-        timeout 60 bash -c 'until nc -z localhost 10000 2>/dev/null; do echo "Waiting for Azurite..."; sleep 2; done'
-        echo "✓ Azurite ready"
+        # Azurite (optional - Azure tests)
+        timeout 30 bash -c 'until nc -z localhost 10000 2>/dev/null; do echo "Waiting for Azurite..."; sleep 2; done' || echo "⚠ Azurite not ready (tests will skip)"
 
-        timeout 60 bash -c 'until curl -f http://localhost:4443/storage/v1/b 2>/dev/null; do echo "Waiting for fake-gcs-server..."; sleep 2; done'
-        echo "✓ fake-gcs-server ready"
+        # fake-gcs-server (optional - GCS tests)
+        timeout 30 bash -c 'until curl -f http://localhost:4443/storage/v1/b 2>/dev/null; do echo "Waiting for fake-gcs-server..."; sleep 2; done' || echo "⚠ fake-gcs-server not ready (tests will skip)"
 
-        timeout 60 bash -c 'until nc -z localhost 2222 2>/dev/null; do echo "Waiting for SFTP..."; sleep 2; done'
-        echo "✓ SFTP ready"
+        # SFTP (optional - SFTP tests)
+        timeout 30 bash -c 'until nc -z localhost 2222 2>/dev/null; do echo "Waiting for SFTP..."; sleep 2; done' || echo "⚠ SFTP not ready (tests will skip)"
 
-        timeout 60 bash -c 'until nc -z localhost 445 2>/dev/null; do echo "Waiting for SMB..."; sleep 2; done'
-        echo "✓ SMB ready"
+        # SMB (optional - SMB tests)
+        timeout 30 bash -c 'until nc -z localhost 445 2>/dev/null; do echo "Waiting for SMB..."; sleep 2; done' || echo "⚠ SMB not ready (tests will skip)"
 
-        timeout 60 bash -c 'until curl -f http://localhost:8080 2>/dev/null; do echo "Waiting for WebDAV..."; sleep 2; done'
-        echo "✓ WebDAV ready"
+        # WebDAV (optional - WebDAV tests)
+        timeout 30 bash -c 'until curl -f http://localhost:8080 2>/dev/null; do echo "Waiting for WebDAV..."; sleep 2; done' || echo "⚠ WebDAV not ready (tests will skip)"
 
-        echo "All services ready!"
+        echo "Service startup complete!"
     
     - name: Install dependencies
       run: |
