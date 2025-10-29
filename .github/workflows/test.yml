@@ -30,18 +30,31 @@ jobs:
         python-version: ${{ matrix.python-version }}
         cache: 'pip'
     
-    - name: Start MinIO
+    - name: Start Docker services
       run: |
-        docker run -d \
-          --name minio \
-          -p 9000:9000 \
-          -e MINIO_ROOT_USER=minioadmin \
-          -e MINIO_ROOT_PASSWORD=minioadmin \
-          minio/minio:latest server /data
-        
-        # Wait for MinIO to be ready
-        timeout 60 bash -c 'until curl -f http://localhost:9000/minio/health/live 2>/dev/null; do echo "Waiting for MinIO..."; sleep 2; done'
-        echo "MinIO is ready!"
+        docker-compose up -d
+
+        # Wait for services to be ready
+        echo "Waiting for services to be ready..."
+        timeout 90 bash -c 'until curl -f http://localhost:9000/minio/health/live 2>/dev/null; do echo "Waiting for MinIO..."; sleep 2; done'
+        echo "✓ MinIO ready"
+
+        timeout 60 bash -c 'until nc -z localhost 10000 2>/dev/null; do echo "Waiting for Azurite..."; sleep 2; done'
+        echo "✓ Azurite ready"
+
+        timeout 60 bash -c 'until curl -f http://localhost:4443/storage/v1/b 2>/dev/null; do echo "Waiting for fake-gcs-server..."; sleep 2; done'
+        echo "✓ fake-gcs-server ready"
+
+        timeout 60 bash -c 'until nc -z localhost 2222 2>/dev/null; do echo "Waiting for SFTP..."; sleep 2; done'
+        echo "✓ SFTP ready"
+
+        timeout 60 bash -c 'until nc -z localhost 445 2>/dev/null; do echo "Waiting for SMB..."; sleep 2; done'
+        echo "✓ SMB ready"
+
+        timeout 60 bash -c 'until curl -f http://localhost:8080 2>/dev/null; do echo "Waiting for WebDAV..."; sleep 2; done'
+        echo "✓ WebDAV ready"
+
+        echo "All services ready!"
     
     - name: Install dependencies
       run: |
@@ -53,14 +66,14 @@ jobs:
         MINIO_ENDPOINT: http://localhost:9000
         MINIO_ACCESS_KEY: minioadmin
         MINIO_SECRET_KEY: minioadmin
+        STORAGE_EMULATOR_HOST: http://localhost:4443
       run: |
         pytest -v --cov=genro_storage --cov-report=xml --cov-report=term
     
-    - name: Stop MinIO
+    - name: Stop Docker services
       if: always()
       run: |
-        docker stop minio || true
-        docker rm minio || true
+        docker-compose down -v
     
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.12'
