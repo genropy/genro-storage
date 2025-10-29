@@ -21,6 +21,7 @@ from .backends import StorageBackend
 from .backends.local import LocalStorage
 from .backends.fsspec import FsspecBackend
 from .backends.base64 import Base64Backend
+from .backends.relative import RelativeMountBackend
 
 
 class StorageManager:
@@ -543,7 +544,11 @@ class StorageManager:
                 f"Supported types: local, s3, gcs, azure, http, memory, base64, smb, sftp, zip, tar, "
                 f"git, github, webdav, libarchive"
             )
-        
+
+        # Apply permission restrictions if specified
+        if 'permissions' in config:
+            backend = self._apply_permissions(mount_name, backend, config['permissions'])
+
         self._mounts[mount_name] = backend
 
     def _configure_relative_mount(self, mount_name: str, config: dict[str, Any]) -> None:
@@ -599,12 +604,61 @@ class StorageManager:
                 f"Valid values: {', '.join(valid_permissions)}"
             )
 
-        # Import here to avoid circular dependency
-        from .backends.relative import RelativeMountBackend
-
         relative_backend = RelativeMountBackend(parent_backend, relative_path, permissions)
 
         self._mounts[mount_name] = relative_backend
+
+    def _apply_permissions(self, mount_name: str, backend: StorageBackend, permissions: str) -> StorageBackend:
+        """Apply permission restrictions to a backend by wrapping with RelativeMountBackend.
+
+        Validates that requested permissions are compatible with backend capabilities.
+        For example, cannot request 'readwrite' on a read-only backend like HTTP.
+
+        Args:
+            mount_name: Name of the mount (for error messages)
+            backend: The backend to wrap
+            permissions: Permission level ('readonly', 'readwrite', 'delete')
+
+        Returns:
+            StorageBackend: Original backend wrapped with permission layer
+
+        Raises:
+            StorageConfigError: If permissions are invalid or incompatible with backend
+        """
+        # Validate permissions value
+        valid_permissions = ('readonly', 'readwrite', 'delete')
+        if permissions not in valid_permissions:
+            raise StorageConfigError(
+                f"Invalid permissions '{permissions}' for mount '{mount_name}'. "
+                f"Valid values: {', '.join(valid_permissions)}"
+            )
+
+        # Check compatibility with backend capabilities
+        caps = backend.capabilities
+
+        # If backend is readonly, can only request 'readonly' permission
+        if caps.readonly and permissions in ('readwrite', 'delete'):
+            raise StorageConfigError(
+                f"Cannot configure mount '{mount_name}' with '{permissions}' permission. "
+                f"Backend type is read-only (supports only 'readonly' permission)"
+            )
+
+        # If backend doesn't support write, cannot request write/delete
+        if not caps.write and permissions in ('readwrite', 'delete'):
+            raise StorageConfigError(
+                f"Cannot configure mount '{mount_name}' with '{permissions}' permission. "
+                f"Backend does not support write operations"
+            )
+
+        # If backend doesn't support delete, cannot request delete permission
+        if not caps.delete and permissions == 'delete':
+            raise StorageConfigError(
+                f"Cannot configure mount '{mount_name}' with 'delete' permission. "
+                f"Backend does not support delete operations"
+            )
+
+        # Wrap backend with permission layer (empty relative path = no prefix)
+        return RelativeMountBackend(backend, relative_path='', permissions=permissions)
 
     def node(self, mount_or_path: str | None = None, *path_parts: str, version: int | str | None = None) -> StorageNode:
         """Create a StorageNode pointing to a file or directory.

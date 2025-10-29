@@ -15,7 +15,12 @@ from genro_storage import StorageManager, StorageConfigError
 class TestHTTPServer:
     """Context manager for test HTTP server."""
 
-    def __init__(self, port=8888):
+    def __init__(self, port=0):
+        """Initialize test HTTP server.
+
+        Args:
+            port: Port number to use. If 0, uses a random available port.
+        """
         self.port = port
         self.tmpdir = None
         self.httpd = None
@@ -30,6 +35,9 @@ class TestHTTPServer:
         # Start HTTP server
         Handler = http.server.SimpleHTTPRequestHandler
         self.httpd = socketserver.TCPServer(("", self.port), Handler)
+
+        # Get the actual port assigned (if port was 0, it gets a random port)
+        self.port = self.httpd.server_address[1]
 
         # Change to temp dir so server serves those files
         import os
