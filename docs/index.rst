@@ -10,7 +10,8 @@ it adds an intuitive mount-point system and user-friendly API inspired by Unix f
 Features
 --------
 
-* **Async/await support** - Use in FastAPI, asyncio apps with AsyncStorageManager (NEW in v0.3.0!)
+* **Async/await support** - Use in FastAPI, asyncio apps with AsyncStorageManager
+* **Native permission control** - Configure readonly, readwrite, or delete permissions for any backend
 * **Powered by fsspec** - Leverage 20+ battle-tested storage backends
 * **Mount point system** - Organize storage with logical names like ``home:``, ``uploads:``, ``s3:``
 * **Intuitive API** - Pathlib-inspired interface that feels natural and Pythonic
@@ -54,8 +55,8 @@ Synchronous Usage
         # Backup to GCS
         node.copy_to(storage.node('backups:avatars/user_123.jpg'))
 
-Async Usage (NEW in v0.3.0!)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Async Usage
+~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -94,7 +95,7 @@ Installation
     pip install genro-storage[sftp]    # SFTP/SSH
 
     # With async support
-    pip install genro-storage[async]   # Async support (NEW in v0.3.0!)
+    pip install genro-storage[async]   # Async support
 
     # All backends + async
     pip install genro-storage[all]     # Everything
