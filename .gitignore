@@ -144,3 +144,7 @@ Thumbs.db
 
 # Project specific
 /test_storage/
+
+# Temporary files
+temp/*
+!temp/.gitignore
