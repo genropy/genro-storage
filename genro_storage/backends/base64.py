@@ -28,7 +28,7 @@ import time
 from typing import BinaryIO, TextIO
 
 from .base import StorageBackend
-from ..capabilities import BackendCapabilities
+from ..capabilities import BackendCapabilities, capability
 from ..exceptions import StorageError
 
 
@@ -43,55 +43,49 @@ class Base64Backend(StorageBackend):
         _creation_time: Fixed timestamp for mtime() calls
     """
 
+    # Default protocol name for this backend
+    _default_protocol = 'base64'
+
     def __init__(self) -> None:
         """Initialize the Base64 backend."""
         self._creation_time = time.time()
 
     @property
     def capabilities(self) -> BackendCapabilities:
-        """Return capabilities of base64 backend.
+        """Return the capabilities of this backend.
 
-        Base64 backend is read-only and provides inline data URIs.
+        Overrides the base implementation to add base64-specific meta-capabilities.
+        """
+        # Get base capabilities from parent (auto-derived from @capability decorators)
+        caps = super().capabilities
+
+        # Base64 is read-only and provides public URLs (data:// URIs)
+        # Use replace() since BackendCapabilities is frozen
+        return caps.__class__(
+            **{**caps.__dict__, 'readonly': True, 'public_urls': True}
+        )
+
+    @classmethod
+    def get_json_info(cls) -> dict:
+        """Return complete backend information in JSON format.
 
         Returns:
-            BackendCapabilities: Read-only with data URI support
+            dict: Backend information with schema, capabilities, and description.
         """
-        return BackendCapabilities(
-            # Read-only operations
-            read=True,
-            write=False,
-            delete=False,
+        # Get base capabilities from parent class (auto-derived from @capability decorators)
+        info = super().get_json_info()
 
-            # No directory concept
-            mkdir=False,
-            list_dir=False,
+        # Override description and schema with Base64-specific information
+        info["description"] = "Base64-encoded inline data storage (read-only)"
+        info["schema"] = {
+            "fields": []  # No configuration needed for base64 backend
+        }
 
-            # No versioning
-            versioning=False,
-            version_listing=False,
-            version_access=False,
+        # Add base64-specific capabilities
+        info["capabilities"]["readonly"] = True
+        info["capabilities"]["public_urls"] = True  # data:// URIs are "public"
 
-            # No metadata
-            metadata=False,
-
-            # Returns data URIs
-            presigned_urls=False,
-            public_urls=True,  # data:// URIs are "public"
-
-            # Inline data
-            atomic_operations=False,
-            symbolic_links=False,
-            copy_optimization=False,
-            hash_on_metadata=False,
-
-            # Performance
-            append_mode=False,
-            seek_support=True,
-
-            # Access
-            readonly=True,
-            temporary=False
-        )
+        return info
 
     def _decode(self, path: str) -> bytes:
         """Decode base64 path to bytes.
@@ -198,6 +192,7 @@ class Base64Backend(StorageBackend):
         self._decode(path)
         return self._creation_time
 
+    @capability('read', 'seek_support')
     def open(self, path: str, mode: str = 'rb') -> BinaryIO | TextIO:
         """Open base64 data as file-like object.
 
@@ -234,6 +229,7 @@ class Base64Backend(StorageBackend):
             text = data.decode(encoding)
             return io.StringIO(text)
 
+    @capability('read')
     def read_bytes(self, path: str) -> bytes:
         """Read and decode base64 data.
 
@@ -248,6 +244,7 @@ class Base64Backend(StorageBackend):
         """
         return self._decode(path)
 
+    @capability('read')
     def read_text(self, path: str, encoding: str = 'utf-8') -> str:
         """Read and decode base64 data as text.
 

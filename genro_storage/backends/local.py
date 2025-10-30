@@ -12,7 +12,7 @@ import shutil
 import sys
 
 from .base import StorageBackend
-from ..capabilities import BackendCapabilities
+from ..capabilities import BackendCapabilities, capability
 
 
 class LocalStorage(StorageBackend):
@@ -45,6 +45,9 @@ class LocalStorage(StorageBackend):
         >>> # Access files relative to base
         >>> data = backend.read_bytes('documents/report.pdf')
     """
+
+    # Default protocol name for this backend
+    _default_protocol = 'local'
 
     def __init__(self, path: Union[str, Callable[[], str]]):
         """Initialize LocalStorage backend.
@@ -96,53 +99,36 @@ class LocalStorage(StorageBackend):
         """
         return self._resolve_base_path()
 
-    @property
-    def capabilities(self) -> BackendCapabilities:
-        """Return capabilities of local filesystem backend.
+    @classmethod
+    def get_json_info(cls) -> dict:
+        """Return complete backend information in JSON format.
 
         Returns:
-            BackendCapabilities: Full support for basic operations, symbolic links
-                                 on Unix/Linux, no versioning or cloud features
+            dict: Backend information with schema, capabilities, and description.
         """
-        # Check if we're on Unix/Linux for symlink support
+        # Get base capabilities from parent class (auto-derived from @capability decorators)
+        info = super().get_json_info()
+
+        # Override description and schema with LocalStorage-specific information
+        info["description"] = "Local filesystem storage with full read/write capabilities"
+        info["schema"] = {
+            "fields": [
+                {
+                    "name": "path",
+                    "type": "text",
+                    "label": "Local Path",
+                    "required": True,
+                    "placeholder": "/path/to/directory",
+                    "help": "Absolute path to local directory"
+                }
+            ]
+        }
+
+        # Add platform-specific capability (symbolic_links only on Unix)
         is_unix = sys.platform != 'win32'
+        info["capabilities"]["symbolic_links"] = is_unix
 
-        return BackendCapabilities(
-            # Core operations
-            read=True,
-            write=True,
-            delete=True,
-
-            # Directory operations
-            mkdir=True,
-            list_dir=True,
-
-            # No versioning on local filesystem
-            versioning=False,
-            version_listing=False,
-            version_access=False,
-
-            # No custom metadata (could use xattr but not standard)
-            metadata=False,
-
-            # No URL generation
-            presigned_urls=False,
-            public_urls=False,
-
-            # Advanced features
-            atomic_operations=True,  # OS handles this
-            symbolic_links=is_unix,  # Unix/Linux only
-            copy_optimization=True,  # Uses native OS copy
-            hash_on_metadata=False,  # Must compute MD5
-
-            # Performance
-            append_mode=True,
-            seek_support=True,
-
-            # Access
-            readonly=False,
-            temporary=False
-        )
+        return info
 
     def _resolve_path(self, path: str) -> Path:
         """Resolve a relative path to absolute filesystem path.
@@ -175,90 +161,96 @@ class LocalStorage(StorageBackend):
     def exists(self, path: str) -> bool:
         """Check if file or directory exists."""
         return self._resolve_path(path).exists()
-    
+
     def is_file(self, path: str) -> bool:
         """Check if path points to a file."""
         return self._resolve_path(path).is_file()
-    
+
     def is_dir(self, path: str) -> bool:
         """Check if path points to a directory."""
         return self._resolve_path(path).is_dir()
-    
+
     def size(self, path: str) -> int:
         """Get file size in bytes."""
         full_path = self._resolve_path(path)
-        
+
         if not full_path.exists():
             raise FileNotFoundError(f"File not found: {path}")
-        
+
         if full_path.is_dir():
             raise ValueError(f"Path is a directory, not a file: {path}")
-        
+
         return full_path.stat().st_size
-    
+
     def mtime(self, path: str) -> float:
         """Get last modification time."""
         full_path = self._resolve_path(path)
-        
+
         if not full_path.exists():
             raise FileNotFoundError(f"Path not found: {path}")
-        
+
         return full_path.stat().st_mtime
-    
+
+    @capability('read', 'write', 'append_mode', 'seek_support', 'atomic_operations')
     def open(self, path: str, mode: str = 'rb') -> BinaryIO | TextIO:
         """Open file and return file-like object."""
         full_path = self._resolve_path(path)
-        
+
         # Ensure parent directory exists for write modes
         if any(m in mode for m in ['w', 'a', 'x']):
             full_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         return open(full_path, mode)
-    
+
+    @capability('read')
     def read_bytes(self, path: str) -> bytes:
         """Read entire file as bytes."""
         full_path = self._resolve_path(path)
-        
+
         if not full_path.exists():
             raise FileNotFoundError(f"File not found: {path}")
-        
+
         return full_path.read_bytes()
-    
+
+    @capability('read')
     def read_text(self, path: str, encoding: str = 'utf-8') -> str:
         """Read entire file as text."""
         full_path = self._resolve_path(path)
-        
+
         if not full_path.exists():
             raise FileNotFoundError(f"File not found: {path}")
-        
+
         return full_path.read_text(encoding=encoding)
-    
+
+    @capability('write', 'atomic_operations')
     def write_bytes(self, path: str, data: bytes) -> None:
         """Write bytes to file."""
         full_path = self._resolve_path(path)
-        
+
         # Ensure parent directory exists
         full_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         full_path.write_bytes(data)
-    
+
+    @capability('write', 'atomic_operations')
     def write_text(self, path: str, text: str, encoding: str = 'utf-8') -> None:
         """Write text to file."""
         full_path = self._resolve_path(path)
-        
+
         # Ensure parent directory exists
         full_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         full_path.write_text(text, encoding=encoding)
-    
+
+    @capability('delete')
     def delete(self, path: str, recursive: bool = False) -> None:
         """Delete file or directory."""
         full_path = self._resolve_path(path)
-        
+
         if not full_path.exists():
             # Idempotent - no error if doesn't exist
             return
-        
+
         if full_path.is_file():
             full_path.unlink()
         elif full_path.is_dir():
@@ -272,28 +264,31 @@ class LocalStorage(StorageBackend):
                         f"Use recursive=True to delete recursively."
                     )
                 full_path.rmdir()
-    
+
+    @capability('list_dir')
     def list_dir(self, path: str) -> list[str]:
         """List directory contents."""
         full_path = self._resolve_path(path)
-        
+
         if not full_path.exists():
             raise FileNotFoundError(f"Directory not found: {path}")
-        
+
         if not full_path.is_dir():
             raise ValueError(f"Path is not a directory: {path}")
-        
+
         return [item.name for item in full_path.iterdir()]
-    
+
+    @capability('mkdir')
     def mkdir(self, path: str, parents: bool = False, exist_ok: bool = False) -> None:
         """Create directory."""
         full_path = self._resolve_path(path)
-        
+
         if full_path.exists() and not exist_ok:
             raise FileExistsError(f"Directory already exists: {path}")
-        
+
         full_path.mkdir(parents=parents, exist_ok=exist_ok)
-    
+
+    @capability('copy_optimization')
     def copy(self, src_path: str, dest_backend: StorageBackend, dest_path: str) -> None:
         """Copy file/directory to another backend.
 

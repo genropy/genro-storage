@@ -5,6 +5,62 @@ allowing feature detection and validation before attempting operations.
 """
 
 from dataclasses import dataclass
+from functools import wraps
+from typing import Callable, Any
+
+
+def capability(*names: str) -> Callable:
+    """Decorator to automatically register capabilities on the backend class.
+
+    During class definition, this decorator adds capability names to the class's
+    PROTOCOL_CAPABILITIES dictionary. For single-protocol backends, uses the
+    _default_protocol attribute; for multi-protocol backends (like FsspecBackend),
+    the dictionary must be declared manually.
+
+    Args:
+        *names: One or more capability names (e.g., 'read', 'write', 'mkdir')
+
+    Examples:
+        >>> class MyBackend(StorageBackend):
+        ...     _default_protocol = 'mybackend'
+        ...
+        ...     @capability('read')
+        ...     def read_bytes(self, path):
+        ...         pass
+        ...
+        ...     @capability('write', 'metadata')
+        ...     def write_bytes(self, path, data):
+        ...         pass
+        ...
+        ...     # Capabilities are now automatically registered:
+        ...     # MyBackend.PROTOCOL_CAPABILITIES == {'mybackend': {'read', 'write', 'metadata'}}
+    """
+    def decorator(func: Callable) -> Callable:
+        # Access the class namespace during class construction
+        import sys
+        frame = sys._getframe(1)
+        namespace = frame.f_locals
+
+        # Get the protocol for this class (default to class name in lowercase)
+        protocol = namespace.get('_default_protocol')
+        if protocol is None:
+            # Try to infer from class name (remove 'Backend' or 'Storage' suffix)
+            class_name = namespace.get('__qualname__', 'unknown')
+            protocol = class_name.lower().replace('backend', '').replace('storage', '') or 'unknown'
+
+        # Initialize PROTOCOL_CAPABILITIES dict if needed
+        if 'PROTOCOL_CAPABILITIES' not in namespace:
+            namespace['PROTOCOL_CAPABILITIES'] = {}
+
+        # Initialize capability set for this protocol
+        if protocol not in namespace['PROTOCOL_CAPABILITIES']:
+            namespace['PROTOCOL_CAPABILITIES'][protocol] = set()
+
+        # Register these capability names
+        namespace['PROTOCOL_CAPABILITIES'][protocol].update(names)
+
+        return func
+    return decorator
 
 
 @dataclass(frozen=True)

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import BinaryIO, TextIO
+from dataclasses import asdict
 
 from ..capabilities import BackendCapabilities
 
@@ -25,26 +26,168 @@ class StorageBackend(ABC):
     Note:
         Backend implementations should not be instantiated directly by users.
         They are created internally by StorageManager based on configuration.
+
+    Capability System:
+        Capabilities are automatically derived from methods decorated with @capability.
+        The decorator populates the _capabilities set during class definition,
+        and __init_subclass__ ensures proper inheritance.
     """
 
-    @property
-    @abstractmethod
-    def capabilities(self) -> BackendCapabilities:
-        """Return the capabilities of this backend.
+    # Class variable: maps protocol → set of capabilities
+    # Populated automatically by @capability decorator or declared manually
+    PROTOCOL_CAPABILITIES: dict[str, set[str]] = {}
 
-        This property must be implemented by all backend subclasses to declare
-        what features they support. This enables feature detection and validation
-        before attempting operations.
+    def __init_subclass__(cls, **kwargs):
+        """Automatically collect and inherit capabilities when subclass is created.
+
+        This method is called when a subclass of StorageBackend is defined.
+        It collects PROTOCOL_CAPABILITIES from parent classes and merges them.
+        """
+        super().__init_subclass__(**kwargs)
+
+        # Collect capabilities from all parent classes
+        inherited_caps = {}
+        for base in cls.__mro__[1:]:  # Skip cls itself
+            if hasattr(base, 'PROTOCOL_CAPABILITIES'):
+                for protocol, caps in base.PROTOCOL_CAPABILITIES.items():
+                    if protocol not in inherited_caps:
+                        inherited_caps[protocol] = set()
+                    inherited_caps[protocol].update(caps)
+
+        # Get capabilities defined in this class (added by @capability decorator)
+        own_caps = cls.__dict__.get('PROTOCOL_CAPABILITIES', {})
+
+        # Merge inherited and own capabilities
+        all_caps = inherited_caps.copy()
+        for protocol, caps in own_caps.items():
+            if protocol not in all_caps:
+                all_caps[protocol] = set()
+            all_caps[protocol].update(caps)
+
+        cls.PROTOCOL_CAPABILITIES = all_caps
+
+    @classmethod
+    def get_capabilities(cls, protocol: str | None = None) -> set[str]:
+        """Get capability set for a given protocol.
+
+        For single-protocol backends (LocalStorage, Base64Backend), protocol
+        parameter is optional and defaults to the backend's only protocol.
+        For multi-protocol backends (FsspecBackend), protocol must be specified.
+
+        Args:
+            protocol: Protocol name (e.g., 's3', 'gcs', 'local', 'base64')
+                     If None, returns capabilities for the only available protocol
+
+        Returns:
+            set: Set of capability names
+
+        Examples:
+            >>> # Single-protocol backend
+            >>> LocalStorage.get_capabilities()  # protocol auto-detected
+            {'read', 'write', 'delete', 'mkdir', ...}
+
+            >>> # Multi-protocol backend
+            >>> FsspecBackend.get_capabilities('s3')
+            {'read', 'write', 'metadata', 'presigned_urls', ...}
+        """
+        if protocol is None:
+            # Auto-detect for single-protocol backends
+            if len(cls.PROTOCOL_CAPABILITIES) == 1:
+                protocol = list(cls.PROTOCOL_CAPABILITIES.keys())[0]
+            else:
+                raise ValueError(
+                    f"{cls.__name__} supports multiple protocols. "
+                    f"Please specify protocol parameter. "
+                    f"Available: {list(cls.PROTOCOL_CAPABILITIES.keys())}"
+                )
+
+        if protocol not in cls.PROTOCOL_CAPABILITIES:
+            raise ValueError(
+                f"Unknown protocol '{protocol}' for {cls.__name__}. "
+                f"Available: {list(cls.PROTOCOL_CAPABILITIES.keys())}"
+            )
+
+        return cls.PROTOCOL_CAPABILITIES[protocol]
+
+    @property
+    def capabilities(self) -> BackendCapabilities:
+        """Return the capabilities of this backend instance.
+
+        For single-protocol backends, automatically uses the only protocol.
+        For multi-protocol backends (FsspecBackend), uses self.protocol.
 
         Returns:
             BackendCapabilities: Object describing supported features
 
         Examples:
+            >>> backend = LocalStorage('/tmp')
             >>> caps = backend.capabilities
             >>> if caps.versioning:
             ...     versions = backend.get_versions('file.txt')
         """
-        pass
+        # For multi-protocol backends, get protocol from instance
+        protocol = getattr(self, 'protocol', None)
+        caps_set = self.get_capabilities(protocol)
+
+        # Build kwargs dict for BackendCapabilities from the capability set
+        kwargs = {}
+        for field in BackendCapabilities.__dataclass_fields__:
+            kwargs[field] = field in caps_set
+
+        return BackendCapabilities(**kwargs)
+
+    @classmethod
+    def get_json_info(cls, protocol: str | None = None) -> dict:
+        """Return complete backend information in JSON format.
+
+        This classmethod can be overridden by backend subclasses to provide
+        complete information including configuration schema, capabilities,
+        and description. This is useful for UI generation and documentation.
+
+        The default implementation returns capabilities derived from @capability
+        decorators, but no schema information.
+
+        Args:
+            protocol: Protocol name for multi-protocol backends (optional for single-protocol)
+
+        Returns:
+            dict: Backend information with schema, capabilities, and description
+
+        Examples:
+            >>> # Single-protocol backend
+            >>> info = LocalStorage.get_json_info()
+            >>> print(info['schema']['fields'])
+            [{'name': 'path', 'type': 'text', 'required': True}]
+
+            >>> # Multi-protocol backend
+            >>> info = FsspecBackend.get_json_info('s3')
+            >>> print(info['capabilities']['metadata'])
+            True
+        """
+        # Get capabilities for the protocol
+        caps_set = cls.get_capabilities(protocol)
+
+        # Build capabilities dict from set
+        caps_dict = {}
+        for field in BackendCapabilities.__dataclass_fields__:
+            caps_dict[field] = field in caps_set
+
+        # Determine backend name from protocol or class name
+        if protocol:
+            backend_name = protocol
+        elif len(cls.PROTOCOL_CAPABILITIES) == 1:
+            backend_name = list(cls.PROTOCOL_CAPABILITIES.keys())[0]
+        else:
+            backend_name = cls.__name__.lower().replace('backend', '').replace('storage', '')
+
+        return {
+            "backend": backend_name,
+            "schema": {
+                "fields": []
+            },
+            "capabilities": caps_dict,
+            "description": "No description available"
+        }
 
     @abstractmethod
     def exists(self, path: str) -> bool:
