@@ -103,27 +103,8 @@ jobs:
         path: htmlcov/
         retention-days: 30
 
-    - name: Coverage Badge
-      if: matrix.python-version == '3.12' && github.ref == 'refs/heads/main'
-      uses: tj-actions/coverage-badge-py@v2
-      with:
-        output: .github/badges/coverage.svg
-
-    - name: Verify Changed files
-      if: matrix.python-version == '3.12' && github.ref == 'refs/heads/main'
-      uses: tj-actions/verify-changed-files@v17
-      id: verify-changed-files
-      with:
-        files: .github/badges/coverage.svg
-
-    - name: Commit coverage badge
-      if: matrix.python-version == '3.12' && github.ref == 'refs/heads/main' && steps.verify-changed-files.outputs.files_changed == 'true'
-      run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git add .github/badges/coverage.svg
-        git commit -m "chore: Update coverage badge"
-        git push
+    # Coverage badge is handled by Codecov automatically
+    # No need to generate and commit a local badge file
 
   lint:
     name: Lint and format check
