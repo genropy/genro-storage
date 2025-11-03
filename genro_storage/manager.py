@@ -1,3 +1,18 @@
+# Copyright (c) 2025 Softwell Srl, Milano, Italy
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """StorageManager - Main entry point for configuring and accessing storage.
 
 This module provides the StorageManager class which is the primary interface
@@ -5,9 +20,11 @@ for configuring storage backends and creating StorageNode instances.
 """
 
 from __future__ import annotations
-from typing import Any
+from typing import Any, Annotated
 import json
 from pathlib import Path
+
+from genro_core.decorators.api import apiready
 
 try:
     import yaml
@@ -24,6 +41,7 @@ from .backends.base64 import Base64Backend
 from .backends.relative import RelativeMountBackend
 
 
+@apiready(path="/storage")
 class StorageManager:
     """Main entry point for configuring and accessing storage.
     
@@ -65,8 +83,14 @@ class StorageManager:
         """
         # Dictionary mapping mount names to backend instances
         self._mounts: dict[str, Any] = {}
-    
-    def configure(self, source: str | list[dict[str, Any]]) -> None:
+
+    def configure(
+        self,
+        source: Annotated[
+            str | list[dict[str, Any]],
+            "Configuration source: path to YAML/JSON file or list of mount configurations"
+        ]
+    ) -> None:
         """Configure mount points from various sources.
         
         This method can be called multiple times. If a mount with the same
@@ -199,7 +223,54 @@ class StorageManager:
         # Validate and configure each mount
         for config in config_list:
             self._configure_mount(config)
-    
+
+    @apiready
+    def add_mount(
+        self,
+        config: Annotated[
+            dict[str, Any],
+            "Mount configuration dictionary"
+        ]
+    ) -> None:
+        """Add or update a single mount point.
+
+        If a mount with the same name already exists, it will be replaced.
+
+        Args:
+            config: Mount configuration dictionary with 'name' and 'type' fields
+
+        Raises:
+            StorageConfigError: If configuration is invalid
+
+        Examples:
+            >>> storage.add_mount({
+            ...     'name': 'uploads',
+            ...     'type': 's3',
+            ...     'bucket': 'my-bucket'
+            ... })
+        """
+        self._configure_mount(config)
+
+    @apiready
+    def delete_mount(
+        self,
+        name: Annotated[str, "Mount point name to delete"]
+    ) -> None:
+        """Delete a mount point.
+
+        Args:
+            name: Name of the mount point to remove
+
+        Raises:
+            KeyError: If mount point doesn't exist
+
+        Examples:
+            >>> storage.delete_mount('uploads')
+        """
+        if name not in self._mounts:
+            raise KeyError(f"Mount point '{name}' not found")
+        del self._mounts[name]
+
     def _load_config_file(self, filepath: str) -> list[dict[str, Any]]:
         """Load configuration from YAML or JSON file.
         
@@ -660,7 +731,19 @@ class StorageManager:
         # Wrap backend with permission layer (empty relative path = no prefix)
         return RelativeMountBackend(backend, relative_path='', permissions=permissions)
 
-    def node(self, mount_or_path: str | None = None, *path_parts: str, version: int | str | None = None) -> StorageNode:
+    @apiready
+    def node(
+        self,
+        mount_or_path: Annotated[
+            str | None,
+            "Mount name or full path (mount:path format), or None for dummy node"
+        ] = None,
+        *path_parts: str,
+        version: Annotated[
+            int | str | None,
+            "Optional version: int for index (-1=latest), str for version_id"
+        ] = None
+    ) -> StorageNode:
         """Create a StorageNode pointing to a file or directory.
 
         This is the primary way to access files and directories. The path
@@ -864,8 +947,9 @@ class StorageManager:
         # Normalize: strip leading/trailing slashes, collapse multiple slashes
         parts = [p for p in path.split('/') if p]
         return '/'.join(parts)
-    
-    def get_mount_names(self) -> list[str]:
+
+    @apiready
+    def get_mount_names(self) -> Annotated[list[str], "List of configured mount point names"]:
         """Get list of configured mount names.
         
         Returns:
@@ -880,8 +964,12 @@ class StorageManager:
             ['home', 'uploads']
         """
         return list(self._mounts.keys())
-    
-    def has_mount(self, name: str) -> bool:
+
+    @apiready
+    def has_mount(
+        self,
+        name: Annotated[str, "Mount point name to check"]
+    ) -> Annotated[bool, "True if mount exists"]:
         """Check if a mount point is configured.
         
         Args:

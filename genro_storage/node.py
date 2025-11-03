@@ -1,3 +1,18 @@
+# Copyright (c) 2025 Softwell Srl, Milano, Italy
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """StorageNode - Represents a file or directory in a storage backend.
 
 This module provides the StorageNode class which is the main interface for
@@ -5,10 +20,12 @@ interacting with files and directories across different storage backends.
 """
 
 from __future__ import annotations
-from typing import BinaryIO, TextIO, TYPE_CHECKING, Callable, Literal
+from typing import BinaryIO, TextIO, TYPE_CHECKING, Callable, Literal, Annotated
 from pathlib import PurePosixPath
 from enum import Enum
 from datetime import datetime
+
+from genro_core.decorators.api import apiready
 
 if TYPE_CHECKING:
     from .manager import StorageManager
@@ -31,6 +48,7 @@ class SkipStrategy(str, Enum):
     CUSTOM = 'custom'
 
 
+@apiready(path="/storage/nodes")
 class StorageNode:
     """Represents a file or directory in a storage backend.
     
@@ -571,7 +589,12 @@ class StorageNode:
         # Normal node
         return self._backend.read_text(self._path, encoding)
 
-    def read(self, mode: str = 'r', encoding: str = 'utf-8') -> str | bytes:
+    @apiready
+    def read(
+        self,
+        mode: Annotated[str, "Read mode: 'r' for text, 'rb' for binary"] = 'r',
+        encoding: Annotated[str, "Text encoding (only for text mode)"] = 'utf-8'
+    ) -> Annotated[str | bytes, "File content as text or bytes"]:
         """Read file content in text or binary mode.
 
         Args:
@@ -706,7 +729,14 @@ class StorageNode:
         """
         return self._write_bytes(text.encode(encoding), skip_if_unchanged=skip_if_unchanged)
 
-    def write(self, data: str | bytes, mode: str = 'w', encoding: str = 'utf-8', skip_if_unchanged: bool = False) -> bool:
+    @apiready
+    def write(
+        self,
+        data: Annotated[str | bytes, "Data to write (str for text, bytes for binary)"],
+        mode: Annotated[str, "Write mode: 'w' for text, 'wb' for binary"] = 'w',
+        encoding: Annotated[str, "Text encoding (only for text mode)"] = 'utf-8',
+        skip_if_unchanged: Annotated[bool, "Skip writing if content is identical"] = False
+    ) -> Annotated[bool, "True if written, False if skipped"]:
         """Write data to file in text or binary mode.
 
         Args:
@@ -746,6 +776,7 @@ class StorageNode:
 
     # ==================== File Operations ====================
 
+    @apiready
     def delete(self) -> None:
         """Delete file or directory."""
         self._backend.delete(self._path, recursive=True)
@@ -1260,13 +1291,18 @@ class StorageNode:
                 self._zip_directory(zf, child, arc_path)
 
     # ==================== Directory Operations ====================
-    
-    def children(self) -> list[StorageNode]:
+
+    @apiready
+    def children(self) -> Annotated[list["StorageNode"], "List of child nodes in this directory"]:
         """List child nodes (if directory)."""
         names = self._backend.list_dir(self._path)
         return [self.child(name) for name in names]
-    
-    def child(self, *parts: str) -> StorageNode:
+
+    @apiready
+    def child(
+        self,
+        *parts: Annotated[str, "Path components to append"]
+    ) -> Annotated["StorageNode", "Child node at the specified path"]:
         """Get a child node by path components.
 
         Args:
@@ -1293,8 +1329,13 @@ class StorageNode:
         # Combine with current path
         full_child_path = str(self._posix_path / child_path)
         return StorageNode(self._manager, self._mount_name, full_child_path)
-    
-    def mkdir(self, parents: bool = False, exist_ok: bool = False) -> None:
+
+    @apiready
+    def mkdir(
+        self,
+        parents: Annotated[bool, "Create parent directories if needed"] = False,
+        exist_ok: Annotated[bool, "Don't raise error if directory exists"] = False
+    ) -> None:
         """Create directory."""
         self._backend.mkdir(self._path, parents=parents, exist_ok=exist_ok)
 
@@ -1571,7 +1612,8 @@ class StorageNode:
                     chunks.append(chunk)
             return chunks
 
-    def get_metadata(self) -> dict[str, str]:
+    @apiready
+    def get_metadata(self) -> Annotated[dict[str, str], "Metadata key-value pairs attached to file"]:
         """Get custom metadata for this file.
 
         Returns user-defined metadata attached to the file. Supported for
@@ -1591,7 +1633,11 @@ class StorageNode:
         """
         return self._backend.get_metadata(self._path)
 
-    def set_metadata(self, metadata: dict[str, str]) -> None:
+    @apiready
+    def set_metadata(
+        self,
+        metadata: Annotated[dict[str, str], "Metadata key-value pairs to set"]
+    ) -> None:
         """Set custom metadata for this file.
 
         Attaches user-defined metadata to the file. Supported for cloud
