@@ -25,7 +25,8 @@ from pathlib import PurePosixPath
 from enum import Enum
 from datetime import datetime
 
-from genro_core.decorators.api import apiready
+# TODO: Replace with genro_core.decorators.api.apiready when available
+from .decorators import apiready
 
 if TYPE_CHECKING:
     from .manager import StorageManager

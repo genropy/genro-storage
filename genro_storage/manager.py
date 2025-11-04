@@ -24,7 +24,8 @@ from typing import Any, Annotated
 import json
 from pathlib import Path
 
-from genro_core.decorators.api import apiready
+# TODO: Replace with genro_core.decorators.api.apiready when available
+from .decorators import apiready
 
 try:
     import yaml
