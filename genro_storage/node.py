@@ -290,7 +290,29 @@ class StorageNode:
         if parent_path == '.':
             parent_path = ''
         return StorageNode(self._manager, self._mount_name, parent_path)
-    
+
+    @property
+    def dirname(self) -> str:
+        """Parent directory fullpath as string.
+
+        Convenience property that returns the fullpath of the parent directory
+        as a string, equivalent to ``parent.fullpath``.
+
+        Returns:
+            str: Parent directory fullpath (e.g., 'home:documents/reports')
+
+        Examples:
+            >>> node = storage.node('home:documents/reports/q4.pdf')
+            >>> print(node.dirname)
+            'home:documents/reports'
+            >>>
+            >>> # Compare with parent property
+            >>> print(node.parent.fullpath)
+            'home:documents/reports'
+            >>> # dirname is a shortcut for the above
+        """
+        return self.parent.fullpath
+
     @property
     def md5hash(self) -> str:
         """MD5 hash of file content.

@@ -278,13 +278,29 @@ class TestDirectoryOperations:
     def test_parent_property(self, storage):
         """Test parent property."""
         node = storage.node('test:documents/reports/file.pdf')
-        
+
         parent = node.parent
         assert parent.fullpath == 'test:documents/reports'
-        
+
         grandparent = parent.parent
         assert grandparent.fullpath == 'test:documents'
-    
+
+    def test_dirname_property(self, storage):
+        """Test dirname property."""
+        node = storage.node('test:documents/reports/file.pdf')
+
+        # dirname should return parent fullpath as string
+        assert node.dirname == 'test:documents/reports'
+        assert node.dirname == node.parent.fullpath
+
+        # Test with parent's dirname
+        parent = node.parent
+        assert parent.dirname == 'test:documents'
+
+        # Test with root level
+        root_file = storage.node('test:file.txt')
+        assert root_file.dirname == 'test:'
+
     def test_delete_directory(self, storage):
         """Test deleting a directory recursively."""
         dir_node = storage.node('test:mydir')
