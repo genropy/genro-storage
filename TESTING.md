@@ -1,175 +1,281 @@
-# Testing with MinIO
+# Testing Guide
 
-This guide explains how to run integration tests using MinIO as a local S3-compatible storage.
+This guide explains how to run tests for genro-storage, both locally and in CI/CD.
 
 ## Quick Start
 
-### 1. Start MinIO
+The simplest way to run tests is using Make commands:
 
 ```bash
-# Start MinIO in Docker
-docker-compose up -d
+# Run all tests (auto-starts Docker services)
+make test
 
-# Check it's running
-docker-compose ps
+# Run only unit tests (no Docker needed)
+make test-unit
 
-# View MinIO console at http://localhost:9001
-# Login: minioadmin / minioadmin
+# Run only integration tests
+make test-integration
+
+# Run all tests with coverage report
+make test-all
+
+# Show available commands
+make help
 ```
 
-### 2. Run Integration Tests
+## Requirements
 
-```bash
-# Install test dependencies
-pip install pytest pytest-cov boto3
+### For Unit Tests
+- Python 3.12+
+- pip packages: `pip install -e ".[dev]"`
 
-# Run all tests including S3 integration tests
-pytest tests/ -v -m integration
-
-# Or run only S3 tests
-pytest tests/test_s3_integration.py -v
-
-# Run with coverage
-pytest tests/ -v --cov=genro_storage
-```
-
-### 3. Stop MinIO
-
-```bash
-docker-compose down
-
-# Or keep data and just stop
-docker-compose stop
-```
+### For Integration Tests
+- Docker Desktop (macOS) or Docker Engine (Linux)
+- docker-compose
 
 ## Test Organization
 
 ```
 tests/
-├── conftest.py                    # Shared fixtures (MinIO setup)
-├── test_local_storage.py          # Unit tests (no dependencies)
-├── test_s3_integration.py         # Integration tests (requires MinIO)
-└── test_memory_storage.py         # Memory backend tests
+├── conftest.py                     # Shared fixtures and helpers
+├── test_local_storage.py           # Unit tests (no Docker)
+├── test_memory_storage.py          # Unit tests (no Docker)
+├── test_s3_integration.py          # Integration tests (requires MinIO)
+├── test_additional_backends.py     # Integration tests (GCS, WebDAV, Azure)
+├── test_new_backends.py            # Integration tests (SMB, SFTP)
+└── ...
 ```
 
-## Running Tests Without MinIO
+## Running Tests
+
+### Option 1: Using Make (Recommended)
 
 ```bash
-# Skip integration tests
+# Install dependencies
+pip install -e ".[dev]"
+
+# Run all tests
+make test
+
+# Run with coverage
+make test-all
+```
+
+### Option 2: Using Scripts Directly
+
+```bash
+# Start services
+bash scripts/start_test_services.sh
+
+# Run tests
+pytest tests/ -v
+
+# Stop services
+bash scripts/stop_test_services.sh
+```
+
+### Option 3: Manual Docker Management
+
+```bash
+# Start all services
+docker-compose up -d
+
+# Check services status
+docker-compose ps
+
+# Run tests
+pytest tests/ -v
+
+# Stop services
+docker-compose down
+```
+
+## Test Services
+
+The following Docker services are required for integration tests:
+
+| Service | Port | Purpose | Container Name |
+|---------|------|---------|----------------|
+| **MinIO** | 9000, 9001 | S3-compatible storage | genro-storage-minio |
+| **fake-gcs-server** | 4443 | Google Cloud Storage emulator | genro-storage-fake-gcs |
+| **WebDAV** | 8080 | WebDAV server | genro-storage-webdav |
+| **Azurite** | 10000-10002 | Azure Storage emulator | genro-storage-azurite |
+| **Samba** | 139, 445 | SMB/CIFS file sharing | genro-storage-samba |
+| **SFTP** | 2222 | SSH file transfer | genro-storage-sftp |
+
+### Service Credentials
+
+- **MinIO**: minioadmin / minioadmin
+- **SFTP**: testuser / testpass
+- **Samba**: testuser / testpass
+- **WebDAV**: testuser / testpass
+- **Azurite**: Uses well-known dev credentials
+- **fake-gcs**: No authentication (anonymous)
+
+## Test Markers
+
+Tests are marked with pytest markers:
+
+```bash
+# Run only unit tests (no Docker)
 pytest tests/ -v -m "not integration"
 
-# Or just run unit tests
-pytest tests/test_local_storage.py -v
-```
-
-## MinIO Configuration
-
-MinIO is configured via `docker-compose.yml`:
-
-- **API Port**: 9000
-- **Console Port**: 9001
-- **User**: minioadmin
-- **Password**: minioadmin
-
-You can override these via environment variables:
-
-```bash
-export MINIO_ENDPOINT=http://localhost:9000
-export MINIO_ACCESS_KEY=minioadmin
-export MINIO_SECRET_KEY=minioadmin
-
-pytest tests/test_s3_integration.py -v
-```
-
-## Debugging
-
-### View MinIO Console
-
-Open http://localhost:9001 in your browser to:
-- See created buckets
-- Browse uploaded files
-- Check logs
-- Monitor metrics
-
-### Check MinIO Logs
-
-```bash
-docker-compose logs -f minio
-```
-
-### Clean Up Test Data
-
-```bash
-# Remove all MinIO data
-docker-compose down -v
-
-# Restart fresh
-docker-compose up -d
+# Run only integration tests (requires Docker)
+pytest tests/ -v -m integration
 ```
 
 ## CI/CD Integration
 
-For GitHub Actions, add this to your workflow:
+### GitHub Actions
 
-```yaml
-services:
-  minio:
-    image: minio/minio:latest
-    ports:
-      - 9000:9000
-    env:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    options: >-
-      --health-cmd "curl -f http://localhost:9000/minio/health/live"
-      --health-interval 5s
-      --health-timeout 3s
-      --health-retries 5
+Tests run automatically on GitHub via `.github/workflows/tests.yml`:
+
+- Starts all required Docker services
+- Runs unit and integration tests
+- Uploads coverage to Codecov
+
+### Local CI Simulation
+
+To simulate CI behavior locally:
+
+```bash
+# Make sure Docker is running
+make services-start
+
+# Run tests like CI does
+pytest tests/ -v -m "not integration" --cov=genro_storage
+pytest tests/ -v -m integration --cov=genro_storage --cov-append
 ```
 
 ## Troubleshooting
 
-### MinIO not starting
+### Services Not Starting
 
 ```bash
 # Check Docker is running
 docker ps
 
-# Check logs
+# View service logs
 docker-compose logs minio
+docker-compose logs fake-gcs
+docker-compose logs webdav
 
-# Try rebuilding
+# Restart all services
+make services-stop
+make services-start
+```
+
+### Port Conflicts
+
+If you get port conflicts (e.g., port 8080 already in use):
+
+```bash
+# Find what's using the port
+lsof -i :8080
+
+# Kill the process or change ports in docker-compose.yml
+```
+
+### Tests Skipping
+
+If tests are being skipped when services are running:
+
+```bash
+# Check services are actually accessible
+curl http://localhost:9000/minio/health/live  # MinIO
+curl http://localhost:4443/storage/v1/b       # fake-gcs
+curl http://localhost:8080                    # WebDAV
+nc -zv localhost 10000                        # Azurite
+nc -zv localhost 2222                         # SFTP
+```
+
+### Clean Up
+
+```bash
+# Stop services and clean up everything
+make clean
+
+# Or manually
 docker-compose down -v
-docker-compose up -d --build
+rm -rf .pytest_cache htmlcov .coverage
 ```
 
-### Tests failing with connection errors
+## Coverage Reports
+
+After running tests with coverage:
 
 ```bash
-# Verify MinIO is accessible
-curl http://localhost:9000/minio/health/live
+# Generate HTML report
+pytest tests/ --cov=genro_storage --cov-report=html
 
-# Should return: OK
+# Open in browser
+open htmlcov/index.html
 ```
 
-### Port already in use
+## Best Practices
+
+1. **Always run unit tests first** - They're fast and catch most issues
+2. **Use Make commands** - They handle service management automatically
+3. **Check service health** - If tests fail, verify services are healthy
+4. **Clean up regularly** - Use `make clean` to reset everything
+5. **Watch logs** - Use `docker-compose logs -f [service]` to debug
+
+## Environment Variables
+
+You can customize test behavior with environment variables:
 
 ```bash
-# Change ports in docker-compose.yml
-ports:
-  - "19000:9000"  # Change 9000 to 19000
-  - "19001:9001"  # Change 9001 to 19001
+# Use different MinIO endpoint
+export MINIO_ENDPOINT=http://localhost:9000
 
-# Update MINIO_ENDPOINT
-export MINIO_ENDPOINT=http://localhost:19000
+# Custom MinIO credentials
+export MINIO_ACCESS_KEY=your_key
+export MINIO_SECRET_KEY=your_secret
+
+# Run tests
+pytest tests/
 ```
 
-## Testing Other Cloud Providers
+## Development Workflow
 
-The same pattern works for:
+Recommended workflow for development:
 
-- **LocalStack** (AWS services): `docker-compose-localstack.yml`
-- **Azurite** (Azure Blob): `docker-compose-azurite.yml`
-- **fake-gcs-server** (GCS): `docker-compose-gcs.yml`
+```bash
+# 1. Start services once
+make services-start
 
-See respective files for setup instructions.
+# 2. Run tests repeatedly during development
+pytest tests/test_your_feature.py -v
+
+# 3. When done, stop services
+make services-stop
+```
+
+Or use watch mode for continuous testing:
+
+```bash
+# Install pytest-watch
+pip install pytest-watch
+
+# Start services
+make services-start
+
+# Watch for changes and re-run tests
+ptw tests/ -- -v
+```
+
+## Manual Service Access
+
+Access services directly for debugging:
+
+- **MinIO Console**: http://localhost:9001
+- **fake-gcs API**: http://localhost:4443/storage/v1/b
+- **WebDAV**: http://localhost:8080 (testuser/testpass)
+
+## Questions?
+
+For issues or questions:
+- Check the logs: `docker-compose logs [service]`
+- Verify services: `make services-status`
+- Clean and restart: `make clean && make services-start`
+- Open an issue on GitHub
