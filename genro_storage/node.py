@@ -883,6 +883,99 @@ class StorageNode:
         else:
             raise ValueError(f"Invalid write mode '{mode}'. Use 'w' for text or 'wb' for binary")
 
+    # ==================== Convenience Methods (Pythonic API) ====================
+
+    @apiready
+    def read_text(self, encoding: str = 'utf-8') -> str:
+        """Read file content as text.
+
+        Convenience method equivalent to read(mode='r', encoding=encoding).
+        Compatible with pathlib.Path API.
+
+        Args:
+            encoding: Text encoding (default: 'utf-8')
+
+        Returns:
+            str: File content as text
+
+        Raises:
+            FileNotFoundError: If file doesn't exist
+
+        Examples:
+            >>> content = node.read_text()
+            >>> content = node.read_text(encoding='latin-1')
+        """
+        return self.read(mode='r', encoding=encoding)
+
+    @apiready
+    def read_bytes(self) -> bytes:
+        """Read file content as bytes.
+
+        Convenience method equivalent to read(mode='rb').
+        Compatible with pathlib.Path API.
+
+        Returns:
+            bytes: File content as bytes
+
+        Raises:
+            FileNotFoundError: If file doesn't exist
+
+        Examples:
+            >>> data = node.read_bytes()
+        """
+        return self.read(mode='rb')
+
+    @apiready
+    def write_text(self, text: str, encoding: str = 'utf-8',
+                   skip_if_unchanged: bool = False) -> bool:
+        """Write text content to file.
+
+        Convenience method equivalent to write(text, mode='w', encoding=encoding, skip_if_unchanged=skip_if_unchanged).
+        Compatible with pathlib.Path API.
+
+        Args:
+            text: Text content to write
+            encoding: Text encoding (default: 'utf-8')
+            skip_if_unchanged: Skip write if content identical (default: False)
+
+        Returns:
+            bool: True if file was written, False if skipped
+
+        Raises:
+            TypeError: If text is not str
+            ValueError: If node is a versioned snapshot (read-only)
+
+        Examples:
+            >>> node.write_text("Hello World")
+            >>> node.write_text("Content", encoding='latin-1')
+            >>> written = node.write_text("New", skip_if_unchanged=True)
+        """
+        return self.write(text, mode='w', encoding=encoding, skip_if_unchanged=skip_if_unchanged)
+
+    @apiready
+    def write_bytes(self, data: bytes, skip_if_unchanged: bool = False) -> bool:
+        """Write binary content to file.
+
+        Convenience method equivalent to write(data, mode='wb', skip_if_unchanged=skip_if_unchanged).
+        Compatible with pathlib.Path API.
+
+        Args:
+            data: Binary content to write
+            skip_if_unchanged: Skip write if content identical (default: False)
+
+        Returns:
+            bool: True if file was written, False if skipped
+
+        Raises:
+            TypeError: If data is not bytes
+            ValueError: If node is a versioned snapshot (read-only)
+
+        Examples:
+            >>> node.write_bytes(b"Binary data")
+            >>> written = node.write_bytes(data, skip_if_unchanged=True)
+        """
+        return self.write(data, mode='wb', skip_if_unchanged=skip_if_unchanged)
+
     # ==================== File Operations ====================
 
     @apiready
