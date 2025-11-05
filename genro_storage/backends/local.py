@@ -51,14 +51,29 @@ class LocalStorage(StorageBackend):
         >>> # Static path
         >>> backend = LocalStorage('/home/user')
         >>>
-        >>> # Dynamic path with callable
+        >>> # Dynamic path with context-based callable (no parameters)
         >>> def get_user_dir():
         ...     user_id = get_current_user()
         ...     return f'/data/users/{user_id}'
         >>> backend = LocalStorage(get_user_dir)
         >>>
+        >>> # Switched mount: callable with prefix parameter
+        >>> # Single mount behaves like multiple mounts based on first path component
+        >>> def resource_resolver(prefix):
+        ...     # prefix = 'sys', 'adm', 'gnr', etc.
+        ...     return f'/path/to/{prefix}-package'
+        >>> backend = LocalStorage(resource_resolver)
+        >>> # Accessing 'sys/folder/file.txt' routes to '/path/to/sys-package/folder/file.txt'
+        >>> # Accessing 'adm/folder/file.txt' routes to '/path/to/adm-package/folder/file.txt'
+        >>>
         >>> # Access files relative to base
         >>> data = backend.read_bytes('documents/report.pdf')
+
+    Note:
+        **Switched Mounts**: When the callable accepts a parameter, it receives the
+        first path component (prefix) and should return the base directory for that prefix.
+        The backend then appends the remaining path. This allows a single mount to route
+        to different base directories based on the prefix.
     """
 
     # Default protocol name for this backend
@@ -92,14 +107,32 @@ class LocalStorage(StorageBackend):
             if not resolved.is_dir():
                 raise ValueError(f"Base path must be a directory: {path}")
 
-    def _resolve_base_path(self) -> Path:
+    def _resolve_base_path(self, requested_path: str = '') -> Path:
         """Resolve base path (evaluating callable if necessary).
+
+        Args:
+            requested_path: The path being accessed (passed to callable if it accepts parameters)
 
         Returns:
             Resolved base path as Path object
+
+        Note:
+            If path is a callable:
+            - Tries to call with requested_path parameter first
+            - Falls back to calling without parameters for backward compatibility
+            - This allows callables to dynamically determine base path based on the requested path
         """
         if callable(self._path_or_callable):
-            path_str = self._path_or_callable()
+            # Try calling with path parameter first (new behavior)
+            import inspect
+            sig = inspect.signature(self._path_or_callable)
+
+            if len(sig.parameters) > 0:
+                # Callable accepts parameters - pass the requested path
+                path_str = self._path_or_callable(requested_path)
+            else:
+                # Callable takes no parameters - backward compatibility
+                path_str = self._path_or_callable()
         else:
             path_str = self._path_or_callable
 
@@ -147,30 +180,58 @@ class LocalStorage(StorageBackend):
 
     def _resolve_path(self, path: str) -> Path:
         """Resolve a relative path to absolute filesystem path.
-        
+
         Args:
             path: Relative path within this storage
-        
+
         Returns:
             Path: Absolute filesystem path
-        
+
         Raises:
             ValueError: If path tries to escape base_path
         """
         if not path:
-            return self.base_path
-        
-        full_path = (self.base_path / path).resolve()
-        
+            return self._resolve_base_path()
+
+        # Check if callable accepts parameters (routing mode)
+        if callable(self._path_or_callable):
+            import inspect
+            sig = inspect.signature(self._path_or_callable)
+            has_parameters = len(sig.parameters) > 0
+        else:
+            has_parameters = False
+
+        if has_parameters:
+            # Routing mode: extract first component (prefix)
+            # Example: 'sys/folder/file.txt' -> prefix='sys', rest='folder/file.txt'
+            if '/' in path:
+                prefix, rest = path.split('/', 1)
+            else:
+                prefix = path
+                rest = ''
+
+            # Pass only the prefix to base_path resolution (for callable routing)
+            base = self._resolve_base_path(prefix)
+
+            # Append the rest of the path
+            if rest:
+                full_path = (base / rest).resolve()
+            else:
+                full_path = base.resolve()
+        else:
+            # Context mode: pass whole path to base resolution
+            base = self._resolve_base_path()
+            full_path = (base / path).resolve()
+
         # Security check: ensure path doesn't escape base_path
         try:
-            full_path.relative_to(self.base_path)
+            full_path.relative_to(base)
         except ValueError:
             raise ValueError(
                 f"Path escapes base directory: {path} "
-                f"(resolved to {full_path}, base is {self.base_path})"
+                f"(resolved to {full_path}, base is {base})"
             )
-        
+
         return full_path
     
     def exists(self, path: str) -> bool:

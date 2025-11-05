@@ -301,6 +301,87 @@ class TestDirectoryOperations:
         root_file = storage.node('test:file.txt')
         assert root_file.dirname == 'test:'
 
+    def test_ext_property(self, storage):
+        """Test ext property (extension without dot)."""
+        # File with extension
+        node = storage.node('test:document.pdf')
+        assert node.ext == 'pdf'
+        assert node.suffix == '.pdf'  # Compare with suffix
+
+        # Multiple dots
+        node_tar = storage.node('test:archive.tar.gz')
+        assert node_tar.ext == 'gz'
+        assert node_tar.suffix == '.gz'
+
+        # No extension
+        node_no_ext = storage.node('test:README')
+        assert node_no_ext.ext == ''
+        assert node_no_ext.suffix == ''
+
+        # Directory (no extension)
+        node_dir = storage.node('test:documents/')
+        assert node_dir.ext == ''
+
+    def test_splitext_method(self, storage):
+        """Test splitext() method."""
+        # Simple case
+        node = storage.node('test:documents/report.pdf')
+        name, ext = node.splitext()
+        assert name == 'documents/report'
+        assert ext == '.pdf'
+
+        # Multiple dots
+        node_tar = storage.node('test:archive.tar.gz')
+        name, ext = node_tar.splitext()
+        assert name == 'archive.tar'
+        assert ext == '.gz'
+
+        # No extension
+        node_no_ext = storage.node('test:README')
+        name, ext = node_no_ext.splitext()
+        assert name == 'README'
+        assert ext == ''
+
+        # Root level file
+        node_root = storage.node('test:file.txt')
+        name, ext = node_root.splitext()
+        assert name == 'file'
+        assert ext == '.txt'
+
+    def test_ext_attributes_property(self, storage, temp_dir):
+        """Test ext_attributes property (batch attributes)."""
+        # Create a test file
+        test_file = storage.node('test:testfile.txt')
+        test_file.write('test content')
+
+        # Get attributes together
+        mtime, size, isdir = test_file.ext_attributes
+
+        assert mtime is not None
+        assert isinstance(mtime, float)
+        assert size == 12  # 'test content' is 12 bytes
+        assert isdir is False
+
+        # Test with directory
+        dir_node = storage.node('test:testdir/')
+        dir_node.mkdir()
+
+        mtime_dir, size_dir, isdir_dir = dir_node.ext_attributes
+        assert mtime_dir is not None
+        assert size_dir is None  # Directories have None size
+        assert isdir_dir is True
+
+        # Test with non-existent file
+        nonexistent = storage.node('test:nonexistent.txt')
+        mtime_none, size_none, isdir_none = nonexistent.ext_attributes
+        assert mtime_none is None
+        assert size_none is None
+        assert isdir_none is False
+
+        # Cleanup
+        test_file.delete()
+        dir_node.delete()
+
     def test_delete_directory(self, storage):
         """Test deleting a directory recursively."""
         dir_node = storage.node('test:mydir')

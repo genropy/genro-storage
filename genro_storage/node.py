@@ -289,7 +289,7 @@ class StorageNode:
         parent_path = str(self._posix_path.parent)
         if parent_path == '.':
             parent_path = ''
-        return StorageNode(self._manager, self._mount_name, parent_path)
+        return self._create_node(self._manager, self._mount_name, parent_path)
 
     @property
     def dirname(self) -> str:
@@ -312,6 +312,92 @@ class StorageNode:
             >>> # dirname is a shortcut for the above
         """
         return self.parent.fullpath
+
+    @property
+    def ext(self) -> str:
+        """File extension without leading dot.
+
+        Convenience property for getting the file extension without the dot prefix,
+        which is more convenient for comparisons and type checking than ``suffix``.
+
+        Returns:
+            str: Extension without dot (e.g., 'pdf', 'txt'), or empty string if no extension
+
+        Examples:
+            >>> node = storage.node('home:documents/report.pdf')
+            >>> print(node.ext)
+            'pdf'
+            >>> print(node.suffix)  # Compare with suffix
+            '.pdf'
+            >>>
+            >>> # More convenient for comparisons
+            >>> if node.ext == 'pdf':
+            ...     process_pdf(node)
+            >>>
+            >>> # Instead of remembering the dot
+            >>> if node.suffix == '.pdf':
+            ...     process_pdf(node)
+        """
+        return self.suffix.lstrip('.') if self.suffix else ''
+
+    def splitext(self) -> tuple[str, str]:
+        """Split path into filename and extension.
+
+        Similar to ``os.path.splitext()``, returns a tuple of (filename, extension).
+        The extension includes the leading dot. The filename includes the full path
+        without the extension.
+
+        Returns:
+            tuple[str, str]: (filename, extension) where extension includes the dot
+
+        Examples:
+            >>> node = storage.node('home:documents/report.pdf')
+            >>> name, ext = node.splitext()
+            >>> print(name)
+            'documents/report'
+            >>> print(ext)
+            '.pdf'
+            >>>
+            >>> # Useful for renaming with different extension
+            >>> name, _ = node.splitext()
+            >>> new_path = f'{name}.docx'
+            >>> new_node = storage.node(f'home:{new_path}')
+        """
+        if self.suffix:
+            name = self._path.rsplit(self.suffix, 1)[0]
+            return name, self.suffix
+        return self._path, ''
+
+    @property
+    def ext_attributes(self) -> tuple[float | None, int | None, bool]:
+        """Commonly-used file attributes as a tuple.
+
+        Convenience property for getting (mtime, size, isdir) together in one call.
+        Returns None values if file doesn't exist. Size is None for directories.
+
+        Returns:
+            tuple: (mtime, size, isdir) where:
+                - mtime: Modification time as Unix timestamp or None
+                - size: File size in bytes or None (None for directories)
+                - isdir: True if directory, False otherwise
+
+        Examples:
+            >>> node = storage.node('home:document.pdf')
+            >>> mtime, size, isdir = node.ext_attributes
+            >>> if mtime and size:
+            ...     print(f'File: {size} bytes, modified at {mtime}')
+            >>>
+            >>> # More concise than
+            >>> mtime = node.mtime
+            >>> size = node.size
+            >>> isdir = node.isdir
+        """
+        if not self.exists:
+            return None, None, False
+
+        is_directory = self.isdir
+        file_size = None if is_directory else self.size
+        return self.mtime, file_size, is_directory
 
     @property
     def md5hash(self) -> str:
@@ -1315,6 +1401,39 @@ class StorageNode:
 
     # ==================== Directory Operations ====================
 
+    def _create_node(self, manager: StorageManager, mount_name: str, path: str) -> "StorageNode":
+        """Factory method for creating node instances.
+
+        This method is used internally to create new node instances while
+        preserving the correct class type through inheritance. Subclasses
+        can override this method to customize node creation.
+
+        Args:
+            manager: StorageManager instance
+            mount_name: Mount point name
+            path: Path within the mount
+
+        Returns:
+            StorageNode: New node instance of the same class as self
+
+        Examples:
+            >>> # In a subclass with custom constructor
+            >>> class CustomNode(StorageNode):
+            ...     def __init__(self, manager, mount, path, extra_param):
+            ...         super().__init__(manager, mount, path)
+            ...         self.extra = extra_param
+            ...
+            ...     def _create_node(self, manager, mount, path):
+            ...         # Preserve extra_param when creating children
+            ...         return self.__class__(manager, mount, path, self.extra)
+
+        Note:
+            This is a protected method (starts with _) and is not part of
+            the public API. It should only be overridden by subclasses that
+            need custom node creation logic.
+        """
+        return self.__class__(manager, mount_name, path)
+
     @apiready
     def children(self) -> Annotated[list["StorageNode"], "List of child nodes in this directory"]:
         """List child nodes (if directory)."""
@@ -1351,7 +1470,7 @@ class StorageNode:
         child_path = '/'.join(parts)
         # Combine with current path
         full_child_path = str(self._posix_path / child_path)
-        return StorageNode(self._manager, self._mount_name, full_child_path)
+        return self._create_node(self._manager, self._mount_name, full_child_path)
 
     @apiready
     def mkdir(
