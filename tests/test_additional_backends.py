@@ -122,27 +122,41 @@ def create_azure_container_if_not_exists():
 class TestGitBackend:
     """Tests for Git backend."""
 
+    @pytest.fixture
+    def temp_git_repo(self, tmp_path):
+        """Create a temporary Git repository for testing."""
+        if not HAS_PYGIT2:
+            pytest.skip("pygit2 not installed")
+
+        import pygit2
+
+        # Create a bare repository
+        repo_path = tmp_path / "test_repo.git"
+        pygit2.init_repository(str(repo_path), bare=True)
+
+        return str(repo_path)
+
     @pytest.mark.skipif(not HAS_PYGIT2, reason="pygit2 not installed")
-    def test_git_configuration_basic(self):
+    def test_git_configuration_basic(self, temp_git_repo):
         """Test basic Git configuration."""
         storage = StorageManager()
         storage.configure([{
             'name': 'git_test',
             'type': 'git',
-            'path': '/path/to/repo.git'
+            'path': temp_git_repo
         }])
         assert 'git_test' in storage._mounts
         backend = storage._mounts['git_test']
         assert backend is not None
 
     @pytest.mark.skipif(not HAS_PYGIT2, reason="pygit2 not installed")
-    def test_git_configuration_with_ref(self):
+    def test_git_configuration_with_ref(self, temp_git_repo):
         """Test Git configuration with ref (branch/tag/commit)."""
         storage = StorageManager()
         storage.configure([{
             'name': 'git_test',
             'type': 'git',
-            'path': '/path/to/repo.git',
+            'path': temp_git_repo,
             'ref': 'main'
         }])
         assert 'git_test' in storage._mounts
@@ -157,13 +171,13 @@ class TestGitBackend:
             }])
 
     @pytest.mark.skipif(not HAS_PYGIT2, reason="pygit2 not installed")
-    def test_git_capabilities(self):
+    def test_git_capabilities(self, temp_git_repo):
         """Test Git backend capabilities."""
         storage = StorageManager()
         storage.configure([{
             'name': 'git_test',
             'type': 'git',
-            'path': '/path/to/repo.git'
+            'path': temp_git_repo
         }])
         backend = storage._mounts['git_test']
         caps = backend.capabilities
