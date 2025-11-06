@@ -289,6 +289,304 @@ class FsspecProvider(AsyncProvider):
             ]
         }
 
+    @AsyncProvider.protocol('azure')
+    def protocol_azure(self) -> dict[str, Any]:
+        """Azure Blob Storage protocol."""
+
+        class AzureModel(BaseModel):
+            """Configuration for Azure Blob Storage."""
+            account_name: str = Field(..., description="Azure storage account name")
+            account_key: str | None = Field(None, description="Account key for authentication")
+            connection_string: str | None = Field(None, description="Connection string (alternative to account_key)")
+            container: str = Field(..., description="Container name")
+
+            @field_validator('account_name')
+            @classmethod
+            def validate_account_name(cls, v: str) -> str:
+                if not v or not v.strip():
+                    raise ValueError("Account name cannot be empty")
+                return v.strip()
+
+        class AzureImplementor(AsyncFsspecImplementor):
+            """Async implementor for Azure Blob Storage."""
+
+            def __init__(self, config: AzureModel):
+                fs_kwargs = {'asynchronous': True}
+
+                if config.connection_string:
+                    fs_kwargs['connection_string'] = config.connection_string
+                elif config.account_key:
+                    fs_kwargs['account_name'] = config.account_name
+                    fs_kwargs['account_key'] = config.account_key
+                else:
+                    # Use default credential (managed identity, environment variables)
+                    fs_kwargs['account_name'] = config.account_name
+
+                super().__init__(
+                    config=config,
+                    protocol='abfs',  # Azure Blob File System
+                    root_path=config.container,
+                    **fs_kwargs
+                )
+
+        return {
+            'model': AzureModel,
+            'implementor': AzureImplementor,
+            'capabilities': [
+                'read', 'write', 'delete', 'list',
+                'metadata', 'hash'
+            ]
+        }
+
+    @AsyncProvider.protocol('http')
+    def protocol_http(self) -> dict[str, Any]:
+        """HTTP/HTTPS protocol (read-only)."""
+
+        class HttpModel(BaseModel):
+            """Configuration for HTTP access."""
+            base_url: str = Field(..., description="Base URL for HTTP requests")
+
+            @field_validator('base_url')
+            @classmethod
+            def validate_base_url(cls, v: str) -> str:
+                if not v.startswith(('http://', 'https://')):
+                    raise ValueError("base_url must start with http:// or https://")
+                return v.rstrip('/')
+
+        class HttpImplementor(AsyncFsspecImplementor):
+            """Async implementor for HTTP/HTTPS (read-only)."""
+
+            def __init__(self, config: HttpModel):
+                super().__init__(
+                    config=config,
+                    protocol='http',
+                    root_path=config.base_url,
+                    asynchronous=True
+                )
+
+        return {
+            'model': HttpModel,
+            'implementor': HttpImplementor,
+            'capabilities': [
+                'read',  # Read-only protocol
+            ]
+        }
+
+    @AsyncProvider.protocol('sftp')
+    def protocol_sftp(self) -> dict[str, Any]:
+        """SFTP protocol."""
+
+        class SftpModel(BaseModel):
+            """Configuration for SFTP."""
+            host: str = Field(..., description="SFTP server hostname")
+            port: int = Field(22, description="SFTP port")
+            username: str = Field(..., description="Username for authentication")
+            password: str | None = Field(None, description="Password (if not using key)")
+            key_filename: str | None = Field(None, description="Path to private key file")
+
+        class SftpImplementor(AsyncFsspecImplementor):
+            """Async implementor for SFTP."""
+
+            def __init__(self, config: SftpModel):
+                fs_kwargs = {}
+                if config.password:
+                    fs_kwargs['password'] = config.password
+                if config.key_filename:
+                    fs_kwargs['key_filename'] = config.key_filename
+
+                super().__init__(
+                    config=config,
+                    protocol='sftp',
+                    root_path='',
+                    host=config.host,
+                    port=config.port,
+                    username=config.username,
+                    **fs_kwargs
+                )
+
+        return {
+            'model': SftpModel,
+            'implementor': SftpImplementor,
+            'capabilities': [
+                'read', 'write', 'delete', 'list'
+            ]
+        }
+
+    @AsyncProvider.protocol('smb')
+    def protocol_smb(self) -> dict[str, Any]:
+        """SMB/CIFS protocol (Windows file sharing)."""
+
+        class SmbModel(BaseModel):
+            """Configuration for SMB."""
+            host: str = Field(..., description="SMB server hostname or IP")
+            share: str = Field(..., description="Share name")
+            username: str | None = Field(None, description="Username for authentication")
+            password: str | None = Field(None, description="Password")
+            domain: str | None = Field(None, description="Domain name")
+
+        class SmbImplementor(AsyncFsspecImplementor):
+            """Async implementor for SMB."""
+
+            def __init__(self, config: SmbModel):
+                fs_kwargs = {}
+                if config.username:
+                    fs_kwargs['username'] = config.username
+                if config.password:
+                    fs_kwargs['password'] = config.password
+                if config.domain:
+                    fs_kwargs['domain'] = config.domain
+
+                super().__init__(
+                    config=config,
+                    protocol='smb',
+                    root_path=f'//{config.host}/{config.share}',
+                    **fs_kwargs
+                )
+
+        return {
+            'model': SmbModel,
+            'implementor': SmbImplementor,
+            'capabilities': [
+                'read', 'write', 'delete', 'list'
+            ]
+        }
+
+    @AsyncProvider.protocol('zip')
+    def protocol_zip(self) -> dict[str, Any]:
+        """ZIP archive protocol (read-only)."""
+
+        class ZipModel(BaseModel):
+            """Configuration for ZIP archive access."""
+            zip_file: str = Field(..., description="Path to ZIP file")
+
+            @field_validator('zip_file')
+            @classmethod
+            def validate_zip_file(cls, v: str) -> str:
+                if not v.endswith('.zip'):
+                    raise ValueError("zip_file must have .zip extension")
+                return v
+
+        class ZipImplementor(AsyncFsspecImplementor):
+            """Async implementor for ZIP archives (read-only)."""
+
+            def __init__(self, config: ZipModel):
+                super().__init__(
+                    config=config,
+                    protocol='zip',
+                    root_path='',
+                    fo=config.zip_file
+                )
+
+        return {
+            'model': ZipModel,
+            'implementor': ZipImplementor,
+            'capabilities': [
+                'read', 'list'  # Read-only
+            ]
+        }
+
+    @AsyncProvider.protocol('tar')
+    def protocol_tar(self) -> dict[str, Any]:
+        """TAR archive protocol (read-only)."""
+
+        class TarModel(BaseModel):
+            """Configuration for TAR archive access."""
+            tar_file: str = Field(..., description="Path to TAR file")
+
+            @field_validator('tar_file')
+            @classmethod
+            def validate_tar_file(cls, v: str) -> str:
+                valid_extensions = ('.tar', '.tar.gz', '.tgz', '.tar.bz2', '.tar.xz')
+                if not any(v.endswith(ext) for ext in valid_extensions):
+                    raise ValueError(f"tar_file must have one of: {valid_extensions}")
+                return v
+
+        class TarImplementor(AsyncFsspecImplementor):
+            """Async implementor for TAR archives (read-only)."""
+
+            def __init__(self, config: TarModel):
+                super().__init__(
+                    config=config,
+                    protocol='tar',
+                    root_path='',
+                    fo=config.tar_file
+                )
+
+        return {
+            'model': TarModel,
+            'implementor': TarImplementor,
+            'capabilities': [
+                'read', 'list'  # Read-only
+            ]
+        }
+
+    @AsyncProvider.protocol('github')
+    def protocol_github(self) -> dict[str, Any]:
+        """GitHub repository protocol (read-only)."""
+
+        class GithubModel(BaseModel):
+            """Configuration for GitHub repository access."""
+            org: str = Field(..., description="GitHub organization or user")
+            repo: str = Field(..., description="Repository name")
+            ref: str = Field('main', description="Branch, tag, or commit SHA")
+            token: str | None = Field(None, description="GitHub personal access token")
+
+        class GithubImplementor(AsyncFsspecImplementor):
+            """Async implementor for GitHub (read-only)."""
+
+            def __init__(self, config: GithubModel):
+                fs_kwargs = {}
+                if config.token:
+                    fs_kwargs['token'] = config.token
+
+                super().__init__(
+                    config=config,
+                    protocol='github',
+                    root_path=f'{config.org}/{config.repo}/{config.ref}',
+                    **fs_kwargs
+                )
+
+        return {
+            'model': GithubModel,
+            'implementor': GithubImplementor,
+            'capabilities': [
+                'read', 'list'  # Read-only
+            ]
+        }
+
+    @AsyncProvider.protocol('ftp')
+    def protocol_ftp(self) -> dict[str, Any]:
+        """FTP protocol."""
+
+        class FtpModel(BaseModel):
+            """Configuration for FTP."""
+            host: str = Field(..., description="FTP server hostname")
+            port: int = Field(21, description="FTP port")
+            username: str = Field('anonymous', description="Username")
+            password: str = Field('', description="Password")
+
+        class FtpImplementor(AsyncFsspecImplementor):
+            """Async implementor for FTP."""
+
+            def __init__(self, config: FtpModel):
+                super().__init__(
+                    config=config,
+                    protocol='ftp',
+                    root_path='',
+                    host=config.host,
+                    port=config.port,
+                    username=config.username,
+                    password=config.password
+                )
+
+        return {
+            'model': FtpModel,
+            'implementor': FtpImplementor,
+            'capabilities': [
+                'read', 'write', 'delete', 'list'
+            ]
+        }
+
 
 class AsyncLocalPathContext:
     """Async context manager for local filesystem path access.
