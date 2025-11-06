@@ -66,6 +66,7 @@ class AsyncStorageManager:
 
     def __init__(self):
         """Initialize AsyncStorageManager."""
+        self.provider_registry = ProviderRegistry()
         self._mounts: dict[str, dict[str, Any]] = {}
 
     async def configure(self, mounts: list[dict[str, Any]]) -> None:
@@ -102,9 +103,9 @@ class AsyncStorageManager:
 
             # Get protocol configuration from registry
             try:
-                protocol_config = ProviderRegistry.get_protocol(protocol)
+                protocol_config = self.provider_registry.get_protocol(protocol)
             except ValueError as e:
-                available = ProviderRegistry.list_protocols()
+                available = self.provider_registry.list_protocols()
                 raise ValueError(
                     f"Unknown protocol '{protocol}'. " f"Available protocols: {available}"
                 ) from e
