@@ -6,10 +6,32 @@ for each supported protocol.
 
 import pytest
 import tempfile
+import socket
 from pathlib import Path
 
 from genro_storage.providers.registry import ProviderRegistry
 from genro_storage.async_storage_manager import AsyncStorageManager
+
+
+def is_service_available(host, port, timeout=1):
+    """Check if a service is available at the given host and port.
+
+    Args:
+        host: Hostname or IP address
+        port: Port number
+        timeout: Connection timeout in seconds
+
+    Returns:
+        bool: True if service is reachable, False otherwise
+    """
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        result = sock.connect_ex((host, port))
+        sock.close()
+        return result == 0
+    except Exception:
+        return False
 
 
 class TestProtocolRegistration:
@@ -302,46 +324,144 @@ class TestProtocolIntegration:
 
         await storage.close_all()
 
-    @pytest.mark.skip(reason="Requires actual S3 credentials")
-    async def test_s3_protocol_integration(self):
-        """Integration test for S3 (requires credentials)."""
+    async def test_s3_minio_protocol_integration(self, minio_bucket, minio_config):
+        """Integration test for S3 using MinIO."""
         storage = AsyncStorageManager()
         await storage.configure([{
             'name': 's3',
-            'protocol': 's3_aws',
-            'bucket': 'test-bucket',
-            'region': 'us-east-1'
+            'protocol': 's3_minio',
+            'bucket': minio_bucket,
+            'endpoint_url': minio_config['endpoint_url'],
+            'access_key': minio_config['aws_access_key_id'],
+            'secret_key': minio_config['aws_secret_access_key']
         }])
 
+        # Write
         node = storage.node('s3:test.txt')
-        await node.write(b'test')
+        await node.write(b'Hello MinIO')
+
+        # Read
+        content = await node.read()
+        assert content == b'Hello MinIO'
+
+        # Properties
+        assert await node.exists
+        assert await node.is_file
+        assert await node.size == 11
+
+        # Delete
+        await node.delete()
+        assert not await node.exists
 
         await storage.close_all()
 
-    @pytest.mark.skip(reason="Requires actual GCS credentials")
     async def test_gcs_protocol_integration(self):
-        """Integration test for GCS (requires credentials)."""
-        pass
+        """Integration test for GCS using fake-gcs-server.
 
-    @pytest.mark.skip(reason="Requires actual Azure credentials")
+        Skipped if fake-gcs-server is not available (docker-compose).
+        """
+        import os
+        gcs_host = os.getenv('STORAGE_EMULATOR_HOST', 'http://localhost:4443')
+
+        # Check if fake-gcs-server is available
+        if not is_service_available('localhost', 4443):
+            pytest.skip("fake-gcs-server not available (run docker-compose up)")
+
+        storage = AsyncStorageManager()
+        await storage.configure([{
+            'name': 'gcs',
+            'protocol': 'gcs',
+            'bucket': 'test-bucket',
+            'endpoint': gcs_host
+        }])
+
+        node = storage.node('gcs:test.txt')
+        await node.write(b'Hello GCS')
+
+        content = await node.read()
+        assert content == b'Hello GCS'
+
+        await storage.close_all()
+
     async def test_azure_protocol_integration(self):
-        """Integration test for Azure (requires credentials)."""
-        pass
+        """Integration test for Azure using Azurite emulator.
 
-    @pytest.mark.skip(reason="Requires FTP server")
-    async def test_ftp_protocol_integration(self):
-        """Integration test for FTP (requires server)."""
-        pass
+        Skipped if Azurite is not available (docker-compose).
+        """
+        # Check if Azurite is available
+        if not is_service_available('localhost', 10000):
+            pytest.skip("Azurite not available (run docker-compose up)")
 
-    @pytest.mark.skip(reason="Requires SFTP server")
+        storage = AsyncStorageManager()
+        await storage.configure([{
+            'name': 'azure',
+            'protocol': 'azure',
+            'account_name': 'devstoreaccount1',
+            'account_key': 'Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==',
+            'container': 'test-container'
+        }])
+
+        node = storage.node('azure:test.txt')
+        await node.write(b'Hello Azure')
+
+        content = await node.read()
+        assert content == b'Hello Azure'
+
+        await storage.close_all()
+
     async def test_sftp_protocol_integration(self):
-        """Integration test for SFTP (requires server)."""
-        pass
+        """Integration test for SFTP.
 
-    @pytest.mark.skip(reason="Requires SMB server")
+        Skipped if SFTP server is not available (docker-compose).
+        """
+        # Check if SFTP is available
+        if not is_service_available('localhost', 2222):
+            pytest.skip("SFTP server not available (run docker-compose up)")
+
+        storage = AsyncStorageManager()
+        await storage.configure([{
+            'name': 'sftp',
+            'protocol': 'sftp',
+            'host': 'localhost',
+            'port': 2222,
+            'username': 'testuser',
+            'password': 'testpass'
+        }])
+
+        node = storage.node('sftp:upload/test.txt')
+        await node.write(b'Hello SFTP')
+
+        content = await node.read()
+        assert content == b'Hello SFTP'
+
+        await storage.close_all()
+
     async def test_smb_protocol_integration(self):
-        """Integration test for SMB (requires server)."""
-        pass
+        """Integration test for SMB.
+
+        Skipped if SMB server is not available (docker-compose).
+        """
+        # Check if SMB is available
+        if not is_service_available('localhost', 445):
+            pytest.skip("SMB server not available (run docker-compose up)")
+
+        storage = AsyncStorageManager()
+        await storage.configure([{
+            'name': 'smb',
+            'protocol': 'smb',
+            'host': 'localhost',
+            'share': 'share',
+            'username': 'testuser',
+            'password': 'testpass'
+        }])
+
+        node = storage.node('smb:test.txt')
+        await node.write(b'Hello SMB')
+
+        content = await node.read()
+        assert content == b'Hello SMB'
+
+        await storage.close_all()
 
 
 class TestProtocolErrorHandling:
