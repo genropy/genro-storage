@@ -316,7 +316,7 @@ class AsyncImplementor(ABC):
         """
         return None
 
-    async def local_path(self, path: str, mode: str = 'r'):
+    def local_path(self, path: str, mode: str = 'r'):
         """Get async context manager for local filesystem path.
 
         For local storage: returns direct path

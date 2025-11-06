@@ -39,7 +39,7 @@ class AsyncStorageNode:
     Architecture:
     - Eager resolution: implementor and full_path set in __init__
     - Cacheable properties: exists, size, mtime (conditional caching)
-    - Resolved decorator: handles must_exist and autocreate_parents
+    - Resolved decorator: handles must_exist and autocreate
     - All operations are async coroutines
 
     Args:
@@ -47,7 +47,7 @@ class AsyncStorageNode:
         mount_point: Mount point name (e.g., 'uploads')
         path: Relative path (e.g., 'documents/file.txt')
         must_exist: If True, methods check file existence
-        autocreate_parents: If True, write() creates parent dirs
+        autocreate: If True, write() creates parent dirs
         cached: If True, property values are cached
 
     Examples:
@@ -77,7 +77,7 @@ class AsyncStorageNode:
         mount_point: str,
         path: str,
         must_exist: bool | None = None,
-        autocreate_parents: bool = True,
+        autocreate: bool = True,
         cached: bool = False
     ):
         """Initialize AsyncStorageNode with eager resolution."""
@@ -87,7 +87,7 @@ class AsyncStorageNode:
 
         # Configuration
         self.must_exist = must_exist
-        self.autocreate_parents = autocreate_parents
+        self.autocreate = autocreate
         self._cached = cached
 
         # Eager resolution (cheap: dict lookup + string concat)
@@ -156,7 +156,7 @@ class AsyncStorageNode:
             self.mount_point,
             parent_path,
             must_exist=False,
-            autocreate_parents=self.autocreate_parents,
+            autocreate=self.autocreate,
             cached=self._cached
         )
 
@@ -183,7 +183,7 @@ class AsyncStorageNode:
         """
         return await self.implementor.read_text(self.full_path, encoding=encoding)
 
-    @resolved(autocreate_parents=True)
+    @resolved(autocreate=True)
     async def write(self, data: bytes, parents: bool = True) -> None:
         """Write bytes to file.
 
@@ -196,9 +196,8 @@ class AsyncStorageNode:
             >>> await node.write(b'data', parents=False)  # Fail if parent missing
         """
         await self.implementor.write_bytes(self.full_path, data)
-        self.invalidate_cache()
 
-    @resolved(autocreate_parents=True)
+    @resolved(autocreate=True)
     async def write_text(self, text: str, encoding: str = 'utf-8', parents: bool = True) -> None:
         """Write text to file.
 
@@ -208,7 +207,6 @@ class AsyncStorageNode:
             parents: If True, create parent directories (default: True)
         """
         await self.implementor.write_text(self.full_path, text, encoding=encoding)
-        self.invalidate_cache()
 
     @resolved()  # Auto must_exist for delete
     async def delete(self, recursive: bool = False) -> None:
@@ -221,7 +219,6 @@ class AsyncStorageNode:
             FileNotFoundError: If file doesn't exist (if must_exist=True)
         """
         await self.implementor.delete(self.full_path, recursive=recursive)
-        self.invalidate_cache()
 
     @resolved(must_exist=False)
     async def mkdir(self, parents: bool = True, exist_ok: bool = True) -> None:
@@ -232,7 +229,6 @@ class AsyncStorageNode:
             exist_ok: If True, don't error if directory exists
         """
         await self.implementor.mkdir(self.full_path, parents=parents, exist_ok=exist_ok)
-        self.invalidate_cache()
 
     async def copy(self, dest: AsyncStorageNode) -> None:
         """Copy file to another node.
@@ -249,7 +245,7 @@ class AsyncStorageNode:
             raise FileNotFoundError(f"Source file not found: {self.mount_point}:{self.path}")
 
         # Create dest parent if needed
-        if dest.autocreate_parents:
+        if dest.autocreate:
             parent_path = dest._get_parent_path()
             if parent_path:
                 await dest.implementor.mkdir(parent_path, parents=True, exist_ok=True)
@@ -280,14 +276,14 @@ class AsyncStorageNode:
                     self.mount_point,
                     child_path,
                     must_exist=False,
-                    autocreate_parents=self.autocreate_parents,
+                    autocreate=self.autocreate,
                     cached=self._cached
                 )
             )
 
         return nodes
 
-    async def local_path(self, mode: str = 'r'):
+    def local_path(self, mode: str = 'r'):
         """Get async context manager for local filesystem path.
 
         For local storage: returns direct path
@@ -303,7 +299,7 @@ class AsyncStorageNode:
             >>> async with node.local_path(mode='r') as local:
             ...     subprocess.run(['ffmpeg', '-i', local, 'output.mp4'])
         """
-        return await self.implementor.local_path(self.full_path, mode=mode)
+        return self.implementor.local_path(self.full_path, mode=mode)
 
     # Advanced features
 

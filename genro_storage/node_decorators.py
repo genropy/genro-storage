@@ -87,12 +87,12 @@ def cacheable_property(func: Callable) -> property:
         return property(sync_wrapper)
 
 
-def resolved(must_exist: bool | None = None, autocreate_parents: bool = False) -> Callable:
+def resolved(must_exist: bool | None = None, autocreate: bool = False) -> Callable:
     """Decorator for storage node methods with preconditions (supports async).
 
     This decorator handles:
     1. Checking file existence (must_exist)
-    2. Auto-creating parent directories (autocreate_parents)
+    2. Auto-creating parent directories (autocreate)
 
     Supports both sync and async methods.
 
@@ -102,14 +102,14 @@ def resolved(must_exist: bool | None = None, autocreate_parents: bool = False) -
             - False: Never check existence
             - None: Auto-detect based on method name (read methods must exist)
 
-        autocreate_parents:
+        autocreate:
             - True: Create parent directories before write operations
             - False: Don't create parents (may fail if parent missing)
 
     The decorator can also read configuration from the instance:
         - self.must_exist: Default value for must_exist (if not overridden)
-        - self.autocreate_parents: Default value for autocreate_parents
-        - kwargs['parents']: Runtime override for autocreate_parents
+        - self.autocreate: Default value for autocreate
+        - kwargs['parents']: Runtime override for autocreate
 
     Usage:
         class AsyncStorageNode:
@@ -117,7 +117,7 @@ def resolved(must_exist: bool | None = None, autocreate_parents: bool = False) -
             async def read(self):
                 return await self.implementor.read_bytes(self.full_path)
 
-            @resolved(autocreate_parents=True)
+            @resolved(autocreate=True)
             async def write(self, data, parents=True):
                 return await self.implementor.write_bytes(self.full_path, data)
 
@@ -159,26 +159,29 @@ def resolved(must_exist: bool | None = None, autocreate_parents: bool = False) -
                         )
 
                 # 2. Determine if we should create parent directories
-                should_create_parents = autocreate_parents
+                # For write methods: check kwargs['parents'] > self.autocreate > decorator autocreate
+                method_name = method.__name__
+                if method_name in WRITE_METHODS:
+                    # Priority: kwargs > instance attribute > decorator parameter
+                    should_create = kwargs.get('parents')
+                    if should_create is None:
+                        should_create = getattr(self, 'autocreate', autocreate)
 
-                if should_create_parents:
-                    # For write methods, check if user wants parents
-                    method_name = method.__name__
-                    if method_name in WRITE_METHODS:
-                        # Check kwargs first, then instance attribute
-                        should_create = kwargs.get(
-                            'parents',
-                            getattr(self, 'autocreate_parents', True)
-                        )
-
+                    parent_path = self._get_parent_path()
+                    if parent_path:
                         if should_create:
                             # Create parent directory (await async)
-                            parent_path = self._get_parent_path()
-                            if parent_path:
-                                await self.implementor.mkdir(
-                                    parent_path,
-                                    parents=True,
-                                    exist_ok=True
+                            await self.implementor.mkdir(
+                                parent_path,
+                                parents=True,
+                                exist_ok=True
+                            )
+                        else:
+                            # Verify parent exists (some backends like memory auto-create)
+                            parent_exists = await self.implementor.exists(parent_path)
+                            if not parent_exists:
+                                raise FileNotFoundError(
+                                    f"Parent directory not found: {parent_path}"
                                 )
 
                 # 3. Execute the method (await async)
@@ -208,26 +211,28 @@ def resolved(must_exist: bool | None = None, autocreate_parents: bool = False) -
                         )
 
                 # 2. Determine if we should create parent directories
-                should_create_parents = autocreate_parents
+                # For write methods: check kwargs['parents'] > self.autocreate > decorator autocreate
+                method_name = method.__name__
+                if method_name in WRITE_METHODS:
+                    # Priority: kwargs > instance attribute > decorator parameter
+                    should_create = kwargs.get('parents')
+                    if should_create is None:
+                        should_create = getattr(self, 'autocreate', autocreate)
 
-                if should_create_parents:
-                    # For write methods, check if user wants parents
-                    method_name = method.__name__
-                    if method_name in WRITE_METHODS:
-                        # Check kwargs first, then instance attribute
-                        should_create = kwargs.get(
-                            'parents',
-                            getattr(self, 'autocreate_parents', True)
-                        )
-
+                    parent_path = self._get_parent_path()
+                    if parent_path:
                         if should_create:
                             # Create parent directory (sync)
-                            parent_path = self._get_parent_path()
-                            if parent_path:
-                                self.implementor.mkdir(
-                                    parent_path,
-                                    parents=True,
-                                    exist_ok=True
+                            self.implementor.mkdir(
+                                parent_path,
+                                parents=True,
+                                exist_ok=True
+                            )
+                        else:
+                            # Verify parent exists (some backends like memory auto-create)
+                            if not self.implementor.exists(parent_path):
+                                raise FileNotFoundError(
+                                    f"Parent directory not found: {parent_path}"
                                 )
 
                 # 3. Execute the method (sync)

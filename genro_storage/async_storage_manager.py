@@ -140,7 +140,7 @@ class AsyncStorageManager:
         self,
         path: str,
         must_exist: bool | None = None,
-        autocreate_parents: bool = True,
+        autocreate: bool = True,
         cached: bool = False
     ) -> AsyncStorageNode:
         """Create an AsyncStorageNode for the given path.
@@ -148,7 +148,7 @@ class AsyncStorageManager:
         Args:
             path: Full path with mount point (e.g., 'uploads:documents/file.txt')
             must_exist: If True, operations check file existence
-            autocreate_parents: If True, write operations create parent dirs
+            autocreate: If True, write operations create parent dirs
             cached: If True, node properties are cached
 
         Returns:
@@ -159,7 +159,7 @@ class AsyncStorageManager:
 
         Examples:
             >>> node = storage.node('uploads:documents/report.pdf')
-            >>> node = storage.node('uploads:new/file.txt', autocreate_parents=True)
+            >>> node = storage.node('uploads:new/file.txt', autocreate=True)
             >>> node = storage.node('uploads:file.txt', cached=True)
         """
         # Parse path
@@ -185,7 +185,7 @@ class AsyncStorageManager:
             mount_point=mount_point,
             path=relative_path,
             must_exist=must_exist,
-            autocreate_parents=autocreate_parents,
+            autocreate=autocreate,
             cached=cached
         )
 

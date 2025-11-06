@@ -83,8 +83,8 @@ class StorageNode:
         return self._async_node.must_exist
 
     @property
-    def autocreate_parents(self) -> bool:
-        return self._async_node.autocreate_parents
+    def autocreate(self) -> bool:
+        return self._async_node.autocreate
 
     # PROPERTIES - States (sync wrappers with asyncio.run)
 

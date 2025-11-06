@@ -77,7 +77,7 @@ class StorageManager:
         self,
         path: str,
         must_exist: bool | None = None,
-        autocreate_parents: bool = True,
+        autocreate: bool = True,
         cached: bool = False
     ) -> StorageNode:
         """Create a StorageNode for the given path (sync wrapper).
@@ -85,7 +85,7 @@ class StorageManager:
         Args:
             path: Full path with mount point (e.g., 'uploads:documents/file.txt')
             must_exist: If True, operations check file existence
-            autocreate_parents: If True, write operations create parent dirs
+            autocreate: If True, write operations create parent dirs
             cached: If True, node properties are cached
 
         Returns:
@@ -98,7 +98,7 @@ class StorageManager:
         async_node = self._async_manager.node(
             path,
             must_exist=must_exist,
-            autocreate_parents=autocreate_parents,
+            autocreate=autocreate,
             cached=cached
         )
 

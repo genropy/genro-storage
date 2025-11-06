@@ -254,18 +254,32 @@ class FsspecProvider(AsyncProvider):
 
         class MemoryModel(BaseModel):
             """Configuration for in-memory filesystem."""
-            pass  # No configuration needed
+            instance_id: str | None = Field(
+                default=None,
+                description="Optional unique ID for isolated memory instances"
+            )
 
         class MemoryImplementor(AsyncFsspecImplementor):
             """Async implementor for in-memory filesystem."""
 
             def __init__(self, config: MemoryModel):
+                # Create isolated memory filesystem with private storage
+                # Each instance gets its own pseudo dict (not shared)
+                import fsspec.implementations.memory
+
                 super().__init__(
                     config=config,
                     protocol='memory',
                     root_path='',
                     asynchronous=True
                 )
+
+                # Override fs to create truly isolated instance with private store
+                self.fs = fsspec.implementations.memory.MemoryFileSystem()
+                # Give it a private pseudo storage dict (not the class-level one)
+                self.fs.store = {}
+                self.fs.pseudo_dirs = ['']
+                self.is_async_fs = False  # Memory fs doesn't support async
 
         return {
             'model': MemoryModel,
@@ -335,11 +349,17 @@ class AsyncLocalPathContext:
 
     async def _download_if_exists(self) -> None:
         """Download remote file to temp if it exists."""
-        exists = await self.implementor.fs._exists(self.fs_path)
-        if not exists:
-            return
+        if self.implementor.is_async_fs:
+            exists = await self.implementor.fs._exists(self.fs_path)
+            if not exists:
+                return
+            data = await self.implementor.fs._cat(self.fs_path)
+        else:
+            exists = await asyncio.to_thread(self.implementor.fs.exists, self.fs_path)
+            if not exists:
+                return
+            data = await asyncio.to_thread(self.implementor.fs.cat, self.fs_path)
 
-        data = await self.implementor.fs._cat(self.fs_path)
         with open(self.tmp_path, 'wb') as f:
             f.write(data)
 
@@ -351,11 +371,18 @@ class AsyncLocalPathContext:
         # Ensure parent directory exists
         parent = str(PurePosixPath(self.fs_path).parent)
         if parent and parent != '.':
-            await self.implementor.fs._makedirs(parent, exist_ok=True)
+            if self.implementor.is_async_fs:
+                await self.implementor.fs._makedirs(parent, exist_ok=True)
+            else:
+                await asyncio.to_thread(self.implementor.fs.makedirs, parent, exist_ok=True)
 
         with open(self.tmp_path, 'rb') as f:
             data = f.read()
-        await self.implementor.fs._pipe(self.fs_path, data)
+
+        if self.implementor.is_async_fs:
+            await self.implementor.fs._pipe(self.fs_path, data)
+        else:
+            await asyncio.to_thread(self.implementor.fs.pipe, self.fs_path, data)
 
     def _cleanup_temp(self) -> None:
         """Remove temp file if it exists."""
@@ -392,9 +419,13 @@ class AsyncFsspecImplementor(AsyncImplementor):
         self.root_path = root_path
         self.fs_kwargs = fs_kwargs
 
-        # Create async fsspec filesystem instance
-        # IMPORTANT: asynchronous=True must be in fs_kwargs
+        # Create fsspec filesystem instance
+        # IMPORTANT: asynchronous=True must be in fs_kwargs for async protocols
         self.fs = fsspec.filesystem(protocol, **fs_kwargs)
+
+        # Detect if filesystem supports async
+        # Local filesystem (file://) doesn't support async, others do
+        self.is_async_fs = hasattr(self.fs, '_cat') and protocol != 'file'
 
     def _make_path(self, path: str) -> str:
         """Combine root_path with path from StorageManager.
@@ -420,13 +451,19 @@ class AsyncFsspecImplementor(AsyncImplementor):
     async def exists(self, path: str) -> bool:
         """Check if file or directory exists."""
         fs_path = self._make_path(path)
-        return await self.fs._exists(fs_path)
+        if self.is_async_fs:
+            return await self.fs._exists(fs_path)
+        else:
+            return await asyncio.to_thread(self.fs.exists, fs_path)
 
     async def is_file(self, path: str) -> bool:
         """Check if path is a file."""
         fs_path = self._make_path(path)
         try:
-            info = await self.fs._info(fs_path)
+            if self.is_async_fs:
+                info = await self.fs._info(fs_path)
+            else:
+                info = await asyncio.to_thread(self.fs.info, fs_path)
             return info['type'] == 'file'
         except FileNotFoundError:
             return False
@@ -435,7 +472,10 @@ class AsyncFsspecImplementor(AsyncImplementor):
         """Check if path is a directory."""
         fs_path = self._make_path(path)
         try:
-            info = await self.fs._info(fs_path)
+            if self.is_async_fs:
+                info = await self.fs._info(fs_path)
+            else:
+                info = await asyncio.to_thread(self.fs.info, fs_path)
             return info['type'] == 'directory'
         except FileNotFoundError:
             return False
@@ -443,7 +483,10 @@ class AsyncFsspecImplementor(AsyncImplementor):
     async def size(self, path: str) -> int:
         """Get file size in bytes."""
         fs_path = self._make_path(path)
-        info = await self.fs._info(fs_path)
+        if self.is_async_fs:
+            info = await self.fs._info(fs_path)
+        else:
+            info = await asyncio.to_thread(self.fs.info, fs_path)
 
         if info['type'] != 'file':
             raise ValueError(f"Path is a directory, not a file: {path}")
@@ -453,7 +496,10 @@ class AsyncFsspecImplementor(AsyncImplementor):
     async def mtime(self, path: str) -> float:
         """Get last modification time."""
         fs_path = self._make_path(path)
-        info = await self.fs._info(fs_path)
+        if self.is_async_fs:
+            info = await self.fs._info(fs_path)
+        else:
+            info = await asyncio.to_thread(self.fs.info, fs_path)
 
         if 'mtime' in info:
             return info['mtime']
@@ -469,7 +515,10 @@ class AsyncFsspecImplementor(AsyncImplementor):
     async def read_bytes(self, path: str) -> bytes:
         """Read entire file as bytes."""
         fs_path = self._make_path(path)
-        return await self.fs._cat(fs_path)
+        if self.is_async_fs:
+            return await self.fs._cat(fs_path)
+        else:
+            return await asyncio.to_thread(self.fs.cat, fs_path)
 
     async def read_text(self, path: str, encoding: str = 'utf-8') -> str:
         """Read entire file as text."""
@@ -479,7 +528,10 @@ class AsyncFsspecImplementor(AsyncImplementor):
     async def write_bytes(self, path: str, data: bytes) -> None:
         """Write bytes to file."""
         fs_path = self._make_path(path)
-        await self.fs._pipe(fs_path, data)
+        if self.is_async_fs:
+            await self.fs._pipe(fs_path, data)
+        else:
+            await asyncio.to_thread(self.fs.pipe, fs_path, data)
 
     async def write_text(self, path: str, text: str, encoding: str = 'utf-8') -> None:
         """Write text to file."""
@@ -494,15 +546,24 @@ class AsyncFsspecImplementor(AsyncImplementor):
         if is_dir:
             if not recursive:
                 raise ValueError(f"Path is a directory, use recursive=True: {path}")
-            await self.fs._rm(fs_path, recursive=True)
+            if self.is_async_fs:
+                await self.fs._rm(fs_path, recursive=True)
+            else:
+                await asyncio.to_thread(self.fs.rm, fs_path, recursive=True)
         else:
-            await self.fs._rm(fs_path)
+            if self.is_async_fs:
+                await self.fs._rm(fs_path)
+            else:
+                await asyncio.to_thread(self.fs.rm, fs_path)
 
     async def list_dir(self, path: str) -> list[str]:
         """List directory contents."""
         fs_path = self._make_path(path)
 
-        entries = await self.fs._ls(fs_path, detail=False)
+        if self.is_async_fs:
+            entries = await self.fs._ls(fs_path, detail=False)
+        else:
+            entries = await asyncio.to_thread(self.fs.ls, fs_path, detail=False)
 
         # Extract basenames
         result = []
@@ -525,7 +586,10 @@ class AsyncFsspecImplementor(AsyncImplementor):
     async def mkdir(self, path: str, parents: bool = False, exist_ok: bool = False) -> None:
         """Create directory."""
         fs_path = self._make_path(path)
-        await self.fs._makedirs(fs_path, exist_ok=exist_ok)
+        if self.is_async_fs:
+            await self.fs._makedirs(fs_path, exist_ok=exist_ok)
+        else:
+            await asyncio.to_thread(self.fs.makedirs, fs_path, exist_ok=exist_ok)
 
     async def copy(
         self,
@@ -542,7 +606,7 @@ class AsyncFsspecImplementor(AsyncImplementor):
 
         return None
 
-    async def local_path(self, path: str, mode: str = 'r'):
+    def local_path(self, path: str, mode: str = 'r'):
         """Get async context manager for local filesystem path.
 
         Args:
