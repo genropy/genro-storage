@@ -61,8 +61,7 @@ https://genro-storage.readthedocs.io
 
 __version__ = "0.5.0"
 
-from .storage_manager import StorageManager
-from .storage_node import StorageNode, SkipStrategy
+from .node import SkipStrategy
 from .exceptions import (
     StorageError,
     StorageNotFoundError,
@@ -71,16 +70,22 @@ from .exceptions import (
 )
 from .api_introspection import get_api_structure, get_api_structure_multi
 
-# Async support (native implementation)
+# Async/Sync unified implementation with SmartSync
 try:
     from .async_storage_manager import AsyncStorageManager
     from .async_storage_node import AsyncStorageNode
+
+    # StorageManager is now just AsyncStorageManager - use _sync parameter to control mode
+    # Sync mode: StorageManager(_sync=True) or AsyncStorageManager(_sync=True)
+    # Async mode: StorageManager() or AsyncStorageManager() [default]
+    StorageManager = AsyncStorageManager
 
     _ASYNC_AVAILABLE = True
 except ImportError:
     _ASYNC_AVAILABLE = False
     AsyncStorageManager = None  # type: ignore
     AsyncStorageNode = None  # type: ignore
+    StorageManager = None  # type: ignore
 
 __all__ = [
     # Version

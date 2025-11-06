@@ -13,115 +13,152 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Global provider registry.
+"""Global provider registry using smartswitch.
 
-This module maintains a global registry of all available protocols
-and their provider classes. Protocols are auto-registered when
-decorated with @protocol decorator.
+This module manages loading and registration of storage providers.
+Each provider module must have a `Provider` class with protocol methods
+decorated with its own `proto` switcher.
+
+Architecture:
+    - ProviderRegistry: Loads provider modules, instantiates Provider classes
+    - Provider classes: Have `proto = Switcher(prefix='protocol_')` as class attribute
+    - Protocol methods: Decorated with @proto, auto-registered with naming convention
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Type, Callable
+import importlib
+import pkgutil
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from .base import AsyncProvider
+    pass
 
 
 class ProviderRegistry:
-    """Global registry for storage providers and protocols.
+    """Registry that loads and manages storage providers.
 
-    This class maintains a mapping of protocol names to their provider
-    classes and protocol methods. Protocols are auto-registered when
-    decorated with @Provider.protocol decorator.
+    At initialization, scans the providers/ directory, imports each module,
+    and instantiates its `Provider` class. Each provider registers its
+    protocols using smartswitch.
 
     Example:
-        >>> # Protocols are auto-registered via decorator
-        >>> class FsspecProvider(AsyncProvider):
-        ...     @protocol('s3_aws')
-        ...     def protocol_s3_aws(self):
-        ...         pass  # Auto-registered
-        ...
-        >>> # Later, retrieve protocol
-        >>> config = ProviderRegistry.get_protocol('s3_aws')
-        >>> Model = config['model']
-        >>> instance = Model(bucket='my-bucket', region='us-east-1')
+        >>> registry = ProviderRegistry()
+        >>> # Auto-loaded providers: fsspec, custom, etc.
+        >>>
+        >>> # Get fsspec provider
+        >>> fsspec = registry.providers['fsspec']
+        >>>
+        >>> # List protocols from fsspec
+        >>> protocols = fsspec.proto.list()
+        >>>
+        >>> # Call a protocol
+        >>> config = fsspec.proto('s3_aws')
     """
 
-    # Registry: protocol_name -> (AsyncProvider class, protocol method)
-    _registry: dict[str, tuple[Type[AsyncProvider], Callable]] = {}
+    def __init__(self):
+        """Initialize registry and load all providers."""
+        self.providers = {}  # module_name -> Provider instance
+        self.load_providers()
 
-    @classmethod
-    def register(
-        cls, protocol_name: str, provider_class: Type[AsyncProvider], protocol_method: Callable
-    ) -> None:
-        """Register a protocol (called automatically by @protocol decorator).
+    def load_providers(self) -> None:
+        """Scan providers/ directory and load all provider modules.
 
-        Args:
-            protocol_name: Protocol name (e.g., 's3_aws')
-            provider_class: Provider class
-            protocol_method: Protocol method that returns config dict
+        For each .py file (except __init__.py, base.py, registry.py):
+        1. Import the module
+        2. Get the `Provider` class
+        3. Instantiate it
+        4. Add to self.providers
         """
-        cls._registry[protocol_name] = (provider_class, protocol_method)
+        # Get path to providers directory
+        providers_dir = Path(__file__).parent
 
-    @classmethod
-    def get_protocol(cls, protocol_name: str) -> dict[str, Any]:
-        """Get protocol configuration.
+        # Scan for .py files
+        for module_info in pkgutil.iter_modules([str(providers_dir)]):
+            module_name = module_info.name
+
+            # Skip special files
+            if module_name in ('__init__', 'base', 'registry'):
+                continue
+
+            try:
+                # Import module
+                module = importlib.import_module(f'.{module_name}', package='genro_storage.providers')
+
+                # Get Provider class
+                if not hasattr(module, 'Provider'):
+                    continue  # Skip if no Provider class
+
+                provider_class = getattr(module, 'Provider')
+
+                # Instantiate and add
+                provider_instance = provider_class()
+                self.add_provider(module_name, provider_instance)
+
+            except Exception as e:
+                # Log error but continue loading other providers
+                import warnings
+                warnings.warn(f"Failed to load provider '{module_name}': {e}")
+                continue
+
+    def add_provider(self, name: str, provider_instance: Any) -> None:
+        """Add a provider to the registry.
 
         Args:
-            protocol_name: Protocol name
+            name: Provider name (usually module name)
+            provider_instance: Instantiated Provider class
+        """
+        self.providers[name] = provider_instance
+
+    def del_provider(self, name: str) -> None:
+        """Remove a provider from the registry.
+
+        Args:
+            name: Provider name to remove
+        """
+        if name in self.providers:
+            del self.providers[name]
+
+    def get_protocol(self, protocol_name: str) -> dict[str, Any]:
+        """Get protocol configuration by searching all providers.
+
+        Args:
+            protocol_name: Protocol name (e.g., 's3_aws', 'gcs')
 
         Returns:
-            dict: Dictionary with 'model', 'implementor', 'capabilities'
+            dict: Protocol configuration with 'model', 'implementor', etc.
 
         Raises:
-            ValueError: If protocol not registered
-
-        Example:
-            >>> config = ProviderRegistry.get_protocol('s3_aws')
-            >>> Model = config['model']
-            >>> Implementor = config['implementor']
-            >>> capabilities = config['capabilities']
+            ValueError: If protocol not found in any provider
         """
-        if protocol_name not in cls._registry:
-            available = list(cls._registry.keys())
-            raise ValueError(
-                f"Protocol '{protocol_name}' not found. " f"Available protocols: {available}"
-            )
+        # Try each provider's proto switcher
+        for provider_name, provider in self.providers.items():
+            if hasattr(provider, 'proto'):
+                try:
+                    return provider.proto(protocol_name)
+                except:
+                    continue  # Try next provider
 
-        provider_class, protocol_method = cls._registry[protocol_name]
+        # Not found in any provider
+        available = self.list_protocols()
+        raise ValueError(
+            f"Protocol '{protocol_name}' not found. "
+            f"Available protocols: {available}"
+        )
 
-        # Create provider instance and call protocol method
-        provider_instance = provider_class()
-        return protocol_method(provider_instance)
-
-    @classmethod
-    def list_protocols(cls) -> list[str]:
-        """List all registered protocols.
+    def list_protocols(self) -> list[str]:
+        """List all available protocols from all providers.
 
         Returns:
-            list[str]: Protocol names
+            list[str]: All protocol names across all providers
         """
-        return list(cls._registry.keys())
+        protocols = []
+        for provider in self.providers.values():
+            if hasattr(provider, 'proto') and hasattr(provider.proto, '_spells'):
+                protocols.extend(provider.proto._spells.keys())
+        return sorted(set(protocols))
 
-    @classmethod
-    def list_providers(cls) -> dict[str, list[str]]:
-        """List all providers and their protocols.
-
-        Returns:
-            dict: Provider name -> list of protocol names
-        """
-        result: dict[str, list[str]] = {}
-
-        for protocol_name, (provider_class, _) in cls._registry.items():
-            provider_name = provider_class.__name__
-            if provider_name not in result:
-                result[provider_name] = []
-            result[provider_name].append(protocol_name)
-
-        return result
-
-    @classmethod
-    def clear(cls) -> None:
-        """Clear registry (useful for testing)."""
-        cls._registry.clear()
+    def clear(self) -> None:
+        """Clear all providers (useful for testing)."""
+        self.providers.clear()

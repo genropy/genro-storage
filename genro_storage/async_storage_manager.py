@@ -16,6 +16,7 @@
 """AsyncStorageManager - Async storage manager with provider architecture.
 
 This is the async base implementation using the provider system.
+Can work in both sync and async modes via SmartSync.
 """
 
 from __future__ import annotations
@@ -25,9 +26,10 @@ from pydantic import ValidationError
 
 from .async_storage_node import AsyncStorageNode
 from .providers.registry import ProviderRegistry
+from .decorators import SmartSync, smartsync
 
 
-class AsyncStorageManager:
+class AsyncStorageManager(SmartSync):
     """Async manager for storage mount points and creates AsyncStorageNodes.
 
     AsyncStorageManager is the async entry point for genro-storage.
@@ -64,11 +66,18 @@ class AsyncStorageManager:
         >>> await node.write(b'Hello World')
     """
 
-    def __init__(self):
-        """Initialize AsyncStorageManager."""
+    def __init__(self, _sync: bool = False):
+        """Initialize AsyncStorageManager.
+
+        Args:
+            _sync: If True, async methods work in sync mode (no await needed).
+                   If False (default), methods return coroutines (await required).
+        """
+        SmartSync.__init__(self, _sync)
         self.provider_registry = ProviderRegistry()
         self._mounts: dict[str, dict[str, Any]] = {}
 
+    @smartsync
     async def configure(self, mounts: list[dict[str, Any]]) -> None:
         """Configure mount points.
 
@@ -228,6 +237,7 @@ class AsyncStorageManager:
         """
         return mount_point in self._mounts
 
+    @smartsync
     async def remove_mount(self, mount_point: str) -> None:
         """Remove a mount point.
 
@@ -248,6 +258,7 @@ class AsyncStorageManager:
 
         del self._mounts[mount_point]
 
+    @smartsync
     async def close_all(self) -> None:
         """Close all mount points and release resources."""
         for mount_point in list(self._mounts.keys()):

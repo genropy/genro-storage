@@ -1,0 +1,3640 @@
+{
+  "metadata": {
+    "timestamp": "2025-11-06T11:14:14.630423",
+    "project": "genro-storage",
+    "tool": "check_doc_coverage.py",
+    "version": "1.0.0"
+  },
+  "coverage": {
+    "total_features": 92,
+    "documented": 90,
+    "coverage_percent": 97.8,
+    "gap": 2,
+    "by_status": {
+      "good": 0,
+      "partial": 90,
+      "missing": 2
+    },
+    "by_location": {
+      "readme": 84,
+      "docs": 0,
+      "notebooks": 87
+    },
+    "by_priority": {
+      "high": 0,
+      "medium": 0,
+      "low": 2
+    }
+  },
+  "features": [
+    {
+      "name": "versioning_on_non_versioned_backends",
+      "test_class": "TestVersioningOnNonVersionedBackends",
+      "test_count": 3,
+      "test_names": [
+        "test_versions_on_local_backend_returns_empty",
+        "test_versions_on_memory_backend_returns_empty",
+        "test_version_count_on_non_versioned_backend"
+      ],
+      "test_file": "tests/test_versioning_edge_cases.py",
+      "test_line": 8,
+      "keywords": [
+        "versioned",
+        "non",
+        "test",
+        "backends",
+        "versioning on non versioned backends",
+        "versioning_on_non_versioned_backends",
+        "versioning"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,10,52)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: non,test,versioning)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,backends,versioning)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "iter_node",
+      "test_class": "TestIterNode",
+      "test_count": 11,
+      "test_names": [
+        "test_create_iternode_with_nodes",
+        "test_iternode_read_text_concatenates",
+        "test_iternode_is_lazy",
+        "test_iternode_append",
+        "test_iternode_extend",
+        "test_iternode_append_and_extend",
+        "test_iternode_copy_to_destination",
+        "test_iternode_empty",
+        "test_iternode_exists_is_false",
+        "test_iternode_write_raises_error",
+        "test_iternode_read_bytes"
+      ],
+      "test_file": "tests/test_virtual_nodes.py",
+      "test_line": 27,
+      "keywords": [
+        "node",
+        "test",
+        "iter_node",
+        "iter node",
+        "iter"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,96,303)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: node,test,iter)",
+        "notebooks/06_versioning.ipynb (keywords: node,test)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: node,test)",
+        "notebooks/07_advanced_features.ipynb (keywords: node,test)",
+        "notebooks/08_real_world_examples.ipynb (keywords: node,test,iter)",
+        "notebooks/05_copy_strategies.ipynb (keywords: node,test,iter)",
+        "notebooks/03_file_operations.ipynb (keywords: node,test,iter)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "diff_node",
+      "test_class": "TestDiffNode",
+      "test_count": 8,
+      "test_names": [
+        "test_create_diffnode",
+        "test_diffnode_generates_diff",
+        "test_diffnode_identical_files",
+        "test_diffnode_is_lazy",
+        "test_diffnode_copy_to_destination",
+        "test_diffnode_exists_is_false",
+        "test_diffnode_write_raises_error",
+        "test_diffnode_binary_raises_error"
+      ],
+      "test_file": "tests/test_virtual_nodes.py",
+      "test_line": 176,
+      "keywords": [
+        "node",
+        "diff node",
+        "test",
+        "diff_node",
+        "diff"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,42,96)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: node,test,diff)",
+        "notebooks/01_quickstart.ipynb (keywords: node,diff)",
+        "notebooks/06_versioning.ipynb (keywords: node,test,diff)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: node,test,diff)",
+        "notebooks/07_advanced_features.ipynb (keywords: node,test,diff)",
+        "notebooks/08_real_world_examples.ipynb (keywords: node,test,diff)",
+        "notebooks/05_copy_strategies.ipynb (keywords: node,test,diff)",
+        "notebooks/03_file_operations.ipynb (keywords: node,test,diff)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "zip_method",
+      "test_class": "TestZipMethod",
+      "test_count": 5,
+      "test_names": [
+        "test_zip_single_file",
+        "test_zip_directory_recursive",
+        "test_zip_iternode",
+        "test_zip_and_write",
+        "test_zip_empty_iternode"
+      ],
+      "test_file": "tests/test_virtual_nodes.py",
+      "test_line": 294,
+      "keywords": [
+        "zip method",
+        "test",
+        "method",
+        "zip",
+        "zip_method"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,27,44)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,zip)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,method,zip)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,zip)",
+        "notebooks/03_file_operations.ipynb (keywords: test,method,zip)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "integration",
+      "test_class": "TestIntegration",
+      "test_count": 4,
+      "test_names": [
+        "test_iternode_workflow",
+        "test_diffnode_workflow",
+        "test_zip_iternode_and_save",
+        "test_incremental_build_with_iternode"
+      ],
+      "test_file": "tests/test_virtual_nodes.py",
+      "test_line": 391,
+      "keywords": [
+        "test",
+        "integration"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,44)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/06_versioning.ipynb (keywords: test,integration)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,integration)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,integration)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "backend_capabilities_complete",
+      "test_class": "TestBackendCapabilitiesComplete",
+      "test_count": 19,
+      "test_names": [
+        "test_equality_same_capabilities",
+        "test_equality_different_capabilities",
+        "test_equality_with_non_capabilities_object",
+        "test_hash_same_for_equal_capabilities",
+        "test_hash_different_for_different_capabilities",
+        "test_repr",
+        "test_str",
+        "test_capabilities_can_be_used_as_dict_keys",
+        "test_capabilities_in_set",
+        "test_str_basic_operations",
+        "test_str_with_versioning",
+        "test_str_with_metadata",
+        "test_str_with_presigned_urls",
+        "test_str_with_copy_optimization",
+        "test_str_with_hash_on_metadata",
+        "test_str_with_symbolic_links",
+        "test_str_with_readonly",
+        "test_str_with_temporary",
+        "test_str_with_multiple_features"
+      ],
+      "test_file": "tests/test_capabilities_complete.py",
+      "test_line": 7,
+      "keywords": [
+        "backend capabilities complete",
+        "test",
+        "backend",
+        "capabilities",
+        "backend_capabilities_complete",
+        "complete"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,10,16)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/06_versioning.ipynb (keywords: test,backend,capabilities)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,backend,capabilities)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,backend,capabilities)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,complete)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,complete)",
+        "notebooks/03_file_operations.ipynb (keywords: test,backend,complete)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "m_d5_hash",
+      "test_class": "TestMD5Hash",
+      "test_count": 6,
+      "test_names": [
+        "test_md5hash_local_file",
+        "test_md5hash_s3_from_etag",
+        "test_md5hash_nonexistent_file",
+        "test_md5hash_directory_raises_error",
+        "test_md5hash_large_file",
+        "test_md5hash_empty_file"
+      ],
+      "test_file": "tests/test_md5_and_equality.py",
+      "test_line": 7,
+      "keywords": [
+        "test",
+        "m d5 hash",
+        "hash",
+        "m_d5_hash"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,40)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/07_advanced_features.ipynb (keywords: test,hash)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,hash)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,hash)",
+        "notebooks/03_file_operations.ipynb (keywords: test,hash)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "node_equality",
+      "test_class": "TestNodeEquality",
+      "test_count": 9,
+      "test_names": [
+        "test_equality_same_content",
+        "test_inequality_different_content",
+        "test_equality_same_path",
+        "test_equality_across_backends",
+        "test_equality_s3_to_local",
+        "test_inequality_with_non_storagenode",
+        "test_equality_nonexistent_files",
+        "test_equality_directory_returns_false",
+        "test_equality_file_to_directory"
+      ],
+      "test_file": "tests/test_md5_and_equality.py",
+      "test_line": 111,
+      "keywords": [
+        "node",
+        "equality",
+        "node equality",
+        "test",
+        "node_equality"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,96,427)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: node,test)",
+        "notebooks/06_versioning.ipynb (keywords: node,test)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: node,test)",
+        "notebooks/07_advanced_features.ipynb (keywords: node,test)",
+        "notebooks/08_real_world_examples.ipynb (keywords: node,test)",
+        "notebooks/05_copy_strategies.ipynb (keywords: node,test)",
+        "notebooks/03_file_operations.ipynb (keywords: node,test)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "m_d5_performance",
+      "test_class": "TestMD5Performance",
+      "test_count": 2,
+      "test_names": [
+        "test_s3_hash_uses_etag_not_download",
+        "test_multiple_hash_calls_consistent"
+      ],
+      "test_file": "tests/test_md5_and_equality.py",
+      "test_line": 253,
+      "keywords": [
+        "test",
+        "m_d5_performance",
+        "performance",
+        "m d5 performance"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,475)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/05_copy_strategies.ipynb (keywords: test,performance)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "git_backend",
+      "test_class": "TestGitBackend",
+      "test_count": 4,
+      "test_names": [
+        "test_git_configuration_basic",
+        "test_git_configuration_with_ref",
+        "test_git_configuration_missing_path",
+        "test_git_capabilities"
+      ],
+      "test_file": "tests/test_additional_backends.py",
+      "test_line": 122,
+      "keywords": [
+        "git",
+        "test",
+        "git_backend",
+        "git backend",
+        "backend"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,6,10)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/01_quickstart.ipynb (keywords: git,backend)",
+        "notebooks/06_versioning.ipynb (keywords: test,backend)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: git,test,backend)",
+        "notebooks/07_advanced_features.ipynb (keywords: git,test,backend)",
+        "notebooks/05_copy_strategies.ipynb (keywords: git,test)",
+        "notebooks/03_file_operations.ipynb (keywords: test,backend)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "git_hub_backend",
+      "test_class": "TestGitHubBackend",
+      "test_count": 6,
+      "test_names": [
+        "test_github_configuration_basic",
+        "test_github_configuration_with_ref",
+        "test_github_configuration_with_token",
+        "test_github_configuration_missing_org",
+        "test_github_configuration_missing_repo",
+        "test_github_capabilities"
+      ],
+      "test_file": "tests/test_additional_backends.py",
+      "test_line": 196,
+      "keywords": [
+        "git hub backend",
+        "git",
+        "git_hub_backend",
+        "hub",
+        "test",
+        "backend"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,6,6)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/01_quickstart.ipynb (keywords: git,hub,backend)",
+        "notebooks/06_versioning.ipynb (keywords: test,backend)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: git,hub,test)",
+        "notebooks/07_advanced_features.ipynb (keywords: git,hub,test)",
+        "notebooks/05_copy_strategies.ipynb (keywords: git,test)",
+        "notebooks/03_file_operations.ipynb (keywords: test,backend)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "g_c_s_backend",
+      "test_class": "TestGCSBackend",
+      "test_count": 5,
+      "test_names": [
+        "test_gcs_configuration_basic",
+        "test_gcs_file_operations",
+        "test_gcs_configuration_missing_bucket",
+        "test_gcs_configuration_with_prefix",
+        "test_gcs_capabilities"
+      ],
+      "test_file": "tests/test_additional_backends.py",
+      "test_line": 280,
+      "keywords": [
+        "test",
+        "g c s backend",
+        "backend",
+        "g_c_s_backend"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,10)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/06_versioning.ipynb (keywords: test,backend)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,backend)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,backend)",
+        "notebooks/03_file_operations.ipynb (keywords: test,backend)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "web_d_a_v_backend",
+      "test_class": "TestWebDAVBackend",
+      "test_count": 5,
+      "test_names": [
+        "test_webdav_configuration_basic",
+        "test_webdav_configuration_with_auth",
+        "test_webdav_configuration_with_token",
+        "test_webdav_configuration_missing_url",
+        "test_webdav_capabilities"
+      ],
+      "test_file": "tests/test_additional_backends.py",
+      "test_line": 386,
+      "keywords": [
+        "web d a v backend",
+        "web_d_a_v_backend",
+        "web",
+        "test",
+        "backend"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,10,27)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/06_versioning.ipynb (keywords: test,backend)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: web,test,backend)",
+        "notebooks/07_advanced_features.ipynb (keywords: web,test,backend)",
+        "notebooks/08_real_world_examples.ipynb (keywords: web,test)",
+        "notebooks/03_file_operations.ipynb (keywords: test,backend)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "azure_backend",
+      "test_class": "TestAzureBackend",
+      "test_count": 5,
+      "test_names": [
+        "test_azure_configuration_basic",
+        "test_azure_file_operations",
+        "test_azure_configuration_missing_account_name",
+        "test_azure_configuration_missing_container",
+        "test_azure_capabilities"
+      ],
+      "test_file": "tests/test_additional_backends.py",
+      "test_line": 484,
+      "keywords": [
+        "test",
+        "backend",
+        "azure_backend",
+        "azure backend",
+        "azure"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,10,12)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/01_quickstart.ipynb (keywords: backend,azure)",
+        "notebooks/06_versioning.ipynb (keywords: test,backend)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,backend,azure)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,backend,azure)",
+        "notebooks/03_file_operations.ipynb (keywords: test,backend)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "lib_archive_backend",
+      "test_class": "TestLibArchiveBackend",
+      "test_count": 4,
+      "test_names": [
+        "test_libarchive_configuration_basic",
+        "test_libarchive_configuration_with_options",
+        "test_libarchive_configuration_missing_file",
+        "test_libarchive_capabilities"
+      ],
+      "test_file": "tests/test_additional_backends.py",
+      "test_line": 586,
+      "keywords": [
+        "lib_archive_backend",
+        "archive",
+        "test",
+        "lib",
+        "backend",
+        "lib archive backend"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,10,12)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: archive,test)",
+        "notebooks/06_versioning.ipynb (keywords: test,backend)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: archive,test,backend)",
+        "notebooks/07_advanced_features.ipynb (keywords: archive,test,backend)",
+        "notebooks/08_real_world_examples.ipynb (keywords: archive,test,lib)",
+        "notebooks/03_file_operations.ipynb (keywords: test,backend)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "s3_versioning",
+      "test_class": "TestS3Versioning",
+      "test_count": 16,
+      "test_names": [
+        "test_versioning_capability",
+        "test_version_count",
+        "test_versions_list",
+        "test_open_with_version_index",
+        "test_open_with_version_id",
+        "test_open_version_read_only",
+        "test_compare_versions_using_nodes",
+        "test_restore_previous_version_by_reading_and_writing",
+        "test_restore_specific_version_by_reading_and_writing",
+        "test_write_bytes_skip_if_unchanged_with_s3",
+        "test_write_text_skip_if_unchanged_with_s3",
+        "test_compact_versions_removes_consecutive_duplicates",
+        "test_compact_versions_dry_run",
+        "test_compact_versions_no_duplicates",
+        "test_open_with_as_of_datetime",
+        "test_version_info_includes_etag"
+      ],
+      "test_file": "tests/test_s3_versioning.py",
+      "test_line": 41,
+      "keywords": [
+        "test",
+        "s3 versioning",
+        "s3_versioning",
+        "versioning"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,52,52)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,versioning)",
+        "notebooks/06_versioning.ipynb (keywords: test,s3 versioning,versioning)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,versioning)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,s3 versioning,versioning)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "s3_versioning_edge_cases",
+      "test_class": "TestS3VersioningEdgeCases",
+      "test_count": 8,
+      "test_names": [
+        "test_restore_single_version_by_reading_and_writing",
+        "test_compact_versions_preserves_non_consecutive",
+        "test_versions_sorted_by_time",
+        "test_versioning_not_enabled_on_bucket",
+        "test_version_at_index_no_versions_raises_error",
+        "test_version_at_index_out_of_range_raises_error",
+        "test_version_at_date_with_naive_datetime",
+        "test_version_at_date_before_all_versions_returns_none"
+      ],
+      "test_file": "tests/test_s3_versioning.py",
+      "test_line": 345,
+      "keywords": [
+        "cases",
+        "test",
+        "s3_versioning_edge_cases",
+        "edge",
+        "s3 versioning edge cases",
+        "versioning"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,52,307)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,versioning)",
+        "notebooks/06_versioning.ipynb (keywords: cases,test,versioning)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,versioning)",
+        "notebooks/07_advanced_features.ipynb (keywords: cases,test)",
+        "notebooks/08_real_world_examples.ipynb (keywords: cases,test,edge)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,versioning)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "h_t_t_p_server",
+      "test_class": "TestHTTPServer",
+      "test_count": 0,
+      "test_names": [],
+      "test_file": "tests/test_http_backend.py",
+      "test_line": 15,
+      "keywords": [
+        "test",
+        "h t t p server",
+        "h_t_t_p_server",
+        "server"
+      ],
+      "in_readme": false,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,server)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,server)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "h_t_t_p_backend",
+      "test_class": "TestHTTPBackend",
+      "test_count": 4,
+      "test_names": [
+        "test_http_configuration_basic",
+        "test_http_configuration_missing_base_url",
+        "test_http_read_file",
+        "test_http_capabilities"
+      ],
+      "test_file": "tests/test_http_backend.py",
+      "test_line": 68,
+      "keywords": [
+        "test",
+        "backend",
+        "h_t_t_p_backend",
+        "h t t p backend"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,10)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/06_versioning.ipynb (keywords: test,backend)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,backend)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,backend)",
+        "notebooks/03_file_operations.ipynb (keywords: test,backend)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "read_text_method",
+      "test_class": "TestReadTextMethod",
+      "test_count": 5,
+      "test_names": [
+        "test_read_text_basic",
+        "test_read_text_with_encoding",
+        "test_read_text_multiline",
+        "test_read_text_empty_file",
+        "test_read_text_nonexistent"
+      ],
+      "test_file": "tests/test_convenience_methods.py",
+      "test_line": 30,
+      "keywords": [
+        "text",
+        "test",
+        "method",
+        "read text method",
+        "read_text_method",
+        "read"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,5,44)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: text,test,read)",
+        "notebooks/01_quickstart.ipynb (keywords: text,read)",
+        "notebooks/06_versioning.ipynb (keywords: test,read)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,read)",
+        "notebooks/07_advanced_features.ipynb (keywords: text,test,method)",
+        "notebooks/08_real_world_examples.ipynb (keywords: text,test,read)",
+        "notebooks/05_copy_strategies.ipynb (keywords: text,test,read)",
+        "notebooks/03_file_operations.ipynb (keywords: text,test,method)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "read_bytes_method",
+      "test_class": "TestReadBytesMethod",
+      "test_count": 4,
+      "test_names": [
+        "test_read_bytes_basic",
+        "test_read_bytes_various_content",
+        "test_read_bytes_empty",
+        "test_read_bytes_nonexistent"
+      ],
+      "test_file": "tests/test_convenience_methods.py",
+      "test_line": 85,
+      "keywords": [
+        "test",
+        "bytes",
+        "method",
+        "read bytes method",
+        "read_bytes_method",
+        "read"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,5,44)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,bytes,read)",
+        "notebooks/01_quickstart.ipynb (keywords: bytes,read)",
+        "notebooks/06_versioning.ipynb (keywords: test,bytes,read)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,read)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,bytes,method)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,bytes,read)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,bytes,read)",
+        "notebooks/03_file_operations.ipynb (keywords: test,bytes,method)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "write_text_method",
+      "test_class": "TestWriteTextMethod",
+      "test_count": 5,
+      "test_names": [
+        "test_write_text_basic",
+        "test_write_text_with_encoding",
+        "test_write_text_overwrite",
+        "test_write_text_skip_if_unchanged",
+        "test_write_text_type_error"
+      ],
+      "test_file": "tests/test_convenience_methods.py",
+      "test_line": 128,
+      "keywords": [
+        "text",
+        "write text method",
+        "test",
+        "write",
+        "method",
+        "write_text_method"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,36,44)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: text,test,write)",
+        "notebooks/01_quickstart.ipynb (keywords: text,write)",
+        "notebooks/06_versioning.ipynb (keywords: test,write)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,write)",
+        "notebooks/07_advanced_features.ipynb (keywords: text,test,write)",
+        "notebooks/08_real_world_examples.ipynb (keywords: text,test,write)",
+        "notebooks/05_copy_strategies.ipynb (keywords: text,test,write)",
+        "notebooks/03_file_operations.ipynb (keywords: text,test,write)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "write_bytes_method",
+      "test_class": "TestWriteBytesMethod",
+      "test_count": 5,
+      "test_names": [
+        "test_write_bytes_basic",
+        "test_write_bytes_various_content",
+        "test_write_bytes_overwrite",
+        "test_write_bytes_skip_if_unchanged",
+        "test_write_bytes_type_error"
+      ],
+      "test_file": "tests/test_convenience_methods.py",
+      "test_line": 189,
+      "keywords": [
+        "test",
+        "bytes",
+        "write",
+        "method",
+        "write_bytes_method",
+        "write bytes method"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,36,44)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,bytes,write)",
+        "notebooks/01_quickstart.ipynb (keywords: bytes,write)",
+        "notebooks/06_versioning.ipynb (keywords: test,bytes,write)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,write)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,bytes,write)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,bytes,write)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,bytes,write)",
+        "notebooks/03_file_operations.ipynb (keywords: test,bytes,write)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "convenience_methods_equivalence",
+      "test_class": "TestConvenienceMethodsEquivalence",
+      "test_count": 4,
+      "test_names": [
+        "test_read_text_equivalent",
+        "test_read_bytes_equivalent",
+        "test_write_text_equivalent",
+        "test_write_bytes_equivalent"
+      ],
+      "test_file": "tests/test_convenience_methods.py",
+      "test_line": 246,
+      "keywords": [
+        "convenience methods equivalence",
+        "test",
+        "equivalence",
+        "convenience",
+        "methods",
+        "convenience_methods_equivalence"
+      ],
+      "in_readme": false,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/07_advanced_features.ipynb (keywords: test,methods)",
+        "notebooks/03_file_operations.ipynb (keywords: test,methods)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "pathlib_compatibility",
+      "test_class": "TestPathlibCompatibility",
+      "test_count": 2,
+      "test_names": [
+        "test_pathlib_pattern_text",
+        "test_pathlib_pattern_bytes"
+      ],
+      "test_file": "tests/test_convenience_methods.py",
+      "test_line": 296,
+      "keywords": [
+        "pathlib_compatibility",
+        "test",
+        "pathlib compatibility",
+        "compatibility",
+        "pathlib"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": false,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,39)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "factory_pattern_basic",
+      "test_class": "TestFactoryPatternBasic",
+      "test_count": 3,
+      "test_names": [
+        "test_base_node_creates_same_type",
+        "test_parent_creates_same_type",
+        "test_children_creates_same_type"
+      ],
+      "test_file": "tests/test_factory_pattern.py",
+      "test_line": 31,
+      "keywords": [
+        "test",
+        "pattern",
+        "factory",
+        "factory_pattern_basic",
+        "factory pattern basic",
+        "basic"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,300)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/06_versioning.ipynb (keywords: test,pattern)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,pattern)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,pattern)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "factory_pattern_subclass",
+      "test_class": "TestFactoryPatternSubclass",
+      "test_count": 4,
+      "test_names": [
+        "test_subclass_child_preserves_type",
+        "test_subclass_parent_preserves_type",
+        "test_subclass_children_preserves_type",
+        "test_subclass_nested_navigation"
+      ],
+      "test_file": "tests/test_factory_pattern.py",
+      "test_line": 81,
+      "keywords": [
+        "test",
+        "pattern",
+        "factory pattern subclass",
+        "factory",
+        "subclass",
+        "factory_pattern_subclass"
+      ],
+      "in_readme": false,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/06_versioning.ipynb (keywords: test,pattern)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,pattern)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,pattern)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "factory_pattern_edge_cases",
+      "test_class": "TestFactoryPatternEdgeCases",
+      "test_count": 2,
+      "test_names": [
+        "test_root_level_parent",
+        "test_multiple_path_components"
+      ],
+      "test_file": "tests/test_factory_pattern.py",
+      "test_line": 147,
+      "keywords": [
+        "cases",
+        "test",
+        "pattern",
+        "factory",
+        "edge",
+        "factory pattern edge cases",
+        "factory_pattern_edge_cases"
+      ],
+      "in_readme": false,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/06_versioning.ipynb (keywords: cases,test,pattern)",
+        "notebooks/08_real_world_examples.ipynb (keywords: cases,test,pattern)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "factory_pattern_complex_subclass",
+      "test_class": "TestFactoryPatternComplexSubclass",
+      "test_count": 1,
+      "test_names": [
+        "test_complex_constructor_preservation"
+      ],
+      "test_file": "tests/test_factory_pattern.py",
+      "test_line": 181,
+      "keywords": [
+        "factory pattern complex subclass",
+        "complex",
+        "factory_pattern_complex_subclass",
+        "test",
+        "pattern",
+        "factory",
+        "subclass"
+      ],
+      "in_readme": false,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/05_copy_strategies.ipynb (keywords: complex,test,pattern)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "local_backend_permissions",
+      "test_class": "TestLocalBackendPermissions",
+      "test_count": 4,
+      "test_names": [
+        "test_local_readonly_permission",
+        "test_local_readwrite_permission",
+        "test_local_delete_permission",
+        "test_local_default_no_permission"
+      ],
+      "test_file": "tests/test_backend_permissions.py",
+      "test_line": 10,
+      "keywords": [
+        "test",
+        "local",
+        "backend",
+        "permissions",
+        "local backend permissions",
+        "local_backend_permissions"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,10,12)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,local)",
+        "notebooks/01_quickstart.ipynb (keywords: local,backend)",
+        "notebooks/06_versioning.ipynb (keywords: test,local,backend)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,local,backend)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,local,backend)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,local)",
+        "notebooks/03_file_operations.ipynb (keywords: test,local,backend)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "memory_backend_permissions",
+      "test_class": "TestMemoryBackendPermissions",
+      "test_count": 3,
+      "test_names": [
+        "test_memory_readonly_permission",
+        "test_memory_readwrite_permission",
+        "test_memory_delete_permission"
+      ],
+      "test_file": "tests/test_backend_permissions.py",
+      "test_line": 76,
+      "keywords": [
+        "memory_backend_permissions",
+        "test",
+        "memory",
+        "backend",
+        "permissions",
+        "memory backend permissions"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,10,27)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,memory)",
+        "notebooks/01_quickstart.ipynb (keywords: memory,backend)",
+        "notebooks/06_versioning.ipynb (keywords: test,memory,backend)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,memory,backend)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,memory,backend)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,memory)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,memory)",
+        "notebooks/03_file_operations.ipynb (keywords: test,memory,backend)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "s3_backend_permissions",
+      "test_class": "TestS3BackendPermissions",
+      "test_count": 3,
+      "test_names": [
+        "test_s3_readonly_permission",
+        "test_s3_readwrite_permission",
+        "test_s3_delete_permission"
+      ],
+      "test_file": "tests/test_backend_permissions.py",
+      "test_line": 129,
+      "keywords": [
+        "s3 backend permissions",
+        "test",
+        "s3_backend_permissions",
+        "backend",
+        "permissions"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,10,36)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/06_versioning.ipynb (keywords: test,backend)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,backend)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,backend)",
+        "notebooks/03_file_operations.ipynb (keywords: test,backend)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "read_only_backend_validation",
+      "test_class": "TestReadOnlyBackendValidation",
+      "test_count": 3,
+      "test_names": [
+        "test_http_readonly_is_ok",
+        "test_http_readwrite_fails",
+        "test_http_delete_fails"
+      ],
+      "test_file": "tests/test_backend_permissions.py",
+      "test_line": 202,
+      "keywords": [
+        "read only backend validation",
+        "test",
+        "read_only_backend_validation",
+        "backend",
+        "validation",
+        "only",
+        "read"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,5,10)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,only,read)",
+        "notebooks/01_quickstart.ipynb (keywords: backend,only,read)",
+        "notebooks/06_versioning.ipynb (keywords: test,backend,only)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,backend,only)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,backend,only)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,validation,read)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,only,read)",
+        "notebooks/03_file_operations.ipynb (keywords: test,backend,only)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "invalid_permissions",
+      "test_class": "TestInvalidPermissions",
+      "test_count": 1,
+      "test_names": [
+        "test_invalid_permission_value"
+      ],
+      "test_file": "tests/test_backend_permissions.py",
+      "test_line": 244,
+      "keywords": [
+        "invalid",
+        "invalid_permissions",
+        "test",
+        "invalid permissions",
+        "permissions"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": false,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,36)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "permission_mixed_operations",
+      "test_class": "TestPermissionMixedOperations",
+      "test_count": 5,
+      "test_names": [
+        "test_readonly_blocks_mkdir",
+        "test_readonly_blocks_copy_as_destination",
+        "test_readwrite_allows_copy",
+        "test_readonly_blocks_open_write_mode",
+        "test_readonly_allows_open_read_mode"
+      ],
+      "test_file": "tests/test_backend_permissions.py",
+      "test_line": 259,
+      "keywords": [
+        "test",
+        "permission mixed operations",
+        "permission_mixed_operations",
+        "operations",
+        "permission",
+        "mixed"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,36,41)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,operations)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,operations)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,operations)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,operations,mixed)",
+        "notebooks/03_file_operations.ipynb (keywords: test,operations)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "relative_backend_complete_coverage",
+      "test_class": "TestRelativeBackendCompleteCoverage",
+      "test_count": 11,
+      "test_names": [
+        "test_is_file_and_is_dir",
+        "test_mtime",
+        "test_write_text_direct",
+        "test_mkdir_direct",
+        "test_get_hash",
+        "test_metadata_methods",
+        "test_versioning_methods",
+        "test_url_generation",
+        "test_local_path_with_write_mode",
+        "test_copy_method_direct",
+        "test_close_method"
+      ],
+      "test_file": "tests/test_backend_permissions.py",
+      "test_line": 343,
+      "keywords": [
+        "relative backend complete coverage",
+        "relative_backend_complete_coverage",
+        "test",
+        "relative",
+        "backend",
+        "coverage",
+        "complete"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,10,16)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/06_versioning.ipynb (keywords: test,backend,complete)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,relative,backend)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,backend,complete)",
+        "notebooks/03_file_operations.ipynb (keywords: test,backend,complete)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "switched_mount_direct",
+      "test_class": "TestSwitchedMountDirect",
+      "test_count": 5,
+      "test_names": [
+        "test_switched_mount_basic_routing",
+        "test_switched_mount_nested_paths",
+        "test_switched_mount_write_operations",
+        "test_switched_mount_exists_check",
+        "test_switched_mount_list_dir"
+      ],
+      "test_file": "tests/test_switched_mount.py",
+      "test_line": 45,
+      "keywords": [
+        "direct",
+        "test",
+        "switched",
+        "mount",
+        "switched mount direct",
+        "switched_mount_direct"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,12,48)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: direct,test)",
+        "notebooks/01_quickstart.ipynb (keywords: direct,mount)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: direct,test,mount)",
+        "notebooks/08_real_world_examples.ipynb (keywords: direct,test)",
+        "notebooks/05_copy_strategies.ipynb (keywords: direct,test)",
+        "notebooks/03_file_operations.ipynb (keywords: direct,test)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "switched_mount_via_storage_manager",
+      "test_class": "TestSwitchedMountViaStorageManager",
+      "test_count": 2,
+      "test_names": [
+        "test_switched_mount_via_manager",
+        "test_switched_mount_node_operations"
+      ],
+      "test_file": "tests/test_switched_mount.py",
+      "test_line": 122,
+      "keywords": [
+        "switched mount via storage manager",
+        "test",
+        "via",
+        "switched",
+        "mount",
+        "storage",
+        "switched_mount_via_storage_manager",
+        "manager"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 1,5,12)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,storage,manager)",
+        "notebooks/01_quickstart.ipynb (keywords: mount,storage,manager)",
+        "notebooks/06_versioning.ipynb (keywords: test,storage,manager)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,mount,storage)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,via,storage)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,storage,manager)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,storage,manager)",
+        "notebooks/03_file_operations.ipynb (keywords: test,storage,manager)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "switched_mount_backward_compatibility",
+      "test_class": "TestSwitchedMountBackwardCompatibility",
+      "test_count": 1,
+      "test_names": [
+        "test_context_callable_no_parameters"
+      ],
+      "test_file": "tests/test_switched_mount.py",
+      "test_line": 178,
+      "keywords": [
+        "switched_mount_backward_compatibility",
+        "test",
+        "compatibility",
+        "switched",
+        "mount",
+        "switched mount backward compatibility",
+        "backward"
+      ],
+      "in_readme": false,
+      "in_docs": false,
+      "in_notebooks": false,
+      "has_test_link": false,
+      "readme_locations": [],
+      "docs_locations": [],
+      "notebook_locations": [],
+      "test_link_locations": [],
+      "status": "missing",
+      "priority": "low"
+    },
+    {
+      "name": "switched_mount_edge_cases",
+      "test_class": "TestSwitchedMountEdgeCases",
+      "test_count": 3,
+      "test_names": [
+        "test_prefix_only_path",
+        "test_unknown_prefix",
+        "test_security_path_escape_with_routing"
+      ],
+      "test_file": "tests/test_switched_mount.py",
+      "test_line": 202,
+      "keywords": [
+        "cases",
+        "switched_mount_edge_cases",
+        "test",
+        "edge",
+        "switched",
+        "mount",
+        "switched mount edge cases"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,12,307)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/08_real_world_examples.ipynb (keywords: cases,test,edge)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "async_storage_manager",
+      "test_class": "TestAsyncStorageManager",
+      "test_count": 6,
+      "test_names": [
+        "test_init",
+        "test_configure",
+        "test_add_mount",
+        "test_has_mount",
+        "test_get_mount_names",
+        "test_node"
+      ],
+      "test_file": "tests/test_asyncer_wrapper.py",
+      "test_line": 40,
+      "keywords": [
+        "async",
+        "test",
+        "async_storage_manager",
+        "storage",
+        "async storage manager",
+        "manager"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 1,5,35)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,storage,manager)",
+        "notebooks/01_quickstart.ipynb (keywords: storage,manager)",
+        "notebooks/06_versioning.ipynb (keywords: test,storage,manager)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,storage,manager)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,storage,manager)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,storage,manager)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,storage,manager)",
+        "notebooks/03_file_operations.ipynb (keywords: test,storage,manager)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "async_storage_node",
+      "test_class": "TestAsyncStorageNode",
+      "test_count": 10,
+      "test_names": [
+        "test_write_read_bytes",
+        "test_write_read_text",
+        "test_exists",
+        "test_delete",
+        "test_size",
+        "test_copy",
+        "test_move",
+        "test_isfile_isdir",
+        "test_sync_properties",
+        "test_repr_str"
+      ],
+      "test_file": "tests/test_asyncer_wrapper.py",
+      "test_line": 90,
+      "keywords": [
+        "node",
+        "async",
+        "test",
+        "async storage node",
+        "storage",
+        "async_storage_node"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 1,5,35)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: node,test,storage)",
+        "notebooks/01_quickstart.ipynb (keywords: node,storage)",
+        "notebooks/06_versioning.ipynb (keywords: node,test,storage)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: node,test,storage)",
+        "notebooks/07_advanced_features.ipynb (keywords: node,test,storage)",
+        "notebooks/08_real_world_examples.ipynb (keywords: node,test,storage)",
+        "notebooks/05_copy_strategies.ipynb (keywords: node,test,storage)",
+        "notebooks/03_file_operations.ipynb (keywords: node,test,storage)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "async_cross_storage",
+      "test_class": "TestAsyncCrossStorage",
+      "test_count": 1,
+      "test_names": [
+        "test_copy_memory_to_local"
+      ],
+      "test_file": "tests/test_asyncer_wrapper.py",
+      "test_line": 216,
+      "keywords": [
+        "async",
+        "test",
+        "async_cross_storage",
+        "storage",
+        "async cross storage",
+        "cross"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 1,5,12)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,storage)",
+        "notebooks/06_versioning.ipynb (keywords: test,storage)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,storage,cross)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,storage)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,storage)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,storage)",
+        "notebooks/03_file_operations.ipynb (keywords: test,storage)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "async_concurrency",
+      "test_class": "TestAsyncConcurrency",
+      "test_count": 2,
+      "test_names": [
+        "test_concurrent_writes",
+        "test_concurrent_reads"
+      ],
+      "test_file": "tests/test_asyncer_wrapper.py",
+      "test_line": 238,
+      "keywords": [
+        "async",
+        "test",
+        "async_concurrency",
+        "async concurrency",
+        "concurrency"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": false,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,35)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "async_errors",
+      "test_class": "TestAsyncErrors",
+      "test_count": 2,
+      "test_names": [
+        "test_read_nonexistent_file",
+        "test_invalid_mount"
+      ],
+      "test_file": "tests/test_asyncer_wrapper.py",
+      "test_line": 285,
+      "keywords": [
+        "async errors",
+        "errors",
+        "async",
+        "test",
+        "async_errors"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,35)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/07_advanced_features.ipynb (keywords: errors,test)",
+        "notebooks/03_file_operations.ipynb (keywords: errors,test)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "base64_backend",
+      "test_class": "TestBase64Backend",
+      "test_count": 32,
+      "test_names": [
+        "test_configure_base64_backend",
+        "test_read_text_from_base64",
+        "test_read_bytes_from_base64",
+        "test_exists_valid_base64",
+        "test_exists_invalid_base64",
+        "test_is_file_valid_base64",
+        "test_is_dir_always_false",
+        "test_size_returns_decoded_size",
+        "test_mtime_returns_timestamp",
+        "test_md5hash_property",
+        "test_read_text_with_encoding",
+        "test_write_text_updates_path",
+        "test_write_bytes_updates_path",
+        "test_delete_raises_permission_error",
+        "test_mkdir_raises_permission_error",
+        "test_list_dir_raises_value_error",
+        "test_invalid_base64_raises_file_not_found",
+        "test_empty_path_raises_file_not_found",
+        "test_base64_with_whitespace",
+        "test_copy_to_memory_backend",
+        "test_equality_between_base64_nodes",
+        "test_inequality_different_content",
+        "test_multiline_base64",
+        "test_open_read_binary",
+        "test_open_read_text",
+        "test_open_write_mode",
+        "test_unicode_text",
+        "test_readme_example",
+        "test_image_data_example",
+        "test_path_changes_after_write",
+        "test_copy_from_memory_to_base64",
+        "test_multiple_writes_maintain_reference"
+      ],
+      "test_file": "tests/test_base64.py",
+      "test_line": 20,
+      "keywords": [
+        "test",
+        "base64 backend",
+        "base64_backend",
+        "base64",
+        "backend",
+        "base"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,10,27)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,base)",
+        "notebooks/01_quickstart.ipynb (keywords: backend,base)",
+        "notebooks/06_versioning.ipynb (keywords: test,backend,base)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,base64 backend,base64)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,base64,backend)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,base)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,base)",
+        "notebooks/03_file_operations.ipynb (keywords: test,backend,base)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "storage_manager",
+      "test_class": "TestStorageManager",
+      "test_count": 7,
+      "test_names": [
+        "test_configure_from_list",
+        "test_configure_missing_name",
+        "test_configure_missing_type",
+        "test_configure_missing_local_path",
+        "test_configure_unknown_type",
+        "test_configure_replace_mount",
+        "test_node_mount_not_found"
+      ],
+      "test_file": "tests/test_local_storage.py",
+      "test_line": 32,
+      "keywords": [
+        "test",
+        "storage manager",
+        "storage",
+        "storage_manager",
+        "manager"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 1,5,35)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,storage,manager)",
+        "notebooks/01_quickstart.ipynb (keywords: storage manager,storage,manager)",
+        "notebooks/06_versioning.ipynb (keywords: test,storage,manager)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,storage manager,storage)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,storage,manager)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,storage,manager)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,storage,manager)",
+        "notebooks/03_file_operations.ipynb (keywords: test,storage,manager)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "file_operations",
+      "test_class": "TestFileOperations",
+      "test_count": 9,
+      "test_names": [
+        "test_write_and_read_text",
+        "test_write_and_read_bytes",
+        "test_file_exists",
+        "test_is_file_is_dir",
+        "test_file_size",
+        "test_file_mtime",
+        "test_file_path_properties",
+        "test_file_open_context_manager",
+        "test_file_delete"
+      ],
+      "test_file": "tests/test_local_storage.py",
+      "test_line": 90,
+      "keywords": [
+        "file_operations",
+        "test",
+        "operations",
+        "file",
+        "file operations"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,12,41)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,operations,file)",
+        "notebooks/01_quickstart.ipynb (keywords: file_operations,operations,file)",
+        "notebooks/06_versioning.ipynb (keywords: test,file)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: file_operations,test,operations)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,file)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,operations,file)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,operations,file)",
+        "notebooks/03_file_operations.ipynb (keywords: test,operations,file)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "directory_operations",
+      "test_class": "TestDirectoryOperations",
+      "test_count": 11,
+      "test_names": [
+        "test_mkdir",
+        "test_mkdir_parents",
+        "test_mkdir_exist_ok",
+        "test_list_directory",
+        "test_child_method",
+        "test_parent_property",
+        "test_dirname_property",
+        "test_ext_property",
+        "test_splitext_method",
+        "test_ext_attributes_property",
+        "test_delete_directory"
+      ],
+      "test_file": "tests/test_local_storage.py",
+      "test_line": 202,
+      "keywords": [
+        "directory_operations",
+        "test",
+        "directory",
+        "operations",
+        "directory operations"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,41,271)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,directory,operations)",
+        "notebooks/01_quickstart.ipynb (keywords: directory,operations,directory operations)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,directory,operations)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,directory,operations)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,directory,operations)",
+        "notebooks/03_file_operations.ipynb (keywords: test,directory,operations)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "copy_move",
+      "test_class": "TestCopyMove",
+      "test_count": 5,
+      "test_names": [
+        "test_copy_file",
+        "test_copy_with_string_dest",
+        "test_move_file",
+        "test_move_updates_self",
+        "test_copy_directory"
+      ],
+      "test_file": "tests/test_local_storage.py",
+      "test_line": 401,
+      "keywords": [
+        "test",
+        "copy_move",
+        "copy",
+        "copy move",
+        "move"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,40,57)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,copy)",
+        "notebooks/06_versioning.ipynb (keywords: test,copy,move)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,copy)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,copy,move)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,copy,move)",
+        "notebooks/03_file_operations.ipynb (keywords: test,copy,move)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "path_normalization",
+      "test_class": "TestPathNormalization",
+      "test_count": 3,
+      "test_names": [
+        "test_path_with_slashes",
+        "test_path_parent_traversal_blocked",
+        "test_root_of_mount"
+      ],
+      "test_file": "tests/test_local_storage.py",
+      "test_line": 490,
+      "keywords": [
+        "path",
+        "test",
+        "path_normalization",
+        "path normalization",
+        "normalization"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,39)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: path,test)",
+        "notebooks/06_versioning.ipynb (keywords: path,test)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: path,test)",
+        "notebooks/07_advanced_features.ipynb (keywords: path,test)",
+        "notebooks/08_real_world_examples.ipynb (keywords: path,test)",
+        "notebooks/03_file_operations.ipynb (keywords: path,test)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "encodings",
+      "test_class": "TestEncodings",
+      "test_count": 2,
+      "test_names": [
+        "test_utf8_encoding",
+        "test_latin1_encoding"
+      ],
+      "test_file": "tests/test_local_storage.py",
+      "test_line": 517,
+      "keywords": [
+        "test",
+        "encodings"
+      ],
+      "in_readme": false,
+      "in_docs": false,
+      "in_notebooks": false,
+      "has_test_link": false,
+      "readme_locations": [],
+      "docs_locations": [],
+      "notebook_locations": [],
+      "test_link_locations": [],
+      "status": "missing",
+      "priority": "low"
+    },
+    {
+      "name": "edge_cases",
+      "test_class": "TestEdgeCases",
+      "test_count": 5,
+      "test_names": [
+        "test_read_nonexistent_file",
+        "test_size_of_nonexistent_file",
+        "test_size_of_directory",
+        "test_empty_file",
+        "test_nested_directory_creation"
+      ],
+      "test_file": "tests/test_local_storage.py",
+      "test_line": 537,
+      "keywords": [
+        "cases",
+        "edge_cases",
+        "test",
+        "edge",
+        "edge cases"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,307)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/06_versioning.ipynb (keywords: cases,test)",
+        "notebooks/07_advanced_features.ipynb (keywords: cases,test)",
+        "notebooks/08_real_world_examples.ipynb (keywords: cases,test,edge)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "capabilities",
+      "test_class": "TestCapabilities",
+      "test_count": 4,
+      "test_names": [
+        "test_memory_backend_capabilities",
+        "test_local_backend_capabilities",
+        "test_base64_backend_capabilities",
+        "test_capabilities_string_representation"
+      ],
+      "test_file": "tests/test_capabilities_and_versioning.py",
+      "test_line": 10,
+      "keywords": [
+        "test",
+        "capabilities"
+      ],
+      "in_readme": false,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/06_versioning.ipynb (keywords: test,capabilities)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,capabilities)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,capabilities)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "version_count",
+      "test_class": "TestVersionCount",
+      "test_count": 2,
+      "test_names": [
+        "test_version_count_zero_for_nonversioned",
+        "test_version_count_zero_for_local"
+      ],
+      "test_file": "tests/test_capabilities_and_versioning.py",
+      "test_line": 79,
+      "keywords": [
+        "version_count",
+        "test",
+        "version count",
+        "count",
+        "version"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 3,5)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,version)",
+        "notebooks/06_versioning.ipynb (keywords: version_count,test,version count)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,version)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,version)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,count,version)",
+        "notebooks/03_file_operations.ipynb (keywords: test,count,version)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "write_if_changed",
+      "test_class": "TestWriteIfChanged",
+      "test_count": 5,
+      "test_names": [
+        "test_write_bytes_skip_if_unchanged_creates_file",
+        "test_write_bytes_skip_if_unchanged_skips_duplicate",
+        "test_write_bytes_skip_if_unchanged_updates_different_content",
+        "test_write_text_skip_if_unchanged_creates_file",
+        "test_write_text_skip_if_unchanged_updates_different_content"
+      ],
+      "test_file": "tests/test_capabilities_and_versioning.py",
+      "test_line": 106,
+      "keywords": [
+        "test",
+        "write if changed",
+        "write",
+        "write_if_changed",
+        "changed"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,36)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,write)",
+        "notebooks/06_versioning.ipynb (keywords: test,write,changed)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,write)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,write)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,write,changed)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,write,changed)",
+        "notebooks/03_file_operations.ipynb (keywords: test,write,changed)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "open_with_version",
+      "test_class": "TestOpenWithVersion",
+      "test_count": 3,
+      "test_names": [
+        "test_open_with_version_raises_on_nonversioned",
+        "test_open_with_as_of_raises_on_nonversioned",
+        "test_open_with_both_version_and_as_of_raises"
+      ],
+      "test_file": "tests/test_capabilities_and_versioning.py",
+      "test_line": 173,
+      "keywords": [
+        "test",
+        "open with version",
+        "open_with_version",
+        "with",
+        "version",
+        "open"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 3,4,5)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,with,version)",
+        "notebooks/01_quickstart.ipynb (keywords: with,open)",
+        "notebooks/06_versioning.ipynb (keywords: test,with,version)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,with,version)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,with,open)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,with,version)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,with,version)",
+        "notebooks/03_file_operations.ipynb (keywords: test,with,version)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "compact_versions",
+      "test_class": "TestCompactVersions",
+      "test_count": 2,
+      "test_names": [
+        "test_compact_versions_raises_on_nonversioned",
+        "test_compact_versions_dry_run_on_nonversioned"
+      ],
+      "test_file": "tests/test_capabilities_and_versioning.py",
+      "test_line": 214,
+      "keywords": [
+        "versions",
+        "test",
+        "compact_versions",
+        "compact versions",
+        "compact"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 3,5)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: versions,test)",
+        "notebooks/06_versioning.ipynb (keywords: versions,test,compact_versions)",
+        "notebooks/08_real_world_examples.ipynb (keywords: versions,test)",
+        "notebooks/05_copy_strategies.ipynb (keywords: versions,test)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "delete_version",
+      "test_class": "TestDeleteVersion",
+      "test_count": 2,
+      "test_names": [
+        "test_delete_version_raises_on_memory",
+        "test_delete_version_raises_on_local"
+      ],
+      "test_file": "tests/test_capabilities_and_versioning.py",
+      "test_line": 240,
+      "keywords": [
+        "delete_version",
+        "test",
+        "delete",
+        "version",
+        "delete version"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 3,5,36)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,version)",
+        "notebooks/06_versioning.ipynb (keywords: test,delete,version)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,delete,version)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,delete,version)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,delete,version)",
+        "notebooks/03_file_operations.ipynb (keywords: test,delete,version)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "call_method",
+      "test_class": "TestCallMethod",
+      "test_count": 11,
+      "test_names": [
+        "test_call_simple_command",
+        "test_call_with_storagenode_arguments",
+        "test_call_modifies_file",
+        "test_call_return_output",
+        "test_call_with_callback",
+        "test_call_async_mode",
+        "test_call_with_subprocess_kwargs",
+        "test_call_command_not_found",
+        "test_call_command_fails",
+        "test_call_multiple_storagenode_args",
+        "test_call_mixed_arguments"
+      ],
+      "test_file": "tests/test_call_and_mimetype.py",
+      "test_line": 10,
+      "keywords": [
+        "test",
+        "method",
+        "call",
+        "call_method",
+        "call method"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,41,44)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,call)",
+        "notebooks/06_versioning.ipynb (keywords: test,call)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,method,call)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,call)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,call)",
+        "notebooks/03_file_operations.ipynb (keywords: test,method,call)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "mimetype_property",
+      "test_class": "TestMimetypeProperty",
+      "test_count": 10,
+      "test_names": [
+        "test_mimetype_image_formats",
+        "test_mimetype_document_formats",
+        "test_mimetype_archive_formats",
+        "test_mimetype_video_audio",
+        "test_mimetype_code_formats",
+        "test_mimetype_unknown_extension",
+        "test_mimetype_no_extension",
+        "test_mimetype_case_insensitive",
+        "test_mimetype_with_base64_backend",
+        "test_mimetype_real_world_extensions"
+      ],
+      "test_file": "tests/test_call_and_mimetype.py",
+      "test_line": 210,
+      "keywords": [
+        "test",
+        "property",
+        "mimetype property",
+        "mimetype_property",
+        "mimetype"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,171,251)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/07_advanced_features.ipynb (keywords: test,mimetype)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,mimetype)",
+        "notebooks/03_file_operations.ipynb (keywords: test,mimetype)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "local_path",
+      "test_class": "TestLocalPath",
+      "test_count": 7,
+      "test_names": [
+        "test_local_path_local_storage_returns_actual_path",
+        "test_local_path_memory_downloads_and_uploads",
+        "test_local_path_memory_read_write_mode",
+        "test_local_path_memory_write_mode",
+        "test_local_path_base64_read_only",
+        "test_local_path_base64_write_raises_error",
+        "test_local_path_preserves_file_extension"
+      ],
+      "test_file": "tests/test_advanced_features.py",
+      "test_line": 12,
+      "keywords": [
+        "path",
+        "test",
+        "local path",
+        "local",
+        "local_path"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,12,39)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: path,test,local)",
+        "notebooks/01_quickstart.ipynb (keywords: path,local)",
+        "notebooks/06_versioning.ipynb (keywords: path,test,local)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: path,test,local)",
+        "notebooks/07_advanced_features.ipynb (keywords: path,test,local path)",
+        "notebooks/08_real_world_examples.ipynb (keywords: path,test,local)",
+        "notebooks/03_file_operations.ipynb (keywords: path,test,local)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "callable_paths",
+      "test_class": "TestCallablePaths",
+      "test_count": 3,
+      "test_names": [
+        "test_callable_path_resolves_at_runtime",
+        "test_callable_path_validation_deferred",
+        "test_static_path_validated_immediately"
+      ],
+      "test_file": "tests/test_advanced_features.py",
+      "test_line": 129,
+      "keywords": [
+        "callable_paths",
+        "paths",
+        "callable paths",
+        "test",
+        "callable"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,48,48)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/02_backends_and_mounts.ipynb (keywords: paths,test)",
+        "notebooks/03_file_operations.ipynb (keywords: paths,test)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "metadata",
+      "test_class": "TestMetadata",
+      "test_count": 5,
+      "test_names": [
+        "test_metadata_memory_returns_empty_dict",
+        "test_metadata_local_returns_empty_dict",
+        "test_metadata_set_raises_permission_error_memory",
+        "test_metadata_set_raises_permission_error_local",
+        "test_metadata_validation"
+      ],
+      "test_file": "tests/test_advanced_features.py",
+      "test_line": 200,
+      "keywords": [
+        "test",
+        "metadata"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,43)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/06_versioning.ipynb (keywords: test,metadata)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,metadata)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,metadata)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,metadata)",
+        "notebooks/03_file_operations.ipynb (keywords: test,metadata)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "u_r_l_generation",
+      "test_class": "TestURLGeneration",
+      "test_count": 4,
+      "test_names": [
+        "test_url_returns_none_for_memory",
+        "test_url_returns_none_for_local",
+        "test_internal_url_returns_none_for_memory",
+        "test_internal_url_nocache_parameter"
+      ],
+      "test_file": "tests/test_advanced_features.py",
+      "test_line": 265,
+      "keywords": [
+        "test",
+        "u_r_l_generation",
+        "u r l generation",
+        "generation"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,50)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,generation)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,generation)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "base64_encoding",
+      "test_class": "TestBase64Encoding",
+      "test_count": 6,
+      "test_names": [
+        "test_to_base64_with_data_uri",
+        "test_to_base64_without_data_uri",
+        "test_to_base64_custom_mime_type",
+        "test_to_base64_auto_detects_mime_type",
+        "test_to_base64_raises_on_nonexistent_file",
+        "test_to_base64_raises_on_directory"
+      ],
+      "test_file": "tests/test_advanced_features.py",
+      "test_line": 317,
+      "keywords": [
+        "encoding",
+        "test",
+        "base64 encoding",
+        "base64",
+        "base64_encoding",
+        "base"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,27,27)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,base)",
+        "notebooks/06_versioning.ipynb (keywords: test,base)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,base64,base)",
+        "notebooks/07_advanced_features.ipynb (keywords: encoding,test,base64 encoding)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,base)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,base)",
+        "notebooks/03_file_operations.ipynb (keywords: encoding,test,base)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "fill_from_u_r_l",
+      "test_class": "TestFillFromURL",
+      "test_count": 4,
+      "test_names": [
+        "test_fill_from_url_downloads_content",
+        "test_fill_from_url_custom_timeout",
+        "test_fill_from_url_raises_on_invalid_url",
+        "test_fill_from_url_raises_on_network_error"
+      ],
+      "test_file": "tests/test_advanced_features.py",
+      "test_line": 411,
+      "keywords": [
+        "fill from u r l",
+        "test",
+        "fill",
+        "fill_from_u_r_l",
+        "from"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,30,199)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,from)",
+        "notebooks/06_versioning.ipynb (keywords: test,from)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,from)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,fill,from)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,from)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,from)",
+        "notebooks/03_file_operations.ipynb (keywords: test,from)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "s3_versioning",
+      "test_class": "TestS3Versioning",
+      "test_count": 4,
+      "test_names": [
+        "test_versions_returns_empty_list_for_memory",
+        "test_versions_returns_empty_list_for_local",
+        "test_open_with_version_raises_permission_error_memory",
+        "test_open_with_version_raises_permission_error_local"
+      ],
+      "test_file": "tests/test_advanced_features.py",
+      "test_line": 494,
+      "keywords": [
+        "test",
+        "s3 versioning",
+        "s3_versioning",
+        "versioning"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,52,52)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,versioning)",
+        "notebooks/06_versioning.ipynb (keywords: test,s3 versioning,versioning)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,versioning)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,s3 versioning,versioning)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "s3_storage",
+      "test_class": "TestS3Storage",
+      "test_count": 11,
+      "test_names": [
+        "test_s3_backend_creation",
+        "test_write_and_read_text",
+        "test_write_and_read_bytes",
+        "test_file_exists",
+        "test_file_properties",
+        "test_delete_file",
+        "test_list_directory",
+        "test_copy_file",
+        "test_move_file",
+        "test_nested_paths",
+        "test_path_with_prefix"
+      ],
+      "test_file": "tests/test_s3_integration.py",
+      "test_line": 16,
+      "keywords": [
+        "test",
+        "storage",
+        "s3 storage",
+        "s3_storage"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 1,5,242)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,storage)",
+        "notebooks/06_versioning.ipynb (keywords: test,storage)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,storage,s3 storage)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,storage)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,storage)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,storage)",
+        "notebooks/03_file_operations.ipynb (keywords: test,storage)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "s3_to_local_copy",
+      "test_class": "TestS3ToLocalCopy",
+      "test_count": 2,
+      "test_names": [
+        "test_copy_s3_to_local",
+        "test_copy_local_to_s3"
+      ],
+      "test_file": "tests/test_s3_integration.py",
+      "test_line": 162,
+      "keywords": [
+        "s3_to_local_copy",
+        "s3 to local copy",
+        "test",
+        "copy",
+        "local"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,12,40)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,copy,local)",
+        "notebooks/01_quickstart.ipynb (keywords: copy,local)",
+        "notebooks/06_versioning.ipynb (keywords: test,copy,local)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,copy,local)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,local)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,copy,local)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,copy)",
+        "notebooks/03_file_operations.ipynb (keywords: test,copy,local)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "memory_storage",
+      "test_class": "TestMemoryStorage",
+      "test_count": 5,
+      "test_names": [
+        "test_memory_backend_creation",
+        "test_write_and_read_text",
+        "test_file_isolation",
+        "test_memory_delete",
+        "test_memory_directory_operations"
+      ],
+      "test_file": "tests/test_s3_integration.py",
+      "test_line": 210,
+      "keywords": [
+        "memory storage",
+        "test",
+        "memory",
+        "storage",
+        "memory_storage"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 1,5,27)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,memory,storage)",
+        "notebooks/01_quickstart.ipynb (keywords: memory storage,memory,storage)",
+        "notebooks/06_versioning.ipynb (keywords: test,memory,storage)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: memory storage,test,memory)",
+        "notebooks/07_advanced_features.ipynb (keywords: memory storage,test,memory)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,memory,storage)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,memory,storage)",
+        "notebooks/03_file_operations.ipynb (keywords: test,memory,storage)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "copy_include_patterns",
+      "test_class": "TestCopyIncludePatterns",
+      "test_count": 3,
+      "test_names": [
+        "test_include_single_extension",
+        "test_include_multiple_patterns",
+        "test_include_with_subdirectories"
+      ],
+      "test_file": "tests/test_copy_filtering.py",
+      "test_line": 9,
+      "keywords": [
+        "patterns",
+        "test",
+        "copy_include_patterns",
+        "copy",
+        "copy include patterns",
+        "include"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,40)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,copy)",
+        "notebooks/06_versioning.ipynb (keywords: patterns,test,copy)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,copy)",
+        "notebooks/08_real_world_examples.ipynb (keywords: patterns,test,copy)",
+        "notebooks/05_copy_strategies.ipynb (keywords: patterns,test,copy)",
+        "notebooks/03_file_operations.ipynb (keywords: test,copy)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "copy_exclude_patterns",
+      "test_class": "TestCopyExcludePatterns",
+      "test_count": 3,
+      "test_names": [
+        "test_exclude_single_pattern",
+        "test_exclude_multiple_patterns",
+        "test_exclude_directory_pattern"
+      ],
+      "test_file": "tests/test_copy_filtering.py",
+      "test_line": 89,
+      "keywords": [
+        "patterns",
+        "copy exclude patterns",
+        "test",
+        "copy",
+        "exclude",
+        "copy_exclude_patterns"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,40)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,copy)",
+        "notebooks/06_versioning.ipynb (keywords: patterns,test,copy)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,copy)",
+        "notebooks/08_real_world_examples.ipynb (keywords: patterns,test,copy)",
+        "notebooks/05_copy_strategies.ipynb (keywords: patterns,test,copy)",
+        "notebooks/03_file_operations.ipynb (keywords: test,copy)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "copy_include_and_exclude",
+      "test_class": "TestCopyIncludeAndExclude",
+      "test_count": 1,
+      "test_names": [
+        "test_include_then_exclude"
+      ],
+      "test_file": "tests/test_copy_filtering.py",
+      "test_line": 170,
+      "keywords": [
+        "copy include and exclude",
+        "test",
+        "copy",
+        "and",
+        "exclude",
+        "copy_include_and_exclude",
+        "include"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,12,40)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,copy,and)",
+        "notebooks/06_versioning.ipynb (keywords: test,copy,and)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,copy,and)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,copy,and)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,copy,and)",
+        "notebooks/03_file_operations.ipynb (keywords: test,copy,and)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "copy_custom_filter",
+      "test_class": "TestCopyCustomFilter",
+      "test_count": 3,
+      "test_names": [
+        "test_filter_by_size",
+        "test_filter_by_modification_time",
+        "test_filter_by_path"
+      ],
+      "test_file": "tests/test_copy_filtering.py",
+      "test_line": 203,
+      "keywords": [
+        "filter",
+        "test",
+        "custom",
+        "copy",
+        "copy custom filter",
+        "copy_custom_filter"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,40,49)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,copy)",
+        "notebooks/06_versioning.ipynb (keywords: test,copy)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,copy)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,custom)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,copy)",
+        "notebooks/05_copy_strategies.ipynb (keywords: filter,test,custom)",
+        "notebooks/03_file_operations.ipynb (keywords: test,copy)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "copy_combined_filtering",
+      "test_class": "TestCopyCombinedFiltering",
+      "test_count": 2,
+      "test_names": [
+        "test_all_filters_together",
+        "test_filter_with_callbacks"
+      ],
+      "test_file": "tests/test_copy_filtering.py",
+      "test_line": 287,
+      "keywords": [
+        "test",
+        "copy_combined_filtering",
+        "copy",
+        "filtering",
+        "combined",
+        "copy combined filtering"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,40,304)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,copy,combined)",
+        "notebooks/06_versioning.ipynb (keywords: test,copy)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,copy)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,copy)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,copy,filtering)",
+        "notebooks/03_file_operations.ipynb (keywords: test,copy)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "copy_filtering_edge_cases",
+      "test_class": "TestCopyFilteringEdgeCases",
+      "test_count": 3,
+      "test_names": [
+        "test_empty_directory_with_filters",
+        "test_filter_exception_skips_file",
+        "test_no_files_match_filters"
+      ],
+      "test_file": "tests/test_copy_filtering.py",
+      "test_line": 357,
+      "keywords": [
+        "cases",
+        "test",
+        "copy_filtering_edge_cases",
+        "copy",
+        "edge",
+        "filtering",
+        "copy filtering edge cases"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,40,304)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/06_versioning.ipynb (keywords: cases,test,copy)",
+        "notebooks/08_real_world_examples.ipynb (keywords: cases,test,copy)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,copy,filtering)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "async_basic_operations",
+      "test_class": "TestAsyncBasicOperations",
+      "test_count": 6,
+      "test_names": [
+        "test_async_write_and_read",
+        "test_async_text_operations",
+        "test_async_properties",
+        "test_async_mkdir_and_list",
+        "test_async_copy",
+        "test_async_delete"
+      ],
+      "test_file": "tests/test_async_architecture.py",
+      "test_line": 46,
+      "keywords": [
+        "async basic operations",
+        "async_basic_operations",
+        "async",
+        "test",
+        "operations",
+        "basic"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,35,41)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,operations)",
+        "notebooks/01_quickstart.ipynb (keywords: operations,basic)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,operations)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,operations)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,operations)",
+        "notebooks/03_file_operations.ipynb (keywords: test,operations)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "async_parallel_operations",
+      "test_class": "TestAsyncParallelOperations",
+      "test_count": 4,
+      "test_names": [
+        "test_parallel_writes",
+        "test_parallel_reads",
+        "test_parallel_copy",
+        "test_parallel_mixed_operations"
+      ],
+      "test_file": "tests/test_async_architecture.py",
+      "test_line": 133,
+      "keywords": [
+        "async",
+        "test",
+        "async parallel operations",
+        "operations",
+        "async_parallel_operations",
+        "parallel"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,35,41)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,operations)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,operations)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,operations)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,operations)",
+        "notebooks/03_file_operations.ipynb (keywords: test,operations)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "async_performance",
+      "test_class": "TestAsyncPerformance",
+      "test_count": 1,
+      "test_names": [
+        "test_async_vs_sequential_writes"
+      ],
+      "test_file": "tests/test_async_architecture.py",
+      "test_line": 224,
+      "keywords": [
+        "async_performance",
+        "async",
+        "test",
+        "async performance",
+        "performance"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,35,475)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/05_copy_strategies.ipynb (keywords: test,performance)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "async_caching",
+      "test_class": "TestAsyncCaching",
+      "test_count": 1,
+      "test_names": [
+        "test_cached_properties"
+      ],
+      "test_file": "tests/test_async_architecture.py",
+      "test_line": 253,
+      "keywords": [
+        "async",
+        "test",
+        "async caching",
+        "caching",
+        "async_caching"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,35,45)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/07_advanced_features.ipynb (keywords: test,caching)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "async_context_manager",
+      "test_class": "TestAsyncContextManager",
+      "test_count": 1,
+      "test_names": [
+        "test_local_path_context"
+      ],
+      "test_file": "tests/test_async_architecture.py",
+      "test_line": 285,
+      "keywords": [
+        "async",
+        "test",
+        "async context manager",
+        "context",
+        "manager",
+        "async_context_manager"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,35,35)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,manager)",
+        "notebooks/01_quickstart.ipynb (keywords: context,manager)",
+        "notebooks/06_versioning.ipynb (keywords: test,manager)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,manager)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,context,manager)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,manager)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,manager)",
+        "notebooks/03_file_operations.ipynb (keywords: test,context,manager)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "async_memory_backend",
+      "test_class": "TestAsyncMemoryBackend",
+      "test_count": 2,
+      "test_names": [
+        "test_memory_backend_isolation",
+        "test_memory_backend_performance"
+      ],
+      "test_file": "tests/test_async_architecture.py",
+      "test_line": 306,
+      "keywords": [
+        "async_memory_backend",
+        "async",
+        "test",
+        "memory",
+        "backend",
+        "async memory backend"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,10,27)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,memory)",
+        "notebooks/01_quickstart.ipynb (keywords: memory,backend)",
+        "notebooks/06_versioning.ipynb (keywords: test,memory,backend)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,memory,backend)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,memory,backend)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,memory)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,memory)",
+        "notebooks/03_file_operations.ipynb (keywords: test,memory,backend)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "async_error_handling",
+      "test_class": "TestAsyncErrorHandling",
+      "test_count": 3,
+      "test_names": [
+        "test_async_file_not_found",
+        "test_async_parent_not_found_without_autocreate",
+        "test_async_directory_delete_not_recursive"
+      ],
+      "test_file": "tests/test_async_architecture.py",
+      "test_line": 364,
+      "keywords": [
+        "handling",
+        "async",
+        "test",
+        "async error handling",
+        "error",
+        "async_error_handling"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,35,66)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,error)",
+        "notebooks/06_versioning.ipynb (keywords: test,error)",
+        "notebooks/07_advanced_features.ipynb (keywords: handling,test,error)",
+        "notebooks/08_real_world_examples.ipynb (keywords: handling,test,error)",
+        "notebooks/03_file_operations.ipynb (keywords: handling,test,error)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "copy_skip_strategies",
+      "test_class": "TestCopySkipStrategies",
+      "test_count": 17,
+      "test_names": [
+        "test_copy_skip_never_default",
+        "test_copy_skip_exists",
+        "test_copy_skip_exists_string_and_enum",
+        "test_copy_skip_size",
+        "test_copy_skip_hash",
+        "test_copy_skip_custom",
+        "test_copy_skip_custom_requires_function",
+        "test_copy_directory_skip_exists",
+        "test_copy_directory_skip_hash",
+        "test_copy_with_progress_callback",
+        "test_copy_with_on_file_callback",
+        "test_copy_with_on_skip_callback",
+        "test_copy_skip_hash_with_directory_tracking",
+        "test_copy_single_file_with_callbacks",
+        "test_copy_nonexistent_source_raises_error",
+        "test_backward_compatibility_simple_copy",
+        "test_skip_strategy_enum_values"
+      ],
+      "test_file": "tests/test_copy_skip_strategies.py",
+      "test_line": 8,
+      "keywords": [
+        "test",
+        "copy",
+        "strategies",
+        "copy_skip_strategies",
+        "skip",
+        "copy skip strategies"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,28,40)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,copy,strategies)",
+        "notebooks/06_versioning.ipynb (keywords: test,copy,skip)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,copy)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,copy,skip)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,copy,strategies)",
+        "notebooks/03_file_operations.ipynb (keywords: test,copy,strategies)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "copy_skip_edge_cases",
+      "test_class": "TestCopySkipEdgeCases",
+      "test_count": 4,
+      "test_names": [
+        "test_skip_size_handles_missing_dest",
+        "test_skip_hash_handles_missing_dest",
+        "test_empty_directory_copy",
+        "test_nested_directory_copy_with_skip"
+      ],
+      "test_file": "tests/test_copy_skip_strategies.py",
+      "test_line": 355,
+      "keywords": [
+        "cases",
+        "test",
+        "copy_skip_edge_cases",
+        "copy",
+        "edge",
+        "copy skip edge cases",
+        "skip"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,28,40)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,copy,skip)",
+        "notebooks/06_versioning.ipynb (keywords: cases,test,copy)",
+        "notebooks/08_real_world_examples.ipynb (keywords: cases,test,copy)",
+        "notebooks/05_copy_strategies.ipynb (keywords: test,copy,skip)",
+        "notebooks/03_file_operations.ipynb (keywords: test,copy,skip)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "serve_method",
+      "test_class": "TestServeMethod",
+      "test_count": 14,
+      "test_names": [
+        "test_serve_basic_file",
+        "test_serve_with_etag_match",
+        "test_serve_with_etag_mismatch",
+        "test_serve_with_download",
+        "test_serve_with_custom_download_name",
+        "test_serve_with_cache_control",
+        "test_serve_missing_file",
+        "test_serve_binary_file",
+        "test_serve_large_file",
+        "test_serve_mimetype_detection",
+        "test_serve_empty_file",
+        "test_serve_with_all_options",
+        "test_serve_etag_changes_on_modification",
+        "test_serve_with_subdirectory"
+      ],
+      "test_file": "tests/test_serve.py",
+      "test_line": 7,
+      "keywords": [
+        "test",
+        "method",
+        "serve",
+        "serve method",
+        "serve_method"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,44,45)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,serve)",
+        "notebooks/06_versioning.ipynb (keywords: test,serve)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,method,serve)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,serve)",
+        "notebooks/03_file_operations.ipynb (keywords: test,method,serve)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "s_m_b_configuration",
+      "test_class": "TestSMBConfiguration",
+      "test_count": 4,
+      "test_names": [
+        "test_smb_requires_host",
+        "test_smb_requires_share",
+        "test_smb_configuration_basic",
+        "test_smb_configuration_with_auth"
+      ],
+      "test_file": "tests/test_new_backends.py",
+      "test_line": 31,
+      "keywords": [
+        "test",
+        "configuration",
+        "s_m_b_configuration",
+        "s m b configuration"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,47)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,configuration)",
+        "notebooks/06_versioning.ipynb (keywords: test,configuration)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,configuration)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,configuration)",
+        "notebooks/03_file_operations.ipynb (keywords: test,configuration)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "s_f_t_p_configuration",
+      "test_class": "TestSFTPConfiguration",
+      "test_count": 6,
+      "test_names": [
+        "test_sftp_requires_host",
+        "test_sftp_requires_username",
+        "test_sftp_configuration_basic",
+        "test_sftp_file_operations",
+        "test_sftp_configuration_with_password",
+        "test_sftp_configuration_with_key"
+      ],
+      "test_file": "tests/test_new_backends.py",
+      "test_line": 99,
+      "keywords": [
+        "test",
+        "configuration",
+        "s f t p configuration",
+        "s_f_t_p_configuration"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,47)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/04_virtual_nodes.ipynb (keywords: test,configuration)",
+        "notebooks/06_versioning.ipynb (keywords: test,configuration)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,configuration)",
+        "notebooks/08_real_world_examples.ipynb (keywords: test,configuration)",
+        "notebooks/03_file_operations.ipynb (keywords: test,configuration)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "z_i_p_backend",
+      "test_class": "TestZIPBackend",
+      "test_count": 3,
+      "test_names": [
+        "test_zip_requires_file",
+        "test_zip_configuration_basic",
+        "test_zip_write_mode"
+      ],
+      "test_file": "tests/test_new_backends.py",
+      "test_line": 197,
+      "keywords": [
+        "test",
+        "z_i_p_backend",
+        "backend",
+        "z i p backend"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,10)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/06_versioning.ipynb (keywords: test,backend)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,backend)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,backend)",
+        "notebooks/03_file_operations.ipynb (keywords: test,backend)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "t_a_r_backend",
+      "test_class": "TestTARBackend",
+      "test_count": 4,
+      "test_names": [
+        "test_tar_requires_file",
+        "test_tar_configuration_basic",
+        "test_tar_gzip_configuration",
+        "test_tar_readonly"
+      ],
+      "test_file": "tests/test_new_backends.py",
+      "test_line": 269,
+      "keywords": [
+        "test",
+        "backend",
+        "t a r backend",
+        "t_a_r_backend"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,10)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/06_versioning.ipynb (keywords: test,backend)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,backend)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,backend)",
+        "notebooks/03_file_operations.ipynb (keywords: test,backend)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    },
+    {
+      "name": "backend_capabilities",
+      "test_class": "TestBackendCapabilities",
+      "test_count": 4,
+      "test_names": [
+        "test_smb_capabilities",
+        "test_sftp_capabilities",
+        "test_zip_capabilities",
+        "test_tar_capabilities"
+      ],
+      "test_file": "tests/test_new_backends.py",
+      "test_line": 376,
+      "keywords": [
+        "test",
+        "backend",
+        "backend_capabilities",
+        "capabilities",
+        "backend capabilities"
+      ],
+      "in_readme": true,
+      "in_docs": false,
+      "in_notebooks": true,
+      "has_test_link": false,
+      "readme_locations": [
+        "README.md (lines: 5,10)"
+      ],
+      "docs_locations": [],
+      "notebook_locations": [
+        "notebooks/06_versioning.ipynb (keywords: test,backend,capabilities)",
+        "notebooks/02_backends_and_mounts.ipynb (keywords: test,backend,capabilities)",
+        "notebooks/07_advanced_features.ipynb (keywords: test,backend,capabilities)",
+        "notebooks/03_file_operations.ipynb (keywords: test,backend)"
+      ],
+      "test_link_locations": [],
+      "status": "partial",
+      "priority": "none"
+    }
+  ]
+}
