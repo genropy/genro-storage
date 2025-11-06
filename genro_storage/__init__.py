@@ -20,10 +20,10 @@ different storage backends (local, S3, GCS, Azure, HTTP, etc.) using a
 mount-point abstraction inspired by Unix filesystems.
 
 Main Components:
-    - StorageManager: Configure and manage storage backends (sync)
-    - StorageNode: Interact with files and directories (sync)
-    - AsyncStorageManager: Async wrapper around StorageManager
-    - AsyncStorageNode: Async wrapper around StorageNode
+    - AsyncStorageManager: Async manager for storage backends (base implementation)
+    - AsyncStorageNode: Async interface for files and directories
+    - StorageManager: Sync wrapper around AsyncStorageManager
+    - StorageNode: Sync wrapper around AsyncStorageNode
     - Exceptions: Storage-specific exception hierarchy
 
 Quick Start (Sync):
@@ -44,7 +44,7 @@ Quick Start (Sync):
     >>> node.copy(storage.node('uploads:backup/report.pdf'))
 
 Quick Start (Async):
-    >>> from genro_storage.asyncer_wrapper import AsyncStorageManager
+    >>> from genro_storage import AsyncStorageManager
     >>>
     >>> storage = AsyncStorageManager()
     >>> storage.configure([
@@ -61,8 +61,8 @@ https://genro-storage.readthedocs.io
 
 __version__ = "0.5.0"
 
-from .manager import StorageManager
-from .node import StorageNode, SkipStrategy
+from .storage_manager import StorageManager
+from .storage_node import StorageNode, SkipStrategy
 from .exceptions import (
     StorageError,
     StorageNotFoundError,
@@ -71,9 +71,10 @@ from .exceptions import (
 )
 from .api_introspection import get_api_structure, get_api_structure_multi
 
-# Async support is optional (requires asyncer)
+# Async support (native implementation)
 try:
-    from .asyncer_wrapper import AsyncStorageManager, AsyncStorageNode
+    from .async_storage_manager import AsyncStorageManager
+    from .async_storage_node import AsyncStorageNode
 
     _ASYNC_AVAILABLE = True
 except ImportError:
