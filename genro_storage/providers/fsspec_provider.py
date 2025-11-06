@@ -54,12 +54,13 @@ class FsspecProvider(AsyncProvider):
     - memory: In-memory filesystem (testing)
     """
 
-    @AsyncProvider.protocol('s3_aws')
+    @AsyncProvider.protocol("s3_aws")
     def protocol_s3_aws(self) -> dict[str, Any]:
         """Amazon S3 protocol with AWS-specific configuration."""
 
         class S3AwsModel(BaseModel):
             """Configuration for Amazon S3."""
+
             bucket: str = Field(..., description="S3 bucket name")
             region: str = Field(..., description="AWS region (e.g., 'us-east-1')")
             access_key: str | None = Field(None, description="AWS access key ID")
@@ -69,7 +70,7 @@ class FsspecProvider(AsyncProvider):
             anon: bool = Field(False, description="Anonymous access (public buckets)")
             version_aware: bool = Field(True, description="Enable versioning support")
 
-            @field_validator('bucket')
+            @field_validator("bucket")
             @classmethod
             def validate_bucket(cls, v: str) -> str:
                 if not v or not v.strip():
@@ -81,44 +82,37 @@ class FsspecProvider(AsyncProvider):
 
             def __init__(self, config: S3AwsModel):
                 fs_kwargs = {
-                    'version_aware': config.version_aware,
-                    'anon': config.anon,
-                    'asynchronous': True,  # IMPORTANT: Enable async mode
+                    "version_aware": config.version_aware,
+                    "anon": config.anon,
+                    "asynchronous": True,  # IMPORTANT: Enable async mode
                 }
 
                 if config.access_key:
-                    fs_kwargs['key'] = config.access_key
+                    fs_kwargs["key"] = config.access_key
                 if config.secret_key:
-                    fs_kwargs['secret'] = config.secret_key
+                    fs_kwargs["secret"] = config.secret_key
                 if config.session_token:
-                    fs_kwargs['token'] = config.session_token
+                    fs_kwargs["token"] = config.session_token
                 if config.endpoint_url:
-                    fs_kwargs['endpoint_url'] = config.endpoint_url
+                    fs_kwargs["endpoint_url"] = config.endpoint_url
                 if config.region:
-                    fs_kwargs['region_name'] = config.region
+                    fs_kwargs["region_name"] = config.region
 
-                super().__init__(
-                    config=config,
-                    protocol='s3',
-                    root_path=config.bucket,
-                    **fs_kwargs
-                )
+                super().__init__(config=config, protocol="s3", root_path=config.bucket, **fs_kwargs)
 
         return {
-            'model': S3AwsModel,
-            'implementor': S3AwsImplementor,
-            'capabilities': [
-                'read', 'write', 'delete', 'list',
-                'metadata', 'versioning', 'hash'
-            ]
+            "model": S3AwsModel,
+            "implementor": S3AwsImplementor,
+            "capabilities": ["read", "write", "delete", "list", "metadata", "versioning", "hash"],
         }
 
-    @AsyncProvider.protocol('s3_minio')
+    @AsyncProvider.protocol("s3_minio")
     def protocol_s3_minio(self) -> dict[str, Any]:
         """MinIO protocol (S3-compatible, no region required)."""
 
         class S3MinioModel(BaseModel):
             """Configuration for MinIO."""
+
             bucket: str = Field(..., description="Bucket name")
             endpoint_url: str = Field(..., description="MinIO endpoint URL")
             access_key: str = Field(..., description="MinIO access key")
@@ -126,7 +120,7 @@ class FsspecProvider(AsyncProvider):
             anon: bool = Field(False, description="Anonymous access")
             version_aware: bool = Field(False, description="Enable versioning")
 
-            @field_validator('bucket')
+            @field_validator("bucket")
             @classmethod
             def validate_bucket(cls, v: str) -> str:
                 if not v or not v.strip():
@@ -138,42 +132,35 @@ class FsspecProvider(AsyncProvider):
 
             def __init__(self, config: S3MinioModel):
                 fs_kwargs = {
-                    'key': config.access_key,
-                    'secret': config.secret_key,
-                    'endpoint_url': config.endpoint_url,
-                    'version_aware': config.version_aware,
-                    'anon': config.anon,
-                    'asynchronous': True,
+                    "key": config.access_key,
+                    "secret": config.secret_key,
+                    "endpoint_url": config.endpoint_url,
+                    "version_aware": config.version_aware,
+                    "anon": config.anon,
+                    "asynchronous": True,
                 }
 
-                super().__init__(
-                    config=config,
-                    protocol='s3',
-                    root_path=config.bucket,
-                    **fs_kwargs
-                )
+                super().__init__(config=config, protocol="s3", root_path=config.bucket, **fs_kwargs)
 
         return {
-            'model': S3MinioModel,
-            'implementor': S3MinioImplementor,
-            'capabilities': [
-                'read', 'write', 'delete', 'list',
-                'metadata', 'versioning', 'hash'
-            ]
+            "model": S3MinioModel,
+            "implementor": S3MinioImplementor,
+            "capabilities": ["read", "write", "delete", "list", "metadata", "versioning", "hash"],
         }
 
-    @AsyncProvider.protocol('gcs')
+    @AsyncProvider.protocol("gcs")
     def protocol_gcs(self) -> dict[str, Any]:
         """Google Cloud Storage protocol."""
 
         class GcsModel(BaseModel):
             """Configuration for Google Cloud Storage."""
+
             bucket: str = Field(..., description="GCS bucket name")
             project: str | None = Field(None, description="GCP project ID")
             token: str | None = Field(None, description="Path to service account JSON")
-            consistency: str = Field('md5', description="Consistency check method")
+            consistency: str = Field("md5", description="Consistency check method")
 
-            @field_validator('bucket')
+            @field_validator("bucket")
             @classmethod
             def validate_bucket(cls, v: str) -> str:
                 if not v or not v.strip():
@@ -185,40 +172,35 @@ class FsspecProvider(AsyncProvider):
 
             def __init__(self, config: GcsModel):
                 fs_kwargs = {
-                    'consistency': config.consistency,
-                    'asynchronous': True,
+                    "consistency": config.consistency,
+                    "asynchronous": True,
                 }
 
                 if config.project:
-                    fs_kwargs['project'] = config.project
+                    fs_kwargs["project"] = config.project
                 if config.token:
-                    fs_kwargs['token'] = config.token
+                    fs_kwargs["token"] = config.token
 
                 super().__init__(
-                    config=config,
-                    protocol='gcs',
-                    root_path=config.bucket,
-                    **fs_kwargs
+                    config=config, protocol="gcs", root_path=config.bucket, **fs_kwargs
                 )
 
         return {
-            'model': GcsModel,
-            'implementor': GcsImplementor,
-            'capabilities': [
-                'read', 'write', 'delete', 'list',
-                'metadata', 'hash'
-            ]
+            "model": GcsModel,
+            "implementor": GcsImplementor,
+            "capabilities": ["read", "write", "delete", "list", "metadata", "hash"],
         }
 
-    @AsyncProvider.protocol('local')
+    @AsyncProvider.protocol("local")
     def protocol_local(self) -> dict[str, Any]:
         """Local filesystem protocol."""
 
         class LocalModel(BaseModel):
             """Configuration for local filesystem."""
+
             root_path: str = Field(..., description="Root directory path")
 
-            @field_validator('root_path')
+            @field_validator("root_path")
             @classmethod
             def validate_root_path(cls, v: str) -> str:
                 if not v or not v.strip():
@@ -234,29 +216,27 @@ class FsspecProvider(AsyncProvider):
             def __init__(self, config: LocalModel):
                 super().__init__(
                     config=config,
-                    protocol='file',
+                    protocol="file",
                     root_path=config.root_path,
                     asynchronous=True,
-                    auto_mkdir=True
+                    auto_mkdir=True,
                 )
 
         return {
-            'model': LocalModel,
-            'implementor': LocalImplementor,
-            'capabilities': [
-                'read', 'write', 'delete', 'list'
-            ]
+            "model": LocalModel,
+            "implementor": LocalImplementor,
+            "capabilities": ["read", "write", "delete", "list"],
         }
 
-    @AsyncProvider.protocol('memory')
+    @AsyncProvider.protocol("memory")
     def protocol_memory(self) -> dict[str, Any]:
         """In-memory filesystem protocol (for testing)."""
 
         class MemoryModel(BaseModel):
             """Configuration for in-memory filesystem."""
+
             instance_id: str | None = Field(
-                default=None,
-                description="Optional unique ID for isolated memory instances"
+                default=None, description="Optional unique ID for isolated memory instances"
             )
 
         class MemoryImplementor(AsyncFsspecImplementor):
@@ -267,40 +247,36 @@ class FsspecProvider(AsyncProvider):
                 # Each instance gets its own pseudo dict (not shared)
                 import fsspec.implementations.memory
 
-                super().__init__(
-                    config=config,
-                    protocol='memory',
-                    root_path='',
-                    asynchronous=True
-                )
+                super().__init__(config=config, protocol="memory", root_path="", asynchronous=True)
 
                 # Override fs to create truly isolated instance with private store
                 self.fs = fsspec.implementations.memory.MemoryFileSystem()
                 # Give it a private pseudo storage dict (not the class-level one)
                 self.fs.store = {}
-                self.fs.pseudo_dirs = ['']
+                self.fs.pseudo_dirs = [""]
                 self.is_async_fs = False  # Memory fs doesn't support async
 
         return {
-            'model': MemoryModel,
-            'implementor': MemoryImplementor,
-            'capabilities': [
-                'read', 'write', 'delete', 'list'
-            ]
+            "model": MemoryModel,
+            "implementor": MemoryImplementor,
+            "capabilities": ["read", "write", "delete", "list"],
         }
 
-    @AsyncProvider.protocol('azure')
+    @AsyncProvider.protocol("azure")
     def protocol_azure(self) -> dict[str, Any]:
         """Azure Blob Storage protocol."""
 
         class AzureModel(BaseModel):
             """Configuration for Azure Blob Storage."""
+
             account_name: str = Field(..., description="Azure storage account name")
             account_key: str | None = Field(None, description="Account key for authentication")
-            connection_string: str | None = Field(None, description="Connection string (alternative to account_key)")
+            connection_string: str | None = Field(
+                None, description="Connection string (alternative to account_key)"
+            )
             container: str = Field(..., description="Container name")
 
-            @field_validator('account_name')
+            @field_validator("account_name")
             @classmethod
             def validate_account_name(cls, v: str) -> str:
                 if not v or not v.strip():
@@ -311,73 +287,69 @@ class FsspecProvider(AsyncProvider):
             """Async implementor for Azure Blob Storage."""
 
             def __init__(self, config: AzureModel):
-                fs_kwargs = {'asynchronous': True}
+                fs_kwargs = {"asynchronous": True}
 
                 if config.connection_string:
-                    fs_kwargs['connection_string'] = config.connection_string
+                    fs_kwargs["connection_string"] = config.connection_string
                 elif config.account_key:
-                    fs_kwargs['account_name'] = config.account_name
-                    fs_kwargs['account_key'] = config.account_key
+                    fs_kwargs["account_name"] = config.account_name
+                    fs_kwargs["account_key"] = config.account_key
                 else:
                     # Use default credential (managed identity, environment variables)
-                    fs_kwargs['account_name'] = config.account_name
+                    fs_kwargs["account_name"] = config.account_name
 
                 super().__init__(
                     config=config,
-                    protocol='abfs',  # Azure Blob File System
+                    protocol="abfs",  # Azure Blob File System
                     root_path=config.container,
-                    **fs_kwargs
+                    **fs_kwargs,
                 )
 
         return {
-            'model': AzureModel,
-            'implementor': AzureImplementor,
-            'capabilities': [
-                'read', 'write', 'delete', 'list',
-                'metadata', 'hash'
-            ]
+            "model": AzureModel,
+            "implementor": AzureImplementor,
+            "capabilities": ["read", "write", "delete", "list", "metadata", "hash"],
         }
 
-    @AsyncProvider.protocol('http')
+    @AsyncProvider.protocol("http")
     def protocol_http(self) -> dict[str, Any]:
         """HTTP/HTTPS protocol (read-only)."""
 
         class HttpModel(BaseModel):
             """Configuration for HTTP access."""
+
             base_url: str = Field(..., description="Base URL for HTTP requests")
 
-            @field_validator('base_url')
+            @field_validator("base_url")
             @classmethod
             def validate_base_url(cls, v: str) -> str:
-                if not v.startswith(('http://', 'https://')):
+                if not v.startswith(("http://", "https://")):
                     raise ValueError("base_url must start with http:// or https://")
-                return v.rstrip('/')
+                return v.rstrip("/")
 
         class HttpImplementor(AsyncFsspecImplementor):
             """Async implementor for HTTP/HTTPS (read-only)."""
 
             def __init__(self, config: HttpModel):
                 super().__init__(
-                    config=config,
-                    protocol='http',
-                    root_path=config.base_url,
-                    asynchronous=True
+                    config=config, protocol="http", root_path=config.base_url, asynchronous=True
                 )
 
         return {
-            'model': HttpModel,
-            'implementor': HttpImplementor,
-            'capabilities': [
-                'read',  # Read-only protocol
-            ]
+            "model": HttpModel,
+            "implementor": HttpImplementor,
+            "capabilities": [
+                "read",  # Read-only protocol
+            ],
         }
 
-    @AsyncProvider.protocol('sftp')
+    @AsyncProvider.protocol("sftp")
     def protocol_sftp(self) -> dict[str, Any]:
         """SFTP protocol."""
 
         class SftpModel(BaseModel):
             """Configuration for SFTP."""
+
             host: str = Field(..., description="SFTP server hostname")
             port: int = Field(22, description="SFTP port")
             username: str = Field(..., description="Username for authentication")
@@ -390,34 +362,33 @@ class FsspecProvider(AsyncProvider):
             def __init__(self, config: SftpModel):
                 fs_kwargs = {}
                 if config.password:
-                    fs_kwargs['password'] = config.password
+                    fs_kwargs["password"] = config.password
                 if config.key_filename:
-                    fs_kwargs['key_filename'] = config.key_filename
+                    fs_kwargs["key_filename"] = config.key_filename
 
                 super().__init__(
                     config=config,
-                    protocol='sftp',
-                    root_path='',
+                    protocol="sftp",
+                    root_path="",
                     host=config.host,
                     port=config.port,
                     username=config.username,
-                    **fs_kwargs
+                    **fs_kwargs,
                 )
 
         return {
-            'model': SftpModel,
-            'implementor': SftpImplementor,
-            'capabilities': [
-                'read', 'write', 'delete', 'list'
-            ]
+            "model": SftpModel,
+            "implementor": SftpImplementor,
+            "capabilities": ["read", "write", "delete", "list"],
         }
 
-    @AsyncProvider.protocol('smb')
+    @AsyncProvider.protocol("smb")
     def protocol_smb(self) -> dict[str, Any]:
         """SMB/CIFS protocol (Windows file sharing)."""
 
         class SmbModel(BaseModel):
             """Configuration for SMB."""
+
             host: str = Field(..., description="SMB server hostname or IP")
             share: str = Field(..., description="Share name")
             username: str | None = Field(None, description="Username for authentication")
@@ -430,39 +401,38 @@ class FsspecProvider(AsyncProvider):
             def __init__(self, config: SmbModel):
                 fs_kwargs = {}
                 if config.username:
-                    fs_kwargs['username'] = config.username
+                    fs_kwargs["username"] = config.username
                 if config.password:
-                    fs_kwargs['password'] = config.password
+                    fs_kwargs["password"] = config.password
                 if config.domain:
-                    fs_kwargs['domain'] = config.domain
+                    fs_kwargs["domain"] = config.domain
 
                 super().__init__(
                     config=config,
-                    protocol='smb',
-                    root_path=f'//{config.host}/{config.share}',
-                    **fs_kwargs
+                    protocol="smb",
+                    root_path=f"//{config.host}/{config.share}",
+                    **fs_kwargs,
                 )
 
         return {
-            'model': SmbModel,
-            'implementor': SmbImplementor,
-            'capabilities': [
-                'read', 'write', 'delete', 'list'
-            ]
+            "model": SmbModel,
+            "implementor": SmbImplementor,
+            "capabilities": ["read", "write", "delete", "list"],
         }
 
-    @AsyncProvider.protocol('zip')
+    @AsyncProvider.protocol("zip")
     def protocol_zip(self) -> dict[str, Any]:
         """ZIP archive protocol (read-only)."""
 
         class ZipModel(BaseModel):
             """Configuration for ZIP archive access."""
+
             zip_file: str = Field(..., description="Path to ZIP file")
 
-            @field_validator('zip_file')
+            @field_validator("zip_file")
             @classmethod
             def validate_zip_file(cls, v: str) -> str:
-                if not v.endswith('.zip'):
+                if not v.endswith(".zip"):
                     raise ValueError("zip_file must have .zip extension")
                 return v
 
@@ -470,33 +440,27 @@ class FsspecProvider(AsyncProvider):
             """Async implementor for ZIP archives (read-only)."""
 
             def __init__(self, config: ZipModel):
-                super().__init__(
-                    config=config,
-                    protocol='zip',
-                    root_path='',
-                    fo=config.zip_file
-                )
+                super().__init__(config=config, protocol="zip", root_path="", fo=config.zip_file)
 
         return {
-            'model': ZipModel,
-            'implementor': ZipImplementor,
-            'capabilities': [
-                'read', 'list'  # Read-only
-            ]
+            "model": ZipModel,
+            "implementor": ZipImplementor,
+            "capabilities": ["read", "list"],  # Read-only
         }
 
-    @AsyncProvider.protocol('tar')
+    @AsyncProvider.protocol("tar")
     def protocol_tar(self) -> dict[str, Any]:
         """TAR archive protocol (read-only)."""
 
         class TarModel(BaseModel):
             """Configuration for TAR archive access."""
+
             tar_file: str = Field(..., description="Path to TAR file")
 
-            @field_validator('tar_file')
+            @field_validator("tar_file")
             @classmethod
             def validate_tar_file(cls, v: str) -> str:
-                valid_extensions = ('.tar', '.tar.gz', '.tgz', '.tar.bz2', '.tar.xz')
+                valid_extensions = (".tar", ".tar.gz", ".tgz", ".tar.bz2", ".tar.xz")
                 if not any(v.endswith(ext) for ext in valid_extensions):
                     raise ValueError(f"tar_file must have one of: {valid_extensions}")
                 return v
@@ -505,30 +469,24 @@ class FsspecProvider(AsyncProvider):
             """Async implementor for TAR archives (read-only)."""
 
             def __init__(self, config: TarModel):
-                super().__init__(
-                    config=config,
-                    protocol='tar',
-                    root_path='',
-                    fo=config.tar_file
-                )
+                super().__init__(config=config, protocol="tar", root_path="", fo=config.tar_file)
 
         return {
-            'model': TarModel,
-            'implementor': TarImplementor,
-            'capabilities': [
-                'read', 'list'  # Read-only
-            ]
+            "model": TarModel,
+            "implementor": TarImplementor,
+            "capabilities": ["read", "list"],  # Read-only
         }
 
-    @AsyncProvider.protocol('github')
+    @AsyncProvider.protocol("github")
     def protocol_github(self) -> dict[str, Any]:
         """GitHub repository protocol (read-only)."""
 
         class GithubModel(BaseModel):
             """Configuration for GitHub repository access."""
+
             org: str = Field(..., description="GitHub organization or user")
             repo: str = Field(..., description="Repository name")
-            ref: str = Field('main', description="Branch, tag, or commit SHA")
+            ref: str = Field("main", description="Branch, tag, or commit SHA")
             token: str | None = Field(None, description="GitHub personal access token")
 
         class GithubImplementor(AsyncFsspecImplementor):
@@ -537,33 +495,32 @@ class FsspecProvider(AsyncProvider):
             def __init__(self, config: GithubModel):
                 fs_kwargs = {}
                 if config.token:
-                    fs_kwargs['token'] = config.token
+                    fs_kwargs["token"] = config.token
 
                 super().__init__(
                     config=config,
-                    protocol='github',
-                    root_path=f'{config.org}/{config.repo}/{config.ref}',
-                    **fs_kwargs
+                    protocol="github",
+                    root_path=f"{config.org}/{config.repo}/{config.ref}",
+                    **fs_kwargs,
                 )
 
         return {
-            'model': GithubModel,
-            'implementor': GithubImplementor,
-            'capabilities': [
-                'read', 'list'  # Read-only
-            ]
+            "model": GithubModel,
+            "implementor": GithubImplementor,
+            "capabilities": ["read", "list"],  # Read-only
         }
 
-    @AsyncProvider.protocol('ftp')
+    @AsyncProvider.protocol("ftp")
     def protocol_ftp(self) -> dict[str, Any]:
         """FTP protocol."""
 
         class FtpModel(BaseModel):
             """Configuration for FTP."""
+
             host: str = Field(..., description="FTP server hostname")
             port: int = Field(21, description="FTP port")
-            username: str = Field('anonymous', description="Username")
-            password: str = Field('', description="Password")
+            username: str = Field("anonymous", description="Username")
+            password: str = Field("", description="Password")
 
         class FtpImplementor(AsyncFsspecImplementor):
             """Async implementor for FTP."""
@@ -571,20 +528,18 @@ class FsspecProvider(AsyncProvider):
             def __init__(self, config: FtpModel):
                 super().__init__(
                     config=config,
-                    protocol='ftp',
-                    root_path='',
+                    protocol="ftp",
+                    root_path="",
                     host=config.host,
                     port=config.port,
                     username=config.username,
-                    password=config.password
+                    password=config.password,
                 )
 
         return {
-            'model': FtpModel,
-            'implementor': FtpImplementor,
-            'capabilities': [
-                'read', 'write', 'delete', 'list'
-            ]
+            "model": FtpModel,
+            "implementor": FtpImplementor,
+            "capabilities": ["read", "write", "delete", "list"],
         }
 
 
@@ -608,7 +563,7 @@ class AsyncLocalPathContext:
         self.mode = mode
         self.fs_path = implementor._make_path(path)
         self.tmp_path = None
-        self.is_local = implementor.protocol == 'file'
+        self.is_local = implementor.protocol == "file"
 
     async def __aenter__(self) -> str:
         """Enter context: setup local path."""
@@ -620,7 +575,7 @@ class AsyncLocalPathContext:
         self.tmp_path = self._create_temp_file()
 
         # Download if reading
-        if 'r' in self.mode:
+        if "r" in self.mode:
             await self._download_if_exists()
 
         return self.tmp_path
@@ -632,7 +587,7 @@ class AsyncLocalPathContext:
             return False
 
         # Upload if writing
-        if 'w' in self.mode and self.tmp_path:
+        if "w" in self.mode and self.tmp_path:
             await self._upload_if_exists()
 
         self._cleanup_temp()
@@ -641,7 +596,7 @@ class AsyncLocalPathContext:
     def _create_temp_file(self) -> str:
         """Create temporary file with same extension."""
         suffix = os.path.splitext(self.path)[1]
-        tmp = tempfile.NamedTemporaryFile(mode='w+b', suffix=suffix, delete=False)
+        tmp = tempfile.NamedTemporaryFile(mode="w+b", suffix=suffix, delete=False)
         tmp.close()
         return tmp.name
 
@@ -658,7 +613,7 @@ class AsyncLocalPathContext:
                 return
             data = await asyncio.to_thread(self.implementor.fs.cat, self.fs_path)
 
-        with open(self.tmp_path, 'wb') as f:
+        with open(self.tmp_path, "wb") as f:
             f.write(data)
 
     async def _upload_if_exists(self) -> None:
@@ -668,13 +623,13 @@ class AsyncLocalPathContext:
 
         # Ensure parent directory exists
         parent = str(PurePosixPath(self.fs_path).parent)
-        if parent and parent != '.':
+        if parent and parent != ".":
             if self.implementor.is_async_fs:
                 await self.implementor.fs._makedirs(parent, exist_ok=True)
             else:
                 await asyncio.to_thread(self.implementor.fs.makedirs, parent, exist_ok=True)
 
-        with open(self.tmp_path, 'rb') as f:
+        with open(self.tmp_path, "rb") as f:
             data = f.read()
 
         if self.implementor.is_async_fs:
@@ -697,13 +652,7 @@ class AsyncFsspecImplementor(AsyncImplementor):
     - Wraps fsspec async filesystem operations
     """
 
-    def __init__(
-        self,
-        config: BaseModel,
-        protocol: str,
-        root_path: str,
-        **fs_kwargs: Any
-    ):
+    def __init__(self, config: BaseModel, protocol: str, root_path: str, **fs_kwargs: Any):
         """Initialize async fsspec implementor.
 
         Args:
@@ -723,7 +672,7 @@ class AsyncFsspecImplementor(AsyncImplementor):
 
         # Detect if filesystem supports async
         # Local filesystem (file://) doesn't support async, others do
-        self.is_async_fs = hasattr(self.fs, '_cat') and protocol != 'file'
+        self.is_async_fs = hasattr(self.fs, "_cat") and protocol != "file"
 
     def _make_path(self, path: str) -> str:
         """Combine root_path with path from StorageManager.
@@ -737,7 +686,7 @@ class AsyncFsspecImplementor(AsyncImplementor):
         if not path:
             return self.root_path
 
-        clean = path.lstrip('/')
+        clean = path.lstrip("/")
 
         if self.root_path:
             return f"{self.root_path}/{clean}"
@@ -762,7 +711,7 @@ class AsyncFsspecImplementor(AsyncImplementor):
                 info = await self.fs._info(fs_path)
             else:
                 info = await asyncio.to_thread(self.fs.info, fs_path)
-            return info['type'] == 'file'
+            return info["type"] == "file"
         except FileNotFoundError:
             return False
 
@@ -774,7 +723,7 @@ class AsyncFsspecImplementor(AsyncImplementor):
                 info = await self.fs._info(fs_path)
             else:
                 info = await asyncio.to_thread(self.fs.info, fs_path)
-            return info['type'] == 'directory'
+            return info["type"] == "directory"
         except FileNotFoundError:
             return False
 
@@ -786,10 +735,10 @@ class AsyncFsspecImplementor(AsyncImplementor):
         else:
             info = await asyncio.to_thread(self.fs.info, fs_path)
 
-        if info['type'] != 'file':
+        if info["type"] != "file":
             raise ValueError(f"Path is a directory, not a file: {path}")
 
-        return info.get('size', 0)
+        return info.get("size", 0)
 
     async def mtime(self, path: str) -> float:
         """Get last modification time."""
@@ -799,15 +748,17 @@ class AsyncFsspecImplementor(AsyncImplementor):
         else:
             info = await asyncio.to_thread(self.fs.info, fs_path)
 
-        if 'mtime' in info:
-            return info['mtime']
-        elif 'LastModified' in info:
+        if "mtime" in info:
+            return info["mtime"]
+        elif "LastModified" in info:
             import datetime
-            dt = info['LastModified']
+
+            dt = info["LastModified"]
             if isinstance(dt, datetime.datetime):
                 return dt.timestamp()
 
         import time
+
         return time.time()
 
     async def read_bytes(self, path: str) -> bytes:
@@ -818,7 +769,7 @@ class AsyncFsspecImplementor(AsyncImplementor):
         else:
             return await asyncio.to_thread(self.fs.cat, fs_path)
 
-    async def read_text(self, path: str, encoding: str = 'utf-8') -> str:
+    async def read_text(self, path: str, encoding: str = "utf-8") -> str:
         """Read entire file as text."""
         data = await self.read_bytes(path)
         return data.decode(encoding)
@@ -831,7 +782,7 @@ class AsyncFsspecImplementor(AsyncImplementor):
         else:
             await asyncio.to_thread(self.fs.pipe, fs_path, data)
 
-    async def write_text(self, path: str, text: str, encoding: str = 'utf-8') -> None:
+    async def write_text(self, path: str, text: str, encoding: str = "utf-8") -> None:
         """Write text to file."""
         data = text.encode(encoding)
         await self.write_bytes(path, data)
@@ -867,15 +818,15 @@ class AsyncFsspecImplementor(AsyncImplementor):
         result = []
         for entry in entries:
             # Remove root_path prefix if present
-            if self.root_path and entry.startswith(self.root_path + '/'):
-                entry = entry[len(self.root_path) + 1:]
+            if self.root_path and entry.startswith(self.root_path + "/"):
+                entry = entry[len(self.root_path) + 1 :]
 
             # Remove path prefix
-            if path and entry.startswith(path + '/'):
-                entry = entry[len(path) + 1:]
+            if path and entry.startswith(path + "/"):
+                entry = entry[len(path) + 1 :]
 
             # Get basename only
-            basename = entry.split('/')[-1]
+            basename = entry.split("/")[-1]
             if basename:
                 result.append(basename)
 
@@ -890,10 +841,7 @@ class AsyncFsspecImplementor(AsyncImplementor):
             await asyncio.to_thread(self.fs.makedirs, fs_path, exist_ok=exist_ok)
 
     async def copy(
-        self,
-        src_path: str,
-        dest_implementor: AsyncImplementor,
-        dest_path: str
+        self, src_path: str, dest_implementor: AsyncImplementor, dest_path: str
     ) -> str | None:
         """Copy file to another implementor."""
         # Read from source
@@ -904,7 +852,7 @@ class AsyncFsspecImplementor(AsyncImplementor):
 
         return None
 
-    def local_path(self, path: str, mode: str = 'r'):
+    def local_path(self, path: str, mode: str = "r"):
         """Get async context manager for local filesystem path.
 
         Args:
@@ -918,5 +866,5 @@ class AsyncFsspecImplementor(AsyncImplementor):
 
     async def close(self) -> None:
         """Close filesystem resources."""
-        if hasattr(self.fs, 'close'):
+        if hasattr(self.fs, "close"):
             await self.fs.close()

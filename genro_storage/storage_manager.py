@@ -78,7 +78,7 @@ class StorageManager:
         path: str,
         must_exist: bool | None = None,
         autocreate: bool = True,
-        cached: bool = False
+        cached: bool = False,
     ) -> StorageNode:
         """Create a StorageNode for the given path (sync wrapper).
 
@@ -96,10 +96,7 @@ class StorageManager:
         """
         # Create async node
         async_node = self._async_manager.node(
-            path,
-            must_exist=must_exist,
-            autocreate=autocreate,
-            cached=cached
+            path, must_exist=must_exist, autocreate=autocreate, cached=cached
         )
 
         # Wrap in sync node

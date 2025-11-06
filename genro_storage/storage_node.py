@@ -146,7 +146,7 @@ class StorageNode:
         """
         return asyncio.run(self._async_node.read())
 
-    def read_text(self, encoding: str = 'utf-8') -> str:
+    def read_text(self, encoding: str = "utf-8") -> str:
         """Read entire file as text.
 
         Args:
@@ -166,7 +166,7 @@ class StorageNode:
         """
         asyncio.run(self._async_node.write(data, parents))
 
-    def write_text(self, text: str, encoding: str = 'utf-8', parents: bool = True) -> None:
+    def write_text(self, text: str, encoding: str = "utf-8", parents: bool = True) -> None:
         """Write text to file.
 
         Args:
@@ -216,7 +216,7 @@ class StorageNode:
         async_nodes = asyncio.run(self._async_node.list())
         return [StorageNode(node) for node in async_nodes]
 
-    def local_path(self, mode: str = 'r'):
+    def local_path(self, mode: str = "r"):
         """Get context manager for local filesystem path.
 
         For local storage: returns direct path
@@ -291,6 +291,7 @@ class SyncLocalPathContext:
 
     def __enter__(self) -> str:
         """Enter context synchronously."""
+
         # Get async context manager
         async def _enter():
             self._async_context = await self._async_node.local_path(self._mode)
@@ -301,6 +302,7 @@ class SyncLocalPathContext:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit context synchronously."""
+
         async def _exit():
             await self._async_context.__aexit__(exc_type, exc_val, exc_tb)
 

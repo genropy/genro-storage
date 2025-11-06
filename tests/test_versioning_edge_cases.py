@@ -12,14 +12,10 @@ class TestVersioningOnNonVersionedBackends:
         """versions property returns empty list for local backend."""
         with tempfile.TemporaryDirectory() as tmpdir:
             storage = StorageManager()
-            storage.configure([{
-                'name': 'local',
-                'type': 'local',
-                'path': tmpdir
-            }])
+            storage.configure([{"name": "local", "type": "local", "path": tmpdir}])
 
-            node = storage.node('local:test.txt')
-            node.write('content', mode='w')
+            node = storage.node("local:test.txt")
+            node.write("content", mode="w")
 
             # Local backend doesn't support versioning
             versions = node.versions
@@ -28,13 +24,10 @@ class TestVersioningOnNonVersionedBackends:
     def test_versions_on_memory_backend_returns_empty(self):
         """versions property returns empty list for memory backend."""
         storage = StorageManager()
-        storage.configure([{
-            'name': 'memory',
-            'type': 'memory'
-        }])
+        storage.configure([{"name": "memory", "type": "memory"}])
 
-        node = storage.node('memory:test.txt')
-        node.write('content', mode='w')
+        node = storage.node("memory:test.txt")
+        node.write("content", mode="w")
 
         # Memory backend doesn't support versioning
         versions = node.versions
@@ -44,14 +37,10 @@ class TestVersioningOnNonVersionedBackends:
         """version_count property returns 0 for non-versioned backends."""
         with tempfile.TemporaryDirectory() as tmpdir:
             storage = StorageManager()
-            storage.configure([{
-                'name': 'local',
-                'type': 'local',
-                'path': tmpdir
-            }])
+            storage.configure([{"name": "local", "type": "local", "path": tmpdir}])
 
-            node = storage.node('local:test.txt')
-            node.write('content', mode='w')
+            node = storage.node("local:test.txt")
+            node.write("content", mode="w")
 
             # Should return 0 (no versioning)
             assert node.version_count == 0

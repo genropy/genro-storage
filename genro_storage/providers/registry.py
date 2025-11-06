@@ -53,10 +53,7 @@ class ProviderRegistry:
 
     @classmethod
     def register(
-        cls,
-        protocol_name: str,
-        provider_class: Type[AsyncProvider],
-        protocol_method: Callable
+        cls, protocol_name: str, provider_class: Type[AsyncProvider], protocol_method: Callable
     ) -> None:
         """Register a protocol (called automatically by @protocol decorator).
 
@@ -89,8 +86,7 @@ class ProviderRegistry:
         if protocol_name not in cls._registry:
             available = list(cls._registry.keys())
             raise ValueError(
-                f"Protocol '{protocol_name}' not found. "
-                f"Available protocols: {available}"
+                f"Protocol '{protocol_name}' not found. " f"Available protocols: {available}"
             )
 
         provider_class, protocol_method = cls._registry[protocol_name]

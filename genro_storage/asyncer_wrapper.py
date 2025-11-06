@@ -41,14 +41,13 @@ try:
     from asyncer import asyncify
 except ImportError:
     raise ImportError(
-        "asyncer is required for async support. "
-        "Install it with: pip install asyncer"
+        "asyncer is required for async support. " "Install it with: pip install asyncer"
     )
 
 from .manager import StorageManager
 from .node import StorageNode
 
-__all__ = ['AsyncStorageManager', 'AsyncStorageNode']
+__all__ = ["AsyncStorageManager", "AsyncStorageNode"]
 
 
 class AsyncStorageManager:
@@ -180,7 +179,7 @@ class AsyncStorageNode:
 
     # Async I/O operations
 
-    async def read(self, mode: str = 'r', encoding: str = 'utf-8') -> str | bytes:
+    async def read(self, mode: str = "r", encoding: str = "utf-8") -> str | bytes:
         """Read file content in text or binary mode (async).
 
         Args:
@@ -200,7 +199,13 @@ class AsyncStorageNode:
         """
         return await asyncify(self._node.read)(mode, encoding)
 
-    async def write(self, data: str | bytes, mode: str = 'w', encoding: str = 'utf-8', skip_if_unchanged: bool = False) -> bool:
+    async def write(
+        self,
+        data: str | bytes,
+        mode: str = "w",
+        encoding: str = "utf-8",
+        skip_if_unchanged: bool = False,
+    ) -> bool:
         """Write data to file in text or binary mode (async).
 
         Args:

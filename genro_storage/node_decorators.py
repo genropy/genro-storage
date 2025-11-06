@@ -48,38 +48,40 @@ def cacheable_property(func: Callable) -> property:
 
     NOTE: Candidate for genro-commons!
     """
-    cache_attr = f'_cache_{func.__name__}'
+    cache_attr = f"_cache_{func.__name__}"
     is_async = inspect.iscoroutinefunction(func)
 
     if is_async:
+
         @wraps(func)
         async def async_wrapper(self: Any) -> Any:
             # If caching is enabled and value is cached, return it
-            if getattr(self, '_cached', False) and hasattr(self, cache_attr):
+            if getattr(self, "_cached", False) and hasattr(self, cache_attr):
                 return getattr(self, cache_attr)
 
             # Compute the value (await async function)
             value = await func(self)
 
             # If caching is enabled, save to cache
-            if getattr(self, '_cached', False):
+            if getattr(self, "_cached", False):
                 setattr(self, cache_attr, value)
 
             return value
 
         return property(async_wrapper)
     else:
+
         @wraps(func)
         def sync_wrapper(self: Any) -> Any:
             # If caching is enabled and value is cached, return it
-            if getattr(self, '_cached', False) and hasattr(self, cache_attr):
+            if getattr(self, "_cached", False) and hasattr(self, cache_attr):
                 return getattr(self, cache_attr)
 
             # Compute the value
             value = func(self)
 
             # If caching is enabled, save to cache
-            if getattr(self, '_cached', False):
+            if getattr(self, "_cached", False):
                 setattr(self, cache_attr, value)
 
             return value
@@ -125,17 +127,24 @@ def resolved(must_exist: bool | None = None, autocreate: bool = False) -> Callab
     """
     # Methods that typically require file to exist
     READ_METHODS = {
-        'read', 'read_bytes', 'read_text', 'open',
-        'size', 'mtime', 'get_hash', 'get_metadata'
+        "read",
+        "read_bytes",
+        "read_text",
+        "open",
+        "size",
+        "mtime",
+        "get_hash",
+        "get_metadata",
     }
 
     # Methods that write/create files
-    WRITE_METHODS = {'write', 'write_bytes', 'write_text'}
+    WRITE_METHODS = {"write", "write_bytes", "write_text"}
 
     def decorator(method: Callable) -> Callable:
         is_async = inspect.iscoroutinefunction(method)
 
         if is_async:
+
             @wraps(method)
             async def async_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
                 # 1. Determine if we should check existence
@@ -148,34 +157,28 @@ def resolved(must_exist: bool | None = None, autocreate: bool = False) -> Callab
                         should_check_exist = True
                     else:
                         # Check instance attribute if available
-                        should_check_exist = getattr(self, 'must_exist', False)
+                        should_check_exist = getattr(self, "must_exist", False)
 
                 # Check existence if required (await async property)
                 if should_check_exist:
                     exists = await self.exists
                     if not exists:
-                        raise FileNotFoundError(
-                            f"File not found: {self.mount_point}:{self.path}"
-                        )
+                        raise FileNotFoundError(f"File not found: {self.mount_point}:{self.path}")
 
                 # 2. Determine if we should create parent directories
                 # For write methods: check kwargs['parents'] > self.autocreate > decorator autocreate
                 method_name = method.__name__
                 if method_name in WRITE_METHODS:
                     # Priority: kwargs > instance attribute > decorator parameter
-                    should_create = kwargs.get('parents')
+                    should_create = kwargs.get("parents")
                     if should_create is None:
-                        should_create = getattr(self, 'autocreate', autocreate)
+                        should_create = getattr(self, "autocreate", autocreate)
 
                     parent_path = self._get_parent_path()
                     if parent_path:
                         if should_create:
                             # Create parent directory (await async)
-                            await self.implementor.mkdir(
-                                parent_path,
-                                parents=True,
-                                exist_ok=True
-                            )
+                            await self.implementor.mkdir(parent_path, parents=True, exist_ok=True)
                         else:
                             # Verify parent exists (some backends like memory auto-create)
                             parent_exists = await self.implementor.exists(parent_path)
@@ -189,6 +192,7 @@ def resolved(must_exist: bool | None = None, autocreate: bool = False) -> Callab
 
             return async_wrapper
         else:
+
             @wraps(method)
             def sync_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
                 # 1. Determine if we should check existence
@@ -201,33 +205,27 @@ def resolved(must_exist: bool | None = None, autocreate: bool = False) -> Callab
                         should_check_exist = True
                     else:
                         # Check instance attribute if available
-                        should_check_exist = getattr(self, 'must_exist', False)
+                        should_check_exist = getattr(self, "must_exist", False)
 
                 # Check existence if required (sync property)
                 if should_check_exist:
                     if not self.exists:
-                        raise FileNotFoundError(
-                            f"File not found: {self.mount_point}:{self.path}"
-                        )
+                        raise FileNotFoundError(f"File not found: {self.mount_point}:{self.path}")
 
                 # 2. Determine if we should create parent directories
                 # For write methods: check kwargs['parents'] > self.autocreate > decorator autocreate
                 method_name = method.__name__
                 if method_name in WRITE_METHODS:
                     # Priority: kwargs > instance attribute > decorator parameter
-                    should_create = kwargs.get('parents')
+                    should_create = kwargs.get("parents")
                     if should_create is None:
-                        should_create = getattr(self, 'autocreate', autocreate)
+                        should_create = getattr(self, "autocreate", autocreate)
 
                     parent_path = self._get_parent_path()
                     if parent_path:
                         if should_create:
                             # Create parent directory (sync)
-                            self.implementor.mkdir(
-                                parent_path,
-                                parents=True,
-                                exist_ok=True
-                            )
+                            self.implementor.mkdir(parent_path, parents=True, exist_ok=True)
                         else:
                             # Verify parent exists (some backends like memory auto-create)
                             if not self.implementor.exists(parent_path):

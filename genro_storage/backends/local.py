@@ -77,7 +77,7 @@ class LocalStorage(StorageBackend):
     """
 
     # Default protocol name for this backend
-    _default_protocol = 'local'
+    _default_protocol = "local"
 
     def __init__(self, path: Union[str, Callable[[], str]]):
         """Initialize LocalStorage backend.
@@ -107,7 +107,7 @@ class LocalStorage(StorageBackend):
             if not resolved.is_dir():
                 raise ValueError(f"Base path must be a directory: {path}")
 
-    def _resolve_base_path(self, requested_path: str = '') -> Path:
+    def _resolve_base_path(self, requested_path: str = "") -> Path:
         """Resolve base path (evaluating callable if necessary).
 
         Args:
@@ -125,6 +125,7 @@ class LocalStorage(StorageBackend):
         if callable(self._path_or_callable):
             # Try calling with path parameter first (new behavior)
             import inspect
+
             sig = inspect.signature(self._path_or_callable)
 
             if len(sig.parameters) > 0:
@@ -167,13 +168,13 @@ class LocalStorage(StorageBackend):
                     "label": "Local Path",
                     "required": True,
                     "placeholder": "/path/to/directory",
-                    "help": "Absolute path to local directory"
+                    "help": "Absolute path to local directory",
                 }
             ]
         }
 
         # Add platform-specific capability (symbolic_links only on Unix)
-        is_unix = sys.platform != 'win32'
+        is_unix = sys.platform != "win32"
         info["capabilities"]["symbolic_links"] = is_unix
 
         return info
@@ -196,6 +197,7 @@ class LocalStorage(StorageBackend):
         # Check if callable accepts parameters (routing mode)
         if callable(self._path_or_callable):
             import inspect
+
             sig = inspect.signature(self._path_or_callable)
             has_parameters = len(sig.parameters) > 0
         else:
@@ -204,11 +206,11 @@ class LocalStorage(StorageBackend):
         if has_parameters:
             # Routing mode: extract first component (prefix)
             # Example: 'sys/folder/file.txt' -> prefix='sys', rest='folder/file.txt'
-            if '/' in path:
-                prefix, rest = path.split('/', 1)
+            if "/" in path:
+                prefix, rest = path.split("/", 1)
             else:
                 prefix = path
-                rest = ''
+                rest = ""
 
             # Pass only the prefix to base_path resolution (for callable routing)
             base = self._resolve_base_path(prefix)
@@ -228,12 +230,11 @@ class LocalStorage(StorageBackend):
             full_path.relative_to(base)
         except ValueError:
             raise ValueError(
-                f"Path escapes base directory: {path} "
-                f"(resolved to {full_path}, base is {base})"
+                f"Path escapes base directory: {path} " f"(resolved to {full_path}, base is {base})"
             )
 
         return full_path
-    
+
     def exists(self, path: str) -> bool:
         """Check if file or directory exists."""
         return self._resolve_path(path).exists()
@@ -267,18 +268,18 @@ class LocalStorage(StorageBackend):
 
         return full_path.stat().st_mtime
 
-    @capability('read', 'write', 'append_mode', 'seek_support', 'atomic_operations')
-    def open(self, path: str, mode: str = 'rb') -> BinaryIO | TextIO:
+    @capability("read", "write", "append_mode", "seek_support", "atomic_operations")
+    def open(self, path: str, mode: str = "rb") -> BinaryIO | TextIO:
         """Open file and return file-like object."""
         full_path = self._resolve_path(path)
 
         # Ensure parent directory exists for write modes
-        if any(m in mode for m in ['w', 'a', 'x']):
+        if any(m in mode for m in ["w", "a", "x"]):
             full_path.parent.mkdir(parents=True, exist_ok=True)
 
         return open(full_path, mode)
 
-    @capability('read')
+    @capability("read")
     def read_bytes(self, path: str) -> bytes:
         """Read entire file as bytes."""
         full_path = self._resolve_path(path)
@@ -288,8 +289,8 @@ class LocalStorage(StorageBackend):
 
         return full_path.read_bytes()
 
-    @capability('read')
-    def read_text(self, path: str, encoding: str = 'utf-8') -> str:
+    @capability("read")
+    def read_text(self, path: str, encoding: str = "utf-8") -> str:
         """Read entire file as text."""
         full_path = self._resolve_path(path)
 
@@ -298,7 +299,7 @@ class LocalStorage(StorageBackend):
 
         return full_path.read_text(encoding=encoding)
 
-    @capability('write', 'atomic_operations')
+    @capability("write", "atomic_operations")
     def write_bytes(self, path: str, data: bytes) -> None:
         """Write bytes to file."""
         full_path = self._resolve_path(path)
@@ -308,8 +309,8 @@ class LocalStorage(StorageBackend):
 
         full_path.write_bytes(data)
 
-    @capability('write', 'atomic_operations')
-    def write_text(self, path: str, text: str, encoding: str = 'utf-8') -> None:
+    @capability("write", "atomic_operations")
+    def write_text(self, path: str, text: str, encoding: str = "utf-8") -> None:
         """Write text to file."""
         full_path = self._resolve_path(path)
 
@@ -318,7 +319,7 @@ class LocalStorage(StorageBackend):
 
         full_path.write_text(text, encoding=encoding)
 
-    @capability('delete')
+    @capability("delete")
     def delete(self, path: str, recursive: bool = False) -> None:
         """Delete file or directory."""
         full_path = self._resolve_path(path)
@@ -341,7 +342,7 @@ class LocalStorage(StorageBackend):
                     )
                 full_path.rmdir()
 
-    @capability('list_dir')
+    @capability("list_dir")
     def list_dir(self, path: str) -> list[str]:
         """List directory contents."""
         full_path = self._resolve_path(path)
@@ -354,7 +355,7 @@ class LocalStorage(StorageBackend):
 
         return [item.name for item in full_path.iterdir()]
 
-    @capability('mkdir')
+    @capability("mkdir")
     def mkdir(self, path: str, parents: bool = False, exist_ok: bool = False) -> None:
         """Create directory."""
         full_path = self._resolve_path(path)
@@ -364,7 +365,7 @@ class LocalStorage(StorageBackend):
 
         full_path.mkdir(parents=parents, exist_ok=exist_ok)
 
-    @capability('copy_optimization')
+    @capability("copy_optimization")
     def copy(self, src_path: str, dest_backend: StorageBackend, dest_path: str) -> None:
         """Copy file/directory to another backend.
 
@@ -397,7 +398,7 @@ class LocalStorage(StorageBackend):
                 dest_item_path = f"{dest_path}/{item.name}" if dest_path else item.name
                 self.copy(item_rel_path, dest_backend, dest_item_path)
 
-    def local_path(self, path: str, mode: str = 'r'):
+    def local_path(self, path: str, mode: str = "r"):
         """Get local filesystem path (returns the actual path).
 
         For local storage, this simply returns the actual filesystem path
@@ -422,7 +423,7 @@ class LocalStorage(StorageBackend):
             yield str(full_path)
 
         return _local_path()
-    
+
     def __repr__(self) -> str:
         """String representation."""
         return f"LocalStorage('{self.base_path}')"

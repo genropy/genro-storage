@@ -46,39 +46,39 @@ def temp_dir():
 @pytest.fixture(scope="session")
 def minio_config():
     """MinIO connection configuration.
-    
+
     Returns:
         dict: Configuration for connecting to MinIO
     """
     return {
-        'endpoint_url': os.getenv('MINIO_ENDPOINT', 'http://localhost:9000'),
-        'aws_access_key_id': os.getenv('MINIO_ACCESS_KEY', 'minioadmin'),
-        'aws_secret_access_key': os.getenv('MINIO_SECRET_KEY', 'minioadmin'),
-        'region_name': 'us-east-1'  # MinIO doesn't care, but boto3 requires it
+        "endpoint_url": os.getenv("MINIO_ENDPOINT", "http://localhost:9000"),
+        "aws_access_key_id": os.getenv("MINIO_ACCESS_KEY", "minioadmin"),
+        "aws_secret_access_key": os.getenv("MINIO_SECRET_KEY", "minioadmin"),
+        "region_name": "us-east-1",  # MinIO doesn't care, but boto3 requires it
     }
 
 
 @pytest.fixture(scope="session")
 def minio_client(minio_config):
     """Create boto3 S3 client connected to MinIO.
-    
+
     Args:
         minio_config: MinIO configuration fixture
-    
+
     Returns:
         boto3.client: S3 client connected to MinIO
-    
+
     Raises:
         pytest.skip: If MinIO is not available
     """
-    client = boto3.client('s3', **minio_config)
-    
+    client = boto3.client("s3", **minio_config)
+
     # Check if MinIO is available
     try:
         client.list_buckets()
     except Exception as e:
         pytest.skip(f"MinIO not available: {e}")
-    
+
     return client
 
 
@@ -101,7 +101,7 @@ def minio_bucket(minio_client):
     try:
         minio_client.create_bucket(Bucket=bucket_name)
     except ClientError as e:
-        if e.response['Error']['Code'] != 'BucketAlreadyExists':
+        if e.response["Error"]["Code"] != "BucketAlreadyExists":
             raise
 
     yield bucket_name
@@ -110,13 +110,10 @@ def minio_bucket(minio_client):
     try:
         # List and delete all objects
         response = minio_client.list_objects_v2(Bucket=bucket_name)
-        if 'Contents' in response:
-            objects = [{'Key': obj['Key']} for obj in response['Contents']]
+        if "Contents" in response:
+            objects = [{"Key": obj["Key"]} for obj in response["Contents"]]
             if objects:
-                minio_client.delete_objects(
-                    Bucket=bucket_name,
-                    Delete={'Objects': objects}
-                )
+                minio_client.delete_objects(Bucket=bucket_name, Delete={"Objects": objects})
 
         # Delete bucket
         minio_client.delete_bucket(Bucket=bucket_name)
@@ -143,8 +140,7 @@ def minio_versioned_bucket(minio_client):
 
     # Enable versioning
     minio_client.put_bucket_versioning(
-        Bucket=bucket_name,
-        VersioningConfiguration={'Status': 'Enabled'}
+        Bucket=bucket_name, VersioningConfiguration={"Status": "Enabled"}
     )
 
     yield bucket_name
@@ -152,30 +148,26 @@ def minio_versioned_bucket(minio_client):
     # Cleanup: delete all versions then bucket
     try:
         # List and delete all object versions
-        paginator = minio_client.get_paginator('list_object_versions')
+        paginator = minio_client.get_paginator("list_object_versions")
         for page in paginator.paginate(Bucket=bucket_name):
             # Delete versions
-            if 'Versions' in page:
+            if "Versions" in page:
                 versions = [
-                    {'Key': v['Key'], 'VersionId': v['VersionId']}
-                    for v in page['Versions']
+                    {"Key": v["Key"], "VersionId": v["VersionId"]} for v in page["Versions"]
                 ]
                 if versions:
                     minio_client.delete_objects(
-                        Bucket=bucket_name,
-                        Delete={'Objects': versions, 'Quiet': True}
+                        Bucket=bucket_name, Delete={"Objects": versions, "Quiet": True}
                     )
 
             # Delete delete markers
-            if 'DeleteMarkers' in page:
+            if "DeleteMarkers" in page:
                 markers = [
-                    {'Key': m['Key'], 'VersionId': m['VersionId']}
-                    for m in page['DeleteMarkers']
+                    {"Key": m["Key"], "VersionId": m["VersionId"]} for m in page["DeleteMarkers"]
                 ]
                 if markers:
                     minio_client.delete_objects(
-                        Bucket=bucket_name,
-                        Delete={'Objects': markers, 'Quiet': True}
+                        Bucket=bucket_name, Delete={"Objects": markers, "Quiet": True}
                     )
 
         # Delete bucket
@@ -187,64 +179,65 @@ def minio_versioned_bucket(minio_client):
 @pytest.fixture
 def s3_storage_config(minio_bucket, minio_config):
     """Storage configuration for S3 backend using MinIO.
-    
+
     Args:
         minio_bucket: MinIO bucket fixture
         minio_config: MinIO configuration fixture
-    
+
     Returns:
         dict: Configuration dict for StorageManager
     """
     return {
-        'name': 'test-s3',
-        'type': 's3',
-        'bucket': minio_bucket,
-        'endpoint_url': minio_config['endpoint_url'],
-        'key': minio_config['aws_access_key_id'],
-        'secret': minio_config['aws_secret_access_key'],
+        "name": "test-s3",
+        "type": "s3",
+        "bucket": minio_bucket,
+        "endpoint_url": minio_config["endpoint_url"],
+        "key": minio_config["aws_access_key_id"],
+        "secret": minio_config["aws_secret_access_key"],
     }
 
 
 @pytest.fixture
 def storage_manager():
     """Create a fresh StorageManager for each test.
-    
+
     Returns:
         StorageManager: Empty storage manager
     """
     from genro_storage import StorageManager
+
     return StorageManager()
 
 
 @pytest.fixture
 def s3_fs(minio_config):
     """Create fsspec S3 filesystem connected to MinIO.
-    
+
     Args:
         minio_config: MinIO configuration fixture
-    
+
     Returns:
         S3FileSystem: fsspec S3 filesystem for MinIO
     """
     import fsspec
-    
+
     try:
         fs = fsspec.filesystem(
-            's3',
-            key=minio_config['aws_access_key_id'],
-            secret=minio_config['aws_secret_access_key'],
-            client_kwargs={'endpoint_url': minio_config['endpoint_url']}
+            "s3",
+            key=minio_config["aws_access_key_id"],
+            secret=minio_config["aws_secret_access_key"],
+            client_kwargs={"endpoint_url": minio_config["endpoint_url"]},
         )
-        
+
         # Test connection
-        fs.ls('/')
-        
+        fs.ls("/")
+
         # Create test-bucket if it doesn't exist
         try:
-            fs.mkdir('test-bucket')
+            fs.mkdir("test-bucket")
         except:
             pass  # Bucket may already exist
-        
+
         return fs
     except Exception as e:
         pytest.skip(f"MinIO not available: {e}")
@@ -253,16 +246,16 @@ def s3_fs(minio_config):
 @pytest.fixture
 def storage_with_s3(s3_storage_config):
     """Create StorageManager configured with MinIO S3 backend.
-    
+
     Args:
         s3_storage_config: S3 storage configuration fixture
-    
+
     Returns:
         StorageManager: Configured storage manager with S3 backend
     """
     from genro_storage import StorageManager
-    
+
     storage = StorageManager()
     storage.configure([s3_storage_config])
-    
+
     return storage

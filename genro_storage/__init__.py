@@ -59,7 +59,7 @@ For more information, see the documentation at:
 https://genro-storage.readthedocs.io
 """
 
-__version__ = '0.4.0'
+__version__ = "0.5.0"
 
 from .manager import StorageManager
 from .node import StorageNode, SkipStrategy
@@ -74,6 +74,7 @@ from .api_introspection import get_api_structure, get_api_structure_multi
 # Async support is optional (requires asyncer)
 try:
     from .asyncer_wrapper import AsyncStorageManager, AsyncStorageNode
+
     _ASYNC_AVAILABLE = True
 except ImportError:
     _ASYNC_AVAILABLE = False
@@ -82,24 +83,20 @@ except ImportError:
 
 __all__ = [
     # Version
-    '__version__',
-
+    "__version__",
     # Main classes (sync)
-    'StorageManager',
-    'StorageNode',
-    'SkipStrategy',
-
+    "StorageManager",
+    "StorageNode",
+    "SkipStrategy",
     # Async classes (optional)
-    'AsyncStorageManager',
-    'AsyncStorageNode',
-
+    "AsyncStorageManager",
+    "AsyncStorageNode",
     # Exceptions
-    'StorageError',
-    'StorageNotFoundError',
-    'StoragePermissionError',
-    'StorageConfigError',
-
+    "StorageError",
+    "StorageNotFoundError",
+    "StoragePermissionError",
+    "StorageConfigError",
     # API Introspection
-    'get_api_structure',
-    'get_api_structure_multi',
+    "get_api_structure",
+    "get_api_structure_multi",
 ]

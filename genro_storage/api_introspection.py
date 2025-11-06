@@ -27,10 +27,7 @@ from typing import Any, get_type_hints, get_origin, get_args
 
 
 def get_api_structure(
-    target: type | object,
-    *,
-    eager: bool = True,
-    mode: str = "json"
+    target: type | object, *, eager: bool = True, mode: str = "json"
 ) -> str | dict:
     """Extract API structure from an @apiready decorated class.
 
@@ -52,18 +49,14 @@ def get_api_structure(
         target = target.__class__
 
     # Check if class is decorated with @apiready
-    if not hasattr(target, '_api_base_path'):
+    if not hasattr(target, "_api_base_path"):
         raise ValueError(
             f"Class {target.__name__} is not decorated with @apiready. "
             "Only @apiready decorated classes can be introspected."
         )
 
     # Collect structure
-    structure = {
-        "class_name": target.__name__,
-        "base_path": target._api_base_path,
-        "endpoints": []
-    }
+    structure = {"class_name": target.__name__, "base_path": target._api_base_path, "endpoints": []}
 
     # Add class docstring if available
     if target.__doc__:
@@ -72,7 +65,7 @@ def get_api_structure(
     # Iterate through class members to find decorated methods
     for name, method in inspect.getmembers(target, inspect.isfunction):
         # Check if method has API metadata
-        if not hasattr(method, '_api_metadata'):
+        if not hasattr(method, "_api_metadata"):
             continue
 
         metadata = method._api_metadata
@@ -92,7 +85,7 @@ def get_api_structure(
             "method": metadata["http_method"],
             "function_name": name,
             "parameters": parameters,
-            "return_type": return_info
+            "return_type": return_info,
         }
 
         # Add docstring if available
@@ -110,11 +103,11 @@ def get_api_structure(
     elif mode.lower() == "yaml":
         try:
             import yaml
+
             return yaml.dump(structure, default_flow_style=False, sort_keys=False)
         except ImportError:
             raise ImportError(
-                "PyYAML is required for YAML output. "
-                "Install it with: pip install pyyaml"
+                "PyYAML is required for YAML output. " "Install it with: pip install pyyaml"
             )
     elif mode.lower() in ("markdown", "md"):
         return _format_as_markdown(structure)
@@ -184,7 +177,7 @@ def _extract_type_info(type_hint: Any) -> dict[str, Any]:
 
     if origin is not None:
         # Handle typing.Annotated
-        if hasattr(origin, '__name__') and origin.__name__ == 'Annotated':
+        if hasattr(origin, "__name__") and origin.__name__ == "Annotated":
             args = get_args(type_hint)
             if args:
                 # First arg is the actual type
@@ -200,14 +193,14 @@ def _extract_type_info(type_hint: Any) -> dict[str, Any]:
                 return info
 
         # Handle Union types (including | syntax in Python 3.10+)
-        if origin is type(None) or (hasattr(origin, '__name__') and 'Union' in origin.__name__):
+        if origin is type(None) or (hasattr(origin, "__name__") and "Union" in origin.__name__):
             args = get_args(type_hint)
             if args:
                 type_names = []
                 for arg in args:
                     if arg is type(None):
                         type_names.append("None")
-                    elif hasattr(arg, '__name__'):
+                    elif hasattr(arg, "__name__"):
                         type_names.append(arg.__name__)
                     else:
                         type_names.append(str(arg))
@@ -215,12 +208,12 @@ def _extract_type_info(type_hint: Any) -> dict[str, Any]:
                 return info
 
         # Handle generic types (list, dict, etc.)
-        if hasattr(origin, '__name__'):
+        if hasattr(origin, "__name__"):
             args = get_args(type_hint)
             if args:
                 arg_names = []
                 for arg in args:
-                    if hasattr(arg, '__name__'):
+                    if hasattr(arg, "__name__"):
                         arg_names.append(arg.__name__)
                     else:
                         arg_names.append(str(arg))
@@ -230,7 +223,7 @@ def _extract_type_info(type_hint: Any) -> dict[str, Any]:
             return info
 
     # Handle simple types with __name__
-    if hasattr(type_hint, '__name__'):
+    if hasattr(type_hint, "__name__"):
         info["type"] = type_hint.__name__
         return info
 
@@ -240,9 +233,7 @@ def _extract_type_info(type_hint: Any) -> dict[str, Any]:
 
 
 def get_api_structure_multi(
-    *targets: type | object,
-    eager: bool = True,
-    mode: str = "json"
+    *targets: type | object, eager: bool = True, mode: str = "json"
 ) -> str | list[dict]:
     """Extract API structure from multiple @apiready decorated classes.
 
@@ -274,11 +265,11 @@ def get_api_structure_multi(
     elif mode.lower() == "yaml":
         try:
             import yaml
+
             return yaml.dump(structures, default_flow_style=False, sort_keys=False)
         except ImportError:
             raise ImportError(
-                "PyYAML is required for YAML output. "
-                "Install it with: pip install pyyaml"
+                "PyYAML is required for YAML output. " "Install it with: pip install pyyaml"
             )
     else:
         # Return raw list if mode not recognized
@@ -317,9 +308,9 @@ def _format_as_html(structure: dict) -> str:
 
     # Endpoints
     for endpoint in structure["endpoints"]:
-        method = endpoint['method']
-        path = endpoint['path']
-        func = endpoint['function_name']
+        method = endpoint["method"]
+        path = endpoint["path"]
+        func = endpoint["function_name"]
         return_type = endpoint.get("return_type", {})
         return_type_str = return_type.get("type", "None")
 
@@ -349,7 +340,7 @@ def _format_as_html(structure: dict) -> str:
 
             lines.append(f'  <div class="params">Parameters: {", ".join(param_list)}</div>')
 
-        lines.append('</div>')
+        lines.append("</div>")
 
     # HTML footer
     lines.append("</body>")
@@ -374,9 +365,9 @@ def _format_as_markdown(structure: dict) -> str:
     lines.append("")
 
     for endpoint in structure["endpoints"]:
-        method = endpoint['method']
-        path = endpoint['path']
-        func = endpoint['function_name']
+        method = endpoint["method"]
+        path = endpoint["path"]
+        func = endpoint["function_name"]
         return_type = endpoint.get("return_type", {})
         return_type_str = return_type.get("type", "None")
 
@@ -405,9 +396,7 @@ def _format_as_markdown(structure: dict) -> str:
 
         # Use HTML for tight control: name, command, params (tight), then space
         lines.append(
-            f"**{func}**<br>"
-            f"&nbsp;&nbsp;{method} {path} -> {return_type_str}"
-            f"{param_line}"
+            f"**{func}**<br>" f"&nbsp;&nbsp;{method} {path} -> {return_type_str}" f"{param_line}"
         )
         lines.append("")
 

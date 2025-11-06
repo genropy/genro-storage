@@ -20,7 +20,7 @@ class TestBackendCapabilitiesComplete:
             version_access=True,
             metadata=True,
             presigned_urls=True,
-            public_urls=False
+            public_urls=False,
         )
 
         caps2 = BackendCapabilities(
@@ -34,7 +34,7 @@ class TestBackendCapabilitiesComplete:
             version_access=True,
             metadata=True,
             presigned_urls=True,
-            public_urls=False
+            public_urls=False,
         )
 
         assert caps1 == caps2
@@ -73,12 +73,7 @@ class TestBackendCapabilitiesComplete:
     def test_repr(self):
         """Test __repr__ returns valid representation."""
         caps = BackendCapabilities(
-            read=True,
-            write=True,
-            delete=False,
-            mkdir=True,
-            readonly=False,
-            versioning=True
+            read=True, write=True, delete=False, mkdir=True, readonly=False, versioning=True
         )
 
         repr_str = repr(caps)
@@ -87,10 +82,10 @@ class TestBackendCapabilitiesComplete:
         assert isinstance(repr_str, str)
 
         # Should contain class name
-        assert 'BackendCapabilities' in repr_str
+        assert "BackendCapabilities" in repr_str
 
         # Should contain some capability info
-        assert 'read=' in repr_str or 'write=' in repr_str
+        assert "read=" in repr_str or "write=" in repr_str
 
     def test_str(self):
         """Test __str__ returns human-readable string."""
@@ -110,10 +105,7 @@ class TestBackendCapabilitiesComplete:
         caps2 = BackendCapabilities(read=True, write=False)
 
         # Should be usable as dict keys
-        capability_dict = {
-            caps1: "read-write",
-            caps2: "read-only"
-        }
+        capability_dict = {caps1: "read-write", caps2: "read-only"}
 
         assert capability_dict[caps1] == "read-write"
         assert capability_dict[caps2] == "read-only"
@@ -185,11 +177,7 @@ class TestBackendCapabilitiesComplete:
 
     def test_str_with_multiple_features(self):
         """Test __str__ with multiple features."""
-        caps = BackendCapabilities(
-            versioning=True,
-            metadata=True,
-            readonly=True
-        )
+        caps = BackendCapabilities(versioning=True, metadata=True, readonly=True)
         result = str(caps)
         assert "versioning" in result
         assert "metadata" in result

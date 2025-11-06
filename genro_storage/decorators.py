@@ -31,6 +31,7 @@ def apiready(obj_or_path=None, **kwargs):
         class MyClass:
             pass
     """
+
     def decorator(obj):
         return obj
 

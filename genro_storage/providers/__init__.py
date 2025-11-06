@@ -27,9 +27,9 @@ from .fsspec_provider import FsspecProvider
 from .custom_provider import CustomProvider
 
 __all__ = [
-    'AsyncProvider',
-    'AsyncImplementor',
-    'ProviderRegistry',
-    'FsspecProvider',
-    'CustomProvider',
+    "AsyncProvider",
+    "AsyncImplementor",
+    "ProviderRegistry",
+    "FsspecProvider",
+    "CustomProvider",
 ]

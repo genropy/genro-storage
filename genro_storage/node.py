@@ -42,41 +42,42 @@ class SkipStrategy(str, Enum):
         HASH: Skip if destination exists and has same content/MD5 (accurate)
         CUSTOM: Use custom skip function provided by user
     """
-    NEVER = 'never'
-    EXISTS = 'exists'
-    SIZE = 'size'
-    HASH = 'hash'
-    CUSTOM = 'custom'
+
+    NEVER = "never"
+    EXISTS = "exists"
+    SIZE = "size"
+    HASH = "hash"
+    CUSTOM = "custom"
 
 
 @apiready(path="/storage/nodes")
 class StorageNode:
     """Represents a file or directory in a storage backend.
-    
+
     StorageNode provides a unified interface for file operations across
     different storage backends (local, S3, GCS, Azure, HTTP, etc.).
-    
+
     Note:
-        Users should not instantiate StorageNode directly. Use 
+        Users should not instantiate StorageNode directly. Use
         ``StorageManager.node()`` instead.
-    
+
     The node can represent either a file or a directory. Use the properties
     ``isfile`` and ``isdir`` to determine the type.
-    
+
     Examples:
         >>> # Get a node via StorageManager
         >>> node = storage.node('home:documents/report.pdf')
-        >>> 
+        >>>
         >>> # Check if it exists
         >>> if node.exists:
         ...     print(f"File size: {node.size} bytes")
-        >>> 
+        >>>
         >>> # Read content
         >>> content = node.read_text()
-        >>> 
+        >>>
         >>> # Write content
         >>> node.write_text("Hello World")
-    
+
     Attributes:
         fullpath: Full path including mount point (e.g., "home:documents/file.txt")
         exists: True if file or directory exists
@@ -89,8 +90,14 @@ class StorageNode:
         suffix: File extension including dot
         parent: Parent directory as StorageNode
     """
-    
-    def __init__(self, manager: StorageManager, mount_name: str | None, path: str | None, version: int | str | None = None):
+
+    def __init__(
+        self,
+        manager: StorageManager,
+        mount_name: str | None,
+        path: str | None,
+        version: int | str | None = None,
+    ):
         """Initialize a StorageNode.
 
         Args:
@@ -107,7 +114,7 @@ class StorageNode:
         self._mount_name = mount_name
         self._path = path
         self._version = version  # None = current version, int/str = specific version
-        self._posix_path = PurePosixPath(path) if path else PurePosixPath('.')
+        self._posix_path = PurePosixPath(path) if path else PurePosixPath(".")
 
         # Virtual node support (set by iternode()/diffnode())
         self._is_virtual = False
@@ -116,9 +123,9 @@ class StorageNode:
 
         # Get backend from manager (None for virtual nodes)
         self._backend = manager._mounts[mount_name] if mount_name else None
-    
+
     # ==================== Properties ====================
-    
+
     @property
     def fullpath(self) -> str:
         """Full path including mount point.
@@ -172,114 +179,114 @@ class StorageNode:
         if self._is_virtual:
             return False
         return self._backend.exists(self._path)
-    
+
     @property
     def isfile(self) -> bool:
         """True if node points to a file.
-        
+
         Returns:
             bool: True if this node is a file, False if directory or doesn't exist
-        
+
         Examples:
             >>> if node.isfile:
             ...     data = node._read_bytes()
         """
         return self._backend.is_file(self._path)
-    
+
     @property
     def isdir(self) -> bool:
         """True if node points to a directory.
-        
+
         Returns:
             bool: True if this node is a directory, False if file or doesn't exist
-        
+
         Examples:
             >>> if node.isdir:
             ...     for child in node.children():
             ...         print(child.basename)
         """
         return self._backend.is_dir(self._path)
-    
+
     @property
     def size(self) -> int:
         """File size in bytes.
-        
+
         Returns:
             int: Size of the file in bytes
-        
+
         Raises:
             FileNotFoundError: If file doesn't exist
             ValueError: If node is a directory (directories don't have size)
-        
+
         Examples:
             >>> print(f"File size: {node.size} bytes")
             >>> print(f"File size: {node.size / 1024:.1f} KB")
         """
         return self._backend.size(self._path)
-    
+
     @property
     def mtime(self) -> float:
         """Last modification time as Unix timestamp.
-        
+
         Returns:
             float: Unix timestamp of last modification time
-        
+
         Examples:
             >>> from datetime import datetime
             >>> mod_time = datetime.fromtimestamp(node.mtime)
             >>> print(f"Modified: {mod_time}")
         """
         return self._backend.mtime(self._path)
-    
+
     @property
     def basename(self) -> str:
         """Filename with extension.
-        
+
         Returns:
             str: The filename including extension
-        
+
         Examples:
             >>> node = storage.node('home:documents/report.pdf')
             >>> print(node.basename)
             'report.pdf'
         """
         return self._posix_path.name
-    
+
     @property
     def stem(self) -> str:
         """Filename without extension.
-        
+
         Returns:
             str: The filename without extension
-        
+
         Examples:
             >>> node = storage.node('home:documents/report.pdf')
             >>> print(node.stem)
             'report'
         """
         return self._posix_path.stem
-    
+
     @property
     def suffix(self) -> str:
         """File extension including dot.
-        
+
         Returns:
             str: The file extension including the leading dot (e.g., ".pdf")
-        
+
         Examples:
             >>> node = storage.node('home:documents/report.pdf')
             >>> print(node.suffix)
             '.pdf'
         """
         return self._posix_path.suffix
-    
+
     @property
     def parent(self) -> StorageNode:
         """Parent directory as StorageNode.
-        
+
         Returns:
             StorageNode: A new StorageNode pointing to the parent directory
-        
+
         Examples:
             >>> node = storage.node('home:documents/reports/q4.pdf')
             >>> parent = node.parent
@@ -287,8 +294,8 @@ class StorageNode:
             'home:documents/reports'
         """
         parent_path = str(self._posix_path.parent)
-        if parent_path == '.':
-            parent_path = ''
+        if parent_path == ".":
+            parent_path = ""
         return self._create_node(self._manager, self._mount_name, parent_path)
 
     @property
@@ -338,7 +345,7 @@ class StorageNode:
             >>> if node.suffix == '.pdf':
             ...     process_pdf(node)
         """
-        return self.suffix.lstrip('.') if self.suffix else ''
+        return self.suffix.lstrip(".") if self.suffix else ""
 
     def splitext(self) -> tuple[str, str]:
         """Split path into filename and extension.
@@ -366,7 +373,7 @@ class StorageNode:
         if self.suffix:
             name = self._path.rsplit(self.suffix, 1)[0]
             return name, self.suffix
-        return self._path, ''
+        return self._path, ""
 
     @property
     def ext_attributes(self) -> tuple[float | None, int | None, bool]:
@@ -426,26 +433,27 @@ class StorageNode:
         # Check if it's a file (not a directory)
         if not self.isfile:
             raise ValueError(f"Cannot compute hash of directory: {self.fullpath}")
-        
+
         # Try to get hash from backend metadata first (S3 ETag, etc.)
         metadata_hash = self._backend.get_hash(self._path)
         if metadata_hash:
             return metadata_hash.lower()
-        
+
         # Fallback: compute MD5 by reading file in blocks
         import hashlib
+
         hasher = hashlib.md5()
-        
+
         # Use 64KB blocks like Genropy legacy code
         BLOCKSIZE = 65536
-        
-        with self.open('rb') as f:
+
+        with self.open("rb") as f:
             while True:
                 chunk = f.read(BLOCKSIZE)
                 if not chunk:
                     break
                 hasher.update(chunk)
-        
+
         return hasher.hexdigest()
 
     @property
@@ -472,8 +480,9 @@ class StorageNode:
             >>> response.headers['Content-Type'] = node.mimetype
         """
         import mimetypes
+
         mime, _ = mimetypes.guess_type(self.path)
-        return mime or 'application/octet-stream'
+        return mime or "application/octet-stream"
 
     @property
     def capabilities(self):
@@ -499,19 +508,16 @@ class StorageNode:
         # If node has a fixed version, it's a snapshot and loses versioning capabilities
         if self._version is not None:
             from dataclasses import replace
-            caps = replace(caps,
-                           versioning=False,
-                           version_listing=False,
-                           version_access=False)
+
+            caps = replace(caps, versioning=False, version_listing=False, version_access=False)
 
         return caps
 
     # ==================== File I/O Methods ====================
 
-    def open(self,
-             mode: str = 'r',
-             version: int | str | None = None,
-             as_of: datetime | None = None) -> BinaryIO | TextIO:
+    def open(
+        self, mode: str = "r", version: int | str | None = None, as_of: datetime | None = None
+    ) -> BinaryIO | TextIO:
         """Open file with optional version control support.
 
         Args:
@@ -561,7 +567,7 @@ class StorageNode:
             )
 
         # If node has a fixed version, it's read-only
-        if self._version is not None and mode in ('w', 'wb', 'a', 'ab'):
+        if self._version is not None and mode in ("w", "wb", "a", "ab"):
             raise ValueError(
                 "Cannot write to versioned snapshot. "
                 "Create a new node without version parameter to write."
@@ -588,19 +594,17 @@ class StorageNode:
 
         # Accesso per data
         if as_of is not None:
-            if 'w' in mode or 'a' in mode or '+' in mode:
+            if "w" in mode or "a" in mode or "+" in mode:
                 raise ValueError("Cannot write to historical versions (read-only)")
 
             version_id = self._resolve_version_at_date(as_of)
             if not version_id:
-                raise FileNotFoundError(
-                    f"No version found before {as_of} for {self.fullpath}"
-                )
+                raise FileNotFoundError(f"No version found before {as_of} for {self.fullpath}")
             return self._backend.open_version(self._path, version_id, mode)
 
         # Accesso per version
         if effective_version is not None:
-            if 'w' in mode or 'a' in mode or '+' in mode:
+            if "w" in mode or "a" in mode or "+" in mode:
                 raise ValueError("Cannot write to historical versions (read-only)")
 
             # Se è un intero, risolvi l'indice
@@ -623,24 +627,24 @@ class StorageNode:
         """
         # Virtual node: materialize content
         if self._is_virtual:
-            if self._virtual_type == 'iter':
+            if self._virtual_type == "iter":
                 # Concatenate all sources as bytes
-                return b''.join(node._read_bytes() for node in self._sources)
-            elif self._virtual_type == 'diff':
+                return b"".join(node._read_bytes() for node in self._sources)
+            elif self._virtual_type == "diff":
                 # Diff as bytes (encode UTF-8)
-                return self._read_text().encode('utf-8')
+                return self._read_text().encode("utf-8")
             else:
                 raise ValueError(f"Unknown virtual type: {self._virtual_type}")
 
         # Versioned node
         if self._version is not None:
-            with self.open(mode='rb') as f:
+            with self.open(mode="rb") as f:
                 return f.read()
 
         # Normal node
         return self._backend.read_bytes(self._path)
 
-    def _read_text(self, encoding: str = 'utf-8') -> str:
+    def _read_text(self, encoding: str = "utf-8") -> str:
         """Internal method: Read entire file as string.
 
         If node has a fixed version, reads that version.
@@ -648,10 +652,10 @@ class StorageNode:
         """
         # Virtual node: materialize content
         if self._is_virtual:
-            if self._virtual_type == 'iter':
+            if self._virtual_type == "iter":
                 # Concatenate all sources as text
-                return ''.join(node._read_text(encoding) for node in self._sources)
-            elif self._virtual_type == 'diff':
+                return "".join(node._read_text(encoding) for node in self._sources)
+            elif self._virtual_type == "diff":
                 # Generate unified diff
                 if len(self._sources) != 2:
                     raise ValueError("diffnode requires exactly 2 nodes")
@@ -663,7 +667,7 @@ class StorageNode:
                 bytes2 = node2._read_bytes()
 
                 # Check for null bytes (binary indicator)
-                if b'\x00' in bytes1 or b'\x00' in bytes2:
+                if b"\x00" in bytes1 or b"\x00" in bytes2:
                     raise ValueError("Cannot diff binary files")
 
                 # Try to decode
@@ -675,20 +679,22 @@ class StorageNode:
 
                 # Generate unified diff
                 import difflib
+
                 lines1 = text1.splitlines(keepends=True)
                 lines2 = text2.splitlines(keepends=True)
                 diff_lines = difflib.unified_diff(
-                    lines1, lines2,
-                    fromfile=node1.fullpath or 'file1',
-                    tofile=node2.fullpath or 'file2'
+                    lines1,
+                    lines2,
+                    fromfile=node1.fullpath or "file1",
+                    tofile=node2.fullpath or "file2",
                 )
-                return ''.join(diff_lines)
+                return "".join(diff_lines)
             else:
                 raise ValueError(f"Unknown virtual type: {self._virtual_type}")
 
         # Versioned node
         if self._version is not None:
-            with self.open(mode='r') as f:
+            with self.open(mode="r") as f:
                 content = f.read()
             # If we got bytes, decode them
             if isinstance(content, bytes):
@@ -701,8 +707,8 @@ class StorageNode:
     @apiready
     def read(
         self,
-        mode: Annotated[str, "Read mode: 'r' for text, 'rb' for binary"] = 'r',
-        encoding: Annotated[str, "Text encoding (only for text mode)"] = 'utf-8'
+        mode: Annotated[str, "Read mode: 'r' for text, 'rb' for binary"] = "r",
+        encoding: Annotated[str, "Text encoding (only for text mode)"] = "utf-8",
     ) -> Annotated[str | bytes, "File content as text or bytes"]:
         """Read file content in text or binary mode.
 
@@ -725,9 +731,9 @@ class StorageNode:
             >>> # Read as binary
             >>> data = node.read(mode='rb')
         """
-        if mode == 'r':
+        if mode == "r":
             return self._read_text(encoding)
-        elif mode == 'rb':
+        elif mode == "rb":
             return self._read_bytes()
         else:
             raise ValueError(f"Invalid read mode '{mode}'. Use 'r' for text or 'rb' for binary")
@@ -764,8 +770,7 @@ class StorageNode:
         # Cannot write to virtual nodes
         if self._is_virtual:
             raise ValueError(
-                "Cannot write to virtual node (no path). "
-                "Virtual nodes are read-only."
+                "Cannot write to virtual node (no path). " "Virtual nodes are read-only."
             )
 
         # Cannot write to versioned snapshots
@@ -787,8 +792,8 @@ class StorageNode:
                 versions = self.versions
                 if versions:
                     # Find latest version
-                    latest = next((v for v in versions if v.get('is_latest')), versions[0])
-                    current_etag = latest.get('etag', '')
+                    latest = next((v for v in versions if v.get("is_latest")), versions[0])
+                    current_etag = latest.get("etag", "")
 
                     # Compare (S3 ETag is MD5 for simple uploads)
                     if current_etag and new_md5 == current_etag:
@@ -807,11 +812,13 @@ class StorageNode:
         # If backend returns a new path (e.g., base64), update it
         if result is not None:
             self._path = result
-            self._posix_path = PurePosixPath(result) if result else PurePosixPath('.')
+            self._posix_path = PurePosixPath(result) if result else PurePosixPath(".")
 
         return True
 
-    def _write_text(self, text: str, encoding: str = 'utf-8', skip_if_unchanged: bool = False) -> bool:
+    def _write_text(
+        self, text: str, encoding: str = "utf-8", skip_if_unchanged: bool = False
+    ) -> bool:
         """Internal method: Write string to file.
 
         Args:
@@ -842,9 +849,9 @@ class StorageNode:
     def write(
         self,
         data: Annotated[str | bytes, "Data to write (str for text, bytes for binary)"],
-        mode: Annotated[str, "Write mode: 'w' for text, 'wb' for binary"] = 'w',
-        encoding: Annotated[str, "Text encoding (only for text mode)"] = 'utf-8',
-        skip_if_unchanged: Annotated[bool, "Skip writing if content is identical"] = False
+        mode: Annotated[str, "Write mode: 'w' for text, 'wb' for binary"] = "w",
+        encoding: Annotated[str, "Text encoding (only for text mode)"] = "utf-8",
+        skip_if_unchanged: Annotated[bool, "Skip writing if content is identical"] = False,
     ) -> Annotated[bool, "True if written, False if skipped"]:
         """Write data to file in text or binary mode.
 
@@ -872,11 +879,11 @@ class StorageNode:
             >>> # Skip if unchanged
             >>> written = node.write('content', skip_if_unchanged=True)
         """
-        if mode == 'w':
+        if mode == "w":
             if not isinstance(data, str):
                 raise TypeError(f"Text mode 'w' requires str, got {type(data).__name__}")
             return self._write_text(data, encoding, skip_if_unchanged)
-        elif mode == 'wb':
+        elif mode == "wb":
             if not isinstance(data, bytes):
                 raise TypeError(f"Binary mode 'wb' requires bytes, got {type(data).__name__}")
             return self._write_bytes(data, skip_if_unchanged)
@@ -886,7 +893,7 @@ class StorageNode:
     # ==================== Convenience Methods (Pythonic API) ====================
 
     @apiready
-    def read_text(self, encoding: str = 'utf-8') -> str:
+    def read_text(self, encoding: str = "utf-8") -> str:
         """Read file content as text.
 
         Convenience method equivalent to read(mode='r', encoding=encoding).
@@ -905,7 +912,7 @@ class StorageNode:
             >>> content = node.read_text()
             >>> content = node.read_text(encoding='latin-1')
         """
-        return self.read(mode='r', encoding=encoding)
+        return self.read(mode="r", encoding=encoding)
 
     @apiready
     def read_bytes(self) -> bytes:
@@ -923,11 +930,12 @@ class StorageNode:
         Examples:
             >>> data = node.read_bytes()
         """
-        return self.read(mode='rb')
+        return self.read(mode="rb")
 
     @apiready
-    def write_text(self, text: str, encoding: str = 'utf-8',
-                   skip_if_unchanged: bool = False) -> bool:
+    def write_text(
+        self, text: str, encoding: str = "utf-8", skip_if_unchanged: bool = False
+    ) -> bool:
         """Write text content to file.
 
         Convenience method equivalent to write(text, mode='w', encoding=encoding, skip_if_unchanged=skip_if_unchanged).
@@ -950,7 +958,7 @@ class StorageNode:
             >>> node.write_text("Content", encoding='latin-1')
             >>> written = node.write_text("New", skip_if_unchanged=True)
         """
-        return self.write(text, mode='w', encoding=encoding, skip_if_unchanged=skip_if_unchanged)
+        return self.write(text, mode="w", encoding=encoding, skip_if_unchanged=skip_if_unchanged)
 
     @apiready
     def write_bytes(self, data: bytes, skip_if_unchanged: bool = False) -> bool:
@@ -974,7 +982,7 @@ class StorageNode:
             >>> node.write_bytes(b"Binary data")
             >>> written = node.write_bytes(data, skip_if_unchanged=True)
         """
-        return self.write(data, mode='wb', skip_if_unchanged=skip_if_unchanged)
+        return self.write(data, mode="wb", skip_if_unchanged=skip_if_unchanged)
 
     # ==================== File Operations ====================
 
@@ -983,9 +991,12 @@ class StorageNode:
         """Delete file or directory."""
         self._backend.delete(self._path, recursive=True)
 
-    def _should_skip_file(self, dest: StorageNode,
-                          skip: SkipStrategy | str,
-                          skip_fn: Callable[[StorageNode, StorageNode], bool] | None) -> tuple[bool, str]:
+    def _should_skip_file(
+        self,
+        dest: StorageNode,
+        skip: SkipStrategy | str,
+        skip_fn: Callable[[StorageNode, StorageNode], bool] | None,
+    ) -> tuple[bool, str]:
         """Determine if file should be skipped during copy.
 
         Args:
@@ -998,53 +1009,56 @@ class StorageNode:
         """
         # Never skip if destination doesn't exist
         if not dest.exists:
-            return (False, '')
+            return (False, "")
 
         # Check skip strategy
-        if skip == 'never' or skip == SkipStrategy.NEVER:
-            return (False, '')
+        if skip == "never" or skip == SkipStrategy.NEVER:
+            return (False, "")
 
-        elif skip == 'exists' or skip == SkipStrategy.EXISTS:
-            return (True, 'destination exists')
+        elif skip == "exists" or skip == SkipStrategy.EXISTS:
+            return (True, "destination exists")
 
-        elif skip == 'size' or skip == SkipStrategy.SIZE:
+        elif skip == "size" or skip == SkipStrategy.SIZE:
             try:
                 if self.size == dest.size:
-                    return (True, f'same size ({self.size} bytes)')
+                    return (True, f"same size ({self.size} bytes)")
                 else:
-                    return (False, '')
+                    return (False, "")
             except Exception:
                 # If size comparison fails, don't skip
-                return (False, '')
+                return (False, "")
 
-        elif skip == 'hash' or skip == SkipStrategy.HASH:
+        elif skip == "hash" or skip == SkipStrategy.HASH:
             try:
                 # Use MD5 hash comparison (with cloud metadata optimization)
                 if self.md5hash == dest.md5hash:
-                    return (True, f'same content (MD5: {self.md5hash[:8]}...)')
+                    return (True, f"same content (MD5: {self.md5hash[:8]}...)")
                 else:
-                    return (False, '')
+                    return (False, "")
             except Exception:
                 # If hash comparison fails, don't skip
-                return (False, '')
+                return (False, "")
 
-        elif skip == 'custom' or skip == SkipStrategy.CUSTOM:
+        elif skip == "custom" or skip == SkipStrategy.CUSTOM:
             try:
                 if skip_fn and skip_fn(self, dest):
-                    return (True, 'custom function returned True')
+                    return (True, "custom function returned True")
                 else:
-                    return (False, '')
+                    return (False, "")
             except Exception as e:
                 # If custom function fails, don't skip
-                return (False, '')
+                return (False, "")
 
-        return (False, '')
+        return (False, "")
 
-    def _copy_file_with_skip(self, dest: StorageNode,
-                             skip: SkipStrategy | str,
-                             skip_fn: Callable[[StorageNode, StorageNode], bool] | None,
-                             on_file: Callable[[StorageNode], None] | None,
-                             on_skip: Callable[[StorageNode, str], None] | None) -> StorageNode:
+    def _copy_file_with_skip(
+        self,
+        dest: StorageNode,
+        skip: SkipStrategy | str,
+        skip_fn: Callable[[StorageNode, StorageNode], bool] | None,
+        on_file: Callable[[StorageNode], None] | None,
+        on_skip: Callable[[StorageNode, str], None] | None,
+    ) -> StorageNode:
         """Copy single file with skip logic.
 
         Args:
@@ -1071,7 +1085,7 @@ class StorageNode:
         # Update destination path if backend returned new path
         if new_path is not None:
             dest._path = new_path
-            dest._posix_path = PurePosixPath(new_path) if new_path else PurePosixPath('.')
+            dest._posix_path = PurePosixPath(new_path) if new_path else PurePosixPath(".")
 
         # Call on_file callback
         if on_file:
@@ -1079,15 +1093,18 @@ class StorageNode:
 
         return dest
 
-    def _copy_dir_with_skip(self, dest: StorageNode,
-                            skip: SkipStrategy | str,
-                            skip_fn: Callable[[StorageNode, StorageNode], bool] | None,
-                            progress: Callable[[int, int], None] | None,
-                            on_file: Callable[[StorageNode], None] | None,
-                            on_skip: Callable[[StorageNode, str], None] | None,
-                            include_patterns: list[str] | None = None,
-                            exclude_patterns: list[str] | None = None,
-                            filter_fn: Callable[[StorageNode, str], bool] | None = None) -> StorageNode:
+    def _copy_dir_with_skip(
+        self,
+        dest: StorageNode,
+        skip: SkipStrategy | str,
+        skip_fn: Callable[[StorageNode, StorageNode], bool] | None,
+        progress: Callable[[int, int], None] | None,
+        on_file: Callable[[StorageNode], None] | None,
+        on_skip: Callable[[StorageNode, str], None] | None,
+        include_patterns: list[str] | None = None,
+        exclude_patterns: list[str] | None = None,
+        filter_fn: Callable[[StorageNode, str], bool] | None = None,
+    ) -> StorageNode:
         """Copy directory recursively with filtering, skip logic and progress tracking.
 
         Args:
@@ -1186,7 +1203,7 @@ class StorageNode:
                 # Update destination path if backend returned new path
                 if new_path is not None:
                     dst._path = new_path
-                    dst._posix_path = PurePosixPath(new_path) if new_path else PurePosixPath('.')
+                    dst._posix_path = PurePosixPath(new_path) if new_path else PurePosixPath(".")
 
                 if on_file:
                     on_file(src)
@@ -1197,18 +1214,21 @@ class StorageNode:
 
         return dest
 
-    def copy_to(self, dest: StorageNode | str,
-             # Filtering (source-based)
-             include: str | list[str] | None = None,
-             exclude: str | list[str] | None = None,
-             filter: Callable[[StorageNode, str], bool] | None = None,
-             # Skip logic (destination-based)
-             skip: SkipStrategy | Literal['never', 'exists', 'size', 'hash', 'custom'] = 'never',
-             skip_fn: Callable[[StorageNode, StorageNode], bool] | None = None,
-             # Callbacks
-             progress: Callable[[int, int], None] | None = None,
-             on_file: Callable[[StorageNode], None] | None = None,
-             on_skip: Callable[[StorageNode, str], None] | None = None) -> StorageNode:
+    def copy_to(
+        self,
+        dest: StorageNode | str,
+        # Filtering (source-based)
+        include: str | list[str] | None = None,
+        exclude: str | list[str] | None = None,
+        filter: Callable[[StorageNode, str], bool] | None = None,
+        # Skip logic (destination-based)
+        skip: SkipStrategy | Literal["never", "exists", "size", "hash", "custom"] = "never",
+        skip_fn: Callable[[StorageNode, StorageNode], bool] | None = None,
+        # Callbacks
+        progress: Callable[[int, int], None] | None = None,
+        on_file: Callable[[StorageNode], None] | None = None,
+        on_skip: Callable[[StorageNode, str], None] | None = None,
+    ) -> StorageNode:
         """Copy file or directory to destination with filtering and skip logic.
 
         Supports filtering which files to copy (source-based) and skipping
@@ -1314,7 +1334,7 @@ class StorageNode:
             raise FileNotFoundError(f"Source not found: {self.fullpath}")
 
         # Validate skip strategy
-        if skip == 'custom' and skip_fn is None:
+        if skip == "custom" and skip_fn is None:
             raise ValueError("skip='custom' requires skip_fn parameter")
 
         # Normalize include/exclude patterns to lists
@@ -1328,7 +1348,7 @@ class StorageNode:
 
         # Check if we need enhanced copy (with skip/filter/callbacks)
         has_filters = bool(include_patterns or exclude_patterns or filter)
-        needs_enhanced = skip != 'never' or progress or on_file or on_skip or has_filters
+        needs_enhanced = skip != "never" or progress or on_file or on_skip or has_filters
 
         if needs_enhanced:
             # Single file copy
@@ -1339,8 +1359,15 @@ class StorageNode:
             # Directory copy (recursive with filtering)
             elif self.isdir:
                 return self._copy_dir_with_skip(
-                    dest, skip, skip_fn, progress, on_file, on_skip,
-                    include_patterns, exclude_patterns, filter
+                    dest,
+                    skip,
+                    skip_fn,
+                    progress,
+                    on_file,
+                    on_skip,
+                    include_patterns,
+                    exclude_patterns,
+                    filter,
                 )
 
         # Simple copy without skip logic (backward compatible)
@@ -1351,26 +1378,26 @@ class StorageNode:
             # If destination backend returned a new path, update dest
             if new_path is not None:
                 dest._path = new_path
-                dest._posix_path = PurePosixPath(new_path) if new_path else PurePosixPath('.')
+                dest._posix_path = PurePosixPath(new_path) if new_path else PurePosixPath(".")
 
         return dest
-    
+
     def move_to(self, dest: StorageNode | str) -> StorageNode:
         """Move file/directory to destination."""
         # Convert string to StorageNode if needed
         if isinstance(dest, str):
             dest = self._manager.node(dest)
-        
+
         # Copy then delete
         self.copy_to(dest)
         self.delete()
-        
+
         # Update self to point to new location
         self._mount_name = dest._mount_name
         self._path = dest._path
         self._posix_path = dest._posix_path
         self._backend = dest._backend
-        
+
         return self
 
     # ==================== Virtual Node Methods ====================
@@ -1394,7 +1421,7 @@ class StorageNode:
             >>> iternode.append(n1)
             >>> content = iternode.read_text()  # Materializes here
         """
-        if not self._is_virtual or self._virtual_type != 'iter':
+        if not self._is_virtual or self._virtual_type != "iter":
             raise ValueError("append() is only available for iternode virtual nodes")
         self._sources.append(node)
 
@@ -1416,7 +1443,7 @@ class StorageNode:
             >>> iternode.extend(n2, n3, n4)
             >>> content = iternode.read_text()  # Materializes all
         """
-        if not self._is_virtual or self._virtual_type != 'iter':
+        if not self._is_virtual or self._virtual_type != "iter":
             raise ValueError("extend() is only available for iternode virtual nodes")
         self._sources.extend(nodes)
 
@@ -1452,12 +1479,12 @@ class StorageNode:
 
         buffer = io.BytesIO()
 
-        with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
-            if self._is_virtual and self._virtual_type == 'iter':
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            if self._is_virtual and self._virtual_type == "iter":
                 # Virtual iternode: add each source node as separate file
                 for node in self._sources:
                     # Use basename as filename in ZIP
-                    filename = node.basename if node.basename else 'file'
+                    filename = node.basename if node.basename else "file"
                     zf.writestr(filename, node._read_bytes())
 
             elif self.isfile:
@@ -1466,14 +1493,14 @@ class StorageNode:
 
             elif self.isdir:
                 # Directory: recursively add all files
-                self._zip_directory(zf, self, '')
+                self._zip_directory(zf, self, "")
 
             else:
                 raise ValueError(f"Cannot create ZIP: node doesn't exist or is invalid type")
 
         return buffer.getvalue()
 
-    def _zip_directory(self, zf: 'zipfile.ZipFile', dir_node: StorageNode, arc_prefix: str) -> None:
+    def _zip_directory(self, zf: "zipfile.ZipFile", dir_node: StorageNode, arc_prefix: str) -> None:
         """Recursively add directory contents to ZIP.
 
         Args:
@@ -1535,8 +1562,7 @@ class StorageNode:
 
     @apiready
     def child(
-        self,
-        *parts: Annotated[str, "Path components to append"]
+        self, *parts: Annotated[str, "Path components to append"]
     ) -> Annotated["StorageNode", "Child node at the specified path"]:
         """Get a child node by path components.
 
@@ -1560,7 +1586,7 @@ class StorageNode:
             >>> # Both produce: 'home:documents/2024/reports/q4.pdf'
         """
         # Join all parts into a single path
-        child_path = '/'.join(parts)
+        child_path = "/".join(parts)
         # Combine with current path
         full_child_path = str(self._posix_path / child_path)
         return self._create_node(self._manager, self._mount_name, full_child_path)
@@ -1569,14 +1595,14 @@ class StorageNode:
     def mkdir(
         self,
         parents: Annotated[bool, "Create parent directories if needed"] = False,
-        exist_ok: Annotated[bool, "Don't raise error if directory exists"] = False
+        exist_ok: Annotated[bool, "Don't raise error if directory exists"] = False,
     ) -> None:
         """Create directory."""
         self._backend.mkdir(self._path, parents=parents, exist_ok=exist_ok)
 
     # ==================== Advanced Methods ====================
 
-    def local_path(self, mode: str = 'r'):
+    def local_path(self, mode: str = "r"):
         """Get local filesystem path for this file.
 
         Returns a context manager that provides a local filesystem path.
@@ -1616,11 +1642,14 @@ class StorageNode:
         """
         return self._backend.local_path(self._path, mode=mode)
 
-    def call(self, *args,
-             callback: Callable[[], None] | None = None,
-             async_mode: bool = False,
-             return_output: bool = False,
-             **subprocess_kwargs) -> str | None:
+    def call(
+        self,
+        *args,
+        callback: Callable[[], None] | None = None,
+        async_mode: bool = False,
+        return_output: bool = False,
+        **subprocess_kwargs,
+    ) -> str | None:
         """Execute external command with automatic local_path management.
 
         Automatically manages local filesystem paths for StorageNode arguments,
@@ -1691,7 +1720,7 @@ class StorageNode:
                 for arg in args:
                     if isinstance(arg, StorageNode):
                         # Automatically get local path for StorageNode
-                        local_path = stack.enter_context(arg.local_path(mode='rw'))
+                        local_path = stack.enter_context(arg.local_path(mode="rw"))
                         cmd_args.append(local_path)
                     else:
                         cmd_args.append(str(arg))
@@ -1699,7 +1728,7 @@ class StorageNode:
                 # Execute command
                 if return_output:
                     result = subprocess.check_output(cmd_args, **subprocess_kwargs)
-                    output = result.decode('utf-8') if isinstance(result, bytes) else result
+                    output = result.decode("utf-8") if isinstance(result, bytes) else result
                 else:
                     subprocess.check_call(cmd_args, **subprocess_kwargs)
                     output = None
@@ -1720,12 +1749,14 @@ class StorageNode:
             # Run synchronously
             return _execute()
 
-    def serve(self,
-              environ: dict,
-              start_response: callable,
-              download: bool = False,
-              download_name: str | None = None,
-              cache_max_age: int | None = None) -> list[bytes]:
+    def serve(
+        self,
+        environ: dict,
+        start_response: callable,
+        download: bool = False,
+        download_name: str | None = None,
+        cache_max_age: int | None = None,
+    ) -> list[bytes]:
         """Serve file via WSGI interface with caching support.
 
         Serves the file through a WSGI application with:
@@ -1786,14 +1817,14 @@ class StorageNode:
             - Streams large files in chunks (doesn't load entire file in memory)
         """
         if not self.exists:
-            start_response('404 Not Found', [('Content-Type', 'text/plain')])
-            return [b'Not Found']
+            start_response("404 Not Found", [("Content-Type", "text/plain")])
+            return [b"Not Found"]
 
         # Check ETag for 304 Not Modified
-        if_none_match = environ.get('HTTP_IF_NONE_MATCH')
+        if_none_match = environ.get("HTTP_IF_NONE_MATCH")
         if if_none_match:
             # Remove quotes from ETag
-            if_none_match = if_none_match.replace('"', '')
+            if_none_match = if_none_match.replace('"', "")
 
             # Compute our ETag (mtime-size)
             mtime = self.mtime
@@ -1802,9 +1833,9 @@ class StorageNode:
 
             if our_etag == if_none_match:
                 # Client has current version, return 304
-                headers = [('ETag', f'"{our_etag}"')]
-                start_response('304 Not Modified', headers)
-                return [b'']
+                headers = [("ETag", f'"{our_etag}"')]
+                start_response("304 Not Modified", headers)
+                return [b""]
 
         # Build response headers
         headers = []
@@ -1813,33 +1844,33 @@ class StorageNode:
         mtime = self.mtime
         size = self.size
         etag = f"{mtime}-{size}"
-        headers.append(('ETag', f'"{etag}"'))
+        headers.append(("ETag", f'"{etag}"'))
 
         # Content-Type
-        headers.append(('Content-Type', self.mimetype))
+        headers.append(("Content-Type", self.mimetype))
 
         # Content-Length
-        headers.append(('Content-Length', str(size)))
+        headers.append(("Content-Length", str(size)))
 
         # Content-Disposition (download)
         if download or download_name:
             filename = download_name or self.basename
-            headers.append(('Content-Disposition', f'attachment; filename="{filename}"'))
+            headers.append(("Content-Disposition", f'attachment; filename="{filename}"'))
 
         # Cache-Control
         if cache_max_age is not None:
-            headers.append(('Cache-Control', f'max-age={cache_max_age}'))
+            headers.append(("Cache-Control", f"max-age={cache_max_age}"))
 
         # Start response
-        start_response('200 OK', headers)
+        start_response("200 OK", headers)
 
         # Stream file content
         # Use local_path for efficient serving (downloads from cloud if needed)
-        with self.local_path(mode='r') as local_path:
+        with self.local_path(mode="r") as local_path:
             # Read and stream in chunks
             chunk_size = 64 * 1024  # 64KB chunks
             chunks = []
-            with open(local_path, 'rb') as f:
+            with open(local_path, "rb") as f:
                 while True:
                     chunk = f.read(chunk_size)
                     if not chunk:
@@ -1848,7 +1879,9 @@ class StorageNode:
             return chunks
 
     @apiready
-    def get_metadata(self) -> Annotated[dict[str, str], "Metadata key-value pairs attached to file"]:
+    def get_metadata(
+        self,
+    ) -> Annotated[dict[str, str], "Metadata key-value pairs attached to file"]:
         """Get custom metadata for this file.
 
         Returns user-defined metadata attached to the file. Supported for
@@ -1870,8 +1903,7 @@ class StorageNode:
 
     @apiready
     def set_metadata(
-        self,
-        metadata: Annotated[dict[str, str], "Metadata key-value pairs to set"]
+        self, metadata: Annotated[dict[str, str], "Metadata key-value pairs to set"]
     ) -> None:
         """Set custom metadata for this file.
 
@@ -2004,7 +2036,7 @@ class StorageNode:
         try:
             # Python gestisce automaticamente indici negativi
             version_info = versions[index]
-            return version_info['version_id']
+            return version_info["version_id"]
         except IndexError:
             total = len(versions)
             raise IndexError(
@@ -2030,21 +2062,15 @@ class StorageNode:
             target_date = target_date.replace(tzinfo=timezone.utc)
 
         # Filter versions up to target date
-        valid_versions = [
-            v for v in versions
-            if v['last_modified'] <= target_date
-        ]
+        valid_versions = [v for v in versions if v["last_modified"] <= target_date]
 
         if not valid_versions:
             return None
 
         # Get the most recent version before target date
-        target_version = max(
-            valid_versions,
-            key=lambda v: v['last_modified']
-        )
+        target_version = max(valid_versions, key=lambda v: v["last_modified"])
 
-        return target_version['version_id']
+        return target_version["version_id"]
 
     def _list_supported_features(self) -> str:
         """Helper to list what this backend supports.
@@ -2112,16 +2138,14 @@ class StorageNode:
             v5: content A (etag: xxx) ← KEPT (not consecutive to v1, shows revert)
         """
         if not self.capabilities.versioning:
-            raise PermissionError(
-                f"{self._mount_name} backend does not support versioning"
-            )
+            raise PermissionError(f"{self._mount_name} backend does not support versioning")
 
         versions = self.versions
         if len(versions) < 2:
             return 0  # Nothing to clean up
 
         # Sort by date (oldest first) to process chronologically
-        sorted_versions = sorted(versions, key=lambda v: v['last_modified'])
+        sorted_versions = sorted(versions, key=lambda v: v["last_modified"])
 
         to_delete = []
 
@@ -2130,12 +2154,12 @@ class StorageNode:
             current = sorted_versions[i]
             next_version = sorted_versions[i + 1]
 
-            current_etag = current.get('etag', '')
-            next_etag = next_version.get('etag', '')
+            current_etag = current.get("etag", "")
+            next_etag = next_version.get("etag", "")
 
             # If consecutive versions have same content, mark the newer one for deletion
             if current_etag and next_etag and current_etag == next_etag:
-                to_delete.append(next_version['version_id'])
+                to_delete.append(next_version["version_id"])
 
         if dry_run:
             return len(to_delete)
@@ -2149,10 +2173,8 @@ class StorageNode:
             except Exception as e:
                 # Log but continue with other deletions
                 import warnings
-                warnings.warn(
-                    f"Failed to delete version {version_id}: {e}",
-                    RuntimeWarning
-                )
+
+                warnings.warn(f"Failed to delete version {version_id}: {e}", RuntimeWarning)
 
         return deleted_count
 
@@ -2189,7 +2211,7 @@ class StorageNode:
         import urllib.error
 
         # Validate URL
-        if not url or not url.startswith(('http://', 'https://')):
+        if not url or not url.startswith(("http://", "https://")):
             raise ValueError(f"Invalid URL: {url}. Must start with http:// or https://")
 
         # Download content
@@ -2255,7 +2277,7 @@ class StorageNode:
         data = self._read_bytes()
 
         # Encode to base64
-        b64_data = base64.b64encode(data).decode('ascii')
+        b64_data = base64.b64encode(data).decode("ascii")
 
         # Return based on format
         if include_uri:
@@ -2263,40 +2285,40 @@ class StorageNode:
             if mime is None:
                 mime, _ = mimetypes.guess_type(self.basename)
                 if mime is None:
-                    mime = 'application/octet-stream'
+                    mime = "application/octet-stream"
 
-            return f'data:{mime};base64,{b64_data}'
+            return f"data:{mime};base64,{b64_data}"
         else:
             return b64_data
 
     # ==================== Special Methods ====================
-    
+
     def __repr__(self) -> str:
         """String representation for debugging."""
         return f"StorageNode('{self.fullpath}')"
-    
+
     def __str__(self) -> str:
         """String representation."""
         return self.fullpath
 
     def __eq__(self, other: object) -> bool:
         """Compare nodes by content (MD5 hash).
-        
+
         Two nodes are considered equal if they have the same file content,
         regardless of their path or location. Comparison is done via MD5 hash.
-        
+
         Args:
             other: Another StorageNode or object to compare
-        
+
         Returns:
             bool: True if both nodes have identical content
-        
+
         Examples:
             >>> file1 = storage.node('home:original.txt')
             >>> file2 = storage.node('backup:copy.txt')
             >>> if file1 == file2:
             ...     print("Files have identical content")
-        
+
         Notes:
             - Only files can be compared (directories return False)
             - Non-existent files return False
@@ -2304,30 +2326,30 @@ class StorageNode:
         """
         if not isinstance(other, StorageNode):
             return NotImplemented
-        
+
         # If same path, they're equal
         if self.fullpath == other.fullpath:
             return True
-        
+
         # Both must be files to compare content
         if not (self.isfile and other.isfile):
             return False
-        
+
         # Compare via MD5 hash
         try:
             return self.md5hash == other.md5hash
         except (FileNotFoundError, ValueError):
             return False
-    
+
     def __ne__(self, other: object) -> bool:
         """Compare nodes for inequality.
-        
+
         Args:
             other: Another StorageNode or object to compare
-        
+
         Returns:
             bool: True if nodes have different content
-        
+
         Examples:
             >>> if file1 != file2:
             ...     print("Files differ")

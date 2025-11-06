@@ -29,7 +29,7 @@ from ..capabilities import BackendCapabilities
 from ..exceptions import StoragePermissionError
 
 
-PermissionLevel = Literal['readonly', 'readwrite', 'delete']
+PermissionLevel = Literal["readonly", "readwrite", "delete"]
 
 
 class RelativeMountBackend(StorageBackend):
@@ -65,7 +65,7 @@ class RelativeMountBackend(StorageBackend):
         self,
         parent_backend: StorageBackend,
         relative_path: str,
-        permissions: PermissionLevel = 'delete'
+        permissions: PermissionLevel = "delete",
     ):
         """Initialize relative mount backend.
 
@@ -75,7 +75,7 @@ class RelativeMountBackend(StorageBackend):
             permissions: Permission level ('readonly', 'readwrite', 'delete')
         """
         self.parent = parent_backend
-        self.relative_path = relative_path.rstrip('/')
+        self.relative_path = relative_path.rstrip("/")
         self.permissions = permissions
 
     def _full_path(self, path: str) -> str:
@@ -91,7 +91,7 @@ class RelativeMountBackend(StorageBackend):
             return self.relative_path
 
         # Normalize and combine paths
-        clean_path = path.lstrip('/')
+        clean_path = path.lstrip("/")
         if self.relative_path:
             return f"{self.relative_path}/{clean_path}"
         return clean_path
@@ -102,10 +102,8 @@ class RelativeMountBackend(StorageBackend):
         Raises:
             StoragePermissionError: If mount is read-only
         """
-        if self.permissions == 'readonly':
-            raise StoragePermissionError(
-                f"Mount is read-only. Write operations are not permitted."
-            )
+        if self.permissions == "readonly":
+            raise StoragePermissionError(f"Mount is read-only. Write operations are not permitted.")
 
     def _check_delete_permission(self) -> None:
         """Check if delete operations are allowed.
@@ -113,7 +111,7 @@ class RelativeMountBackend(StorageBackend):
         Raises:
             StoragePermissionError: If mount doesn't have delete permission
         """
-        if self.permissions in ('readonly', 'readwrite'):
+        if self.permissions in ("readonly", "readwrite"):
             raise StoragePermissionError(
                 f"Mount does not have delete permission (current: {self.permissions})"
             )
@@ -149,9 +147,9 @@ class RelativeMountBackend(StorageBackend):
         """Get last modification time."""
         return self.parent.mtime(self._full_path(path))
 
-    def open(self, path: str, mode: str = 'rb') -> BinaryIO | TextIO:
+    def open(self, path: str, mode: str = "rb") -> BinaryIO | TextIO:
         """Open file with permission check for write modes."""
-        if mode in ('w', 'wb', 'a', 'ab', 'r+', 'rb+', 'w+', 'wb+', 'a+', 'ab+'):
+        if mode in ("w", "wb", "a", "ab", "r+", "rb+", "w+", "wb+", "a+", "ab+"):
             self._check_write_permission()
         return self.parent.open(self._full_path(path), mode)
 
@@ -159,7 +157,7 @@ class RelativeMountBackend(StorageBackend):
         """Read entire file as bytes."""
         return self.parent.read_bytes(self._full_path(path))
 
-    def read_text(self, path: str, encoding: str = 'utf-8') -> str:
+    def read_text(self, path: str, encoding: str = "utf-8") -> str:
         """Read entire file as text."""
         return self.parent.read_text(self._full_path(path), encoding)
 
@@ -179,7 +177,7 @@ class RelativeMountBackend(StorageBackend):
         """Get list of available versions."""
         return self.parent.get_versions(self._full_path(path))
 
-    def open_version(self, path: str, version_id: str, mode: str = 'rb'):
+    def open_version(self, path: str, version_id: str, mode: str = "rb"):
         """Open specific version of file."""
         return self.parent.open_version(self._full_path(path), version_id, mode)
 
@@ -191,9 +189,9 @@ class RelativeMountBackend(StorageBackend):
         """Generate internal URL for file access."""
         return self.parent.internal_url(self._full_path(path), nocache)
 
-    def local_path(self, path: str, mode: str = 'r'):
+    def local_path(self, path: str, mode: str = "r"):
         """Get local filesystem path with permission check for write modes."""
-        if mode in ('w', 'rw'):
+        if mode in ("w", "rw"):
             self._check_write_permission()
         return self.parent.local_path(self._full_path(path), mode)
 
@@ -204,7 +202,7 @@ class RelativeMountBackend(StorageBackend):
         self._check_write_permission()
         self.parent.write_bytes(self._full_path(path), data)
 
-    def write_text(self, path: str, text: str, encoding: str = 'utf-8') -> None:
+    def write_text(self, path: str, text: str, encoding: str = "utf-8") -> None:
         """Write text to file."""
         self._check_write_permission()
         self.parent.write_text(self._full_path(path), text, encoding)
@@ -219,7 +217,7 @@ class RelativeMountBackend(StorageBackend):
         self._check_write_permission()
         self.parent.set_metadata(self._full_path(path), metadata)
 
-    def copy(self, src_path: str, dest_backend: 'StorageBackend', dest_path: str) -> str | None:
+    def copy(self, src_path: str, dest_backend: "StorageBackend", dest_path: str) -> str | None:
         """Copy file to another backend."""
         # Source read is always allowed
         # Destination write is checked by dest_backend

@@ -59,7 +59,7 @@ class Base64Backend(StorageBackend):
     """
 
     # Default protocol name for this backend
-    _default_protocol = 'base64'
+    _default_protocol = "base64"
 
     def __init__(self) -> None:
         """Initialize the Base64 backend."""
@@ -76,9 +76,7 @@ class Base64Backend(StorageBackend):
 
         # Base64 is read-only and provides public URLs (data:// URIs)
         # Use replace() since BackendCapabilities is frozen
-        return caps.__class__(
-            **{**caps.__dict__, 'readonly': True, 'public_urls': True}
-        )
+        return caps.__class__(**{**caps.__dict__, "readonly": True, "public_urls": True})
 
     @classmethod
     def get_json_info(cls) -> dict:
@@ -92,9 +90,7 @@ class Base64Backend(StorageBackend):
 
         # Override description and schema with Base64-specific information
         info["description"] = "Base64-encoded inline data storage (read-only)"
-        info["schema"] = {
-            "fields": []  # No configuration needed for base64 backend
-        }
+        info["schema"] = {"fields": []}  # No configuration needed for base64 backend
 
         # Add base64-specific capabilities
         info["capabilities"]["readonly"] = True
@@ -119,7 +115,7 @@ class Base64Backend(StorageBackend):
 
         try:
             # Remove whitespace and decode
-            clean_path = path.strip().replace(' ', '').replace('\n', '')
+            clean_path = path.strip().replace(" ", "").replace("\n", "")
             return base64.b64decode(clean_path, validate=True)
         except Exception as e:
             raise FileNotFoundError(f"Invalid base64 data: {e}") from e
@@ -137,7 +133,7 @@ class Base64Backend(StorageBackend):
             return False
 
         try:
-            clean_path = path.strip().replace(' ', '').replace('\n', '')
+            clean_path = path.strip().replace(" ", "").replace("\n", "")
             base64.b64decode(clean_path, validate=True)
             return True
         except Exception:
@@ -207,8 +203,8 @@ class Base64Backend(StorageBackend):
         self._decode(path)
         return self._creation_time
 
-    @capability('read', 'seek_support')
-    def open(self, path: str, mode: str = 'rb') -> BinaryIO | TextIO:
+    @capability("read", "seek_support")
+    def open(self, path: str, mode: str = "rb") -> BinaryIO | TextIO:
         """Open base64 data as file-like object.
 
         Args:
@@ -227,8 +223,8 @@ class Base64Backend(StorageBackend):
             the new base64 path.
         """
         # Write modes: return empty buffer
-        if 'w' in mode or 'a' in mode or '+' in mode:
-            if 'b' in mode:
+        if "w" in mode or "a" in mode or "+" in mode:
+            if "b" in mode:
                 return io.BytesIO()
             else:
                 return io.StringIO()
@@ -236,15 +232,15 @@ class Base64Backend(StorageBackend):
         # Read modes: decode existing data
         data = self._decode(path)
 
-        if 'b' in mode:
+        if "b" in mode:
             return io.BytesIO(data)
         else:
             # Text mode
-            encoding = 'utf-8'  # Could be made configurable
+            encoding = "utf-8"  # Could be made configurable
             text = data.decode(encoding)
             return io.StringIO(text)
 
-    @capability('read')
+    @capability("read")
     def read_bytes(self, path: str) -> bytes:
         """Read and decode base64 data.
 
@@ -259,8 +255,8 @@ class Base64Backend(StorageBackend):
         """
         return self._decode(path)
 
-    @capability('read')
-    def read_text(self, path: str, encoding: str = 'utf-8') -> str:
+    @capability("read")
+    def read_text(self, path: str, encoding: str = "utf-8") -> str:
         """Read and decode base64 data as text.
 
         Args:
@@ -300,7 +296,7 @@ class Base64Backend(StorageBackend):
         """
         return base64.b64encode(data).decode()
 
-    def write_text(self, path: str, text: str, encoding: str = 'utf-8') -> str:
+    def write_text(self, path: str, text: str, encoding: str = "utf-8") -> str:
         """Write text to base64 node.
 
         Creates a new base64-encoded string from the text. The path parameter
@@ -364,7 +360,7 @@ class Base64Backend(StorageBackend):
         """
         raise PermissionError("Base64 backend is read-only")
 
-    def copy(self, src_path: str, dest_backend: 'StorageBackend', dest_path: str) -> str | None:
+    def copy(self, src_path: str, dest_backend: "StorageBackend", dest_path: str) -> str | None:
         """Copy base64 data to another backend.
 
         This decodes the base64 data and writes it to the destination backend.
@@ -402,7 +398,7 @@ class Base64Backend(StorageBackend):
         data = self._decode(path)
         return hashlib.md5(data).hexdigest()
 
-    def local_path(self, path: str, mode: str = 'r'):
+    def local_path(self, path: str, mode: str = "r"):
         """Get local filesystem path for base64 data.
 
         Creates a temporary file with the decoded base64 content.
@@ -429,7 +425,7 @@ class Base64Backend(StorageBackend):
         import os
         from contextlib import contextmanager
 
-        if mode != 'r':
+        if mode != "r":
             raise PermissionError(
                 f"Base64 backend is read-only. Only mode='r' is supported, got '{mode}'"
             )
@@ -440,7 +436,7 @@ class Base64Backend(StorageBackend):
             data = self._decode(path)
 
             # Create temp file
-            with tempfile.NamedTemporaryFile(mode='wb', delete=False) as tmp:
+            with tempfile.NamedTemporaryFile(mode="wb", delete=False) as tmp:
                 tmp.write(data)
                 tmp_path = tmp.name
 

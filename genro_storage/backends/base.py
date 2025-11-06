@@ -63,14 +63,14 @@ class StorageBackend(ABC):
         # Collect capabilities from all parent classes
         inherited_caps = {}
         for base in cls.__mro__[1:]:  # Skip cls itself
-            if hasattr(base, 'PROTOCOL_CAPABILITIES'):
+            if hasattr(base, "PROTOCOL_CAPABILITIES"):
                 for protocol, caps in base.PROTOCOL_CAPABILITIES.items():
                     if protocol not in inherited_caps:
                         inherited_caps[protocol] = set()
                     inherited_caps[protocol].update(caps)
 
         # Get capabilities defined in this class (added by @capability decorator)
-        own_caps = cls.__dict__.get('PROTOCOL_CAPABILITIES', {})
+        own_caps = cls.__dict__.get("PROTOCOL_CAPABILITIES", {})
 
         # Merge inherited and own capabilities
         all_caps = inherited_caps.copy()
@@ -141,7 +141,7 @@ class StorageBackend(ABC):
             ...     versions = backend.get_versions('file.txt')
         """
         # For multi-protocol backends, get protocol from instance
-        protocol = getattr(self, 'protocol', None)
+        protocol = getattr(self, "protocol", None)
         caps_set = self.get_capabilities(protocol)
 
         # Build kwargs dict for BackendCapabilities from the capability set
@@ -193,258 +193,256 @@ class StorageBackend(ABC):
         elif len(cls.PROTOCOL_CAPABILITIES) == 1:
             backend_name = list(cls.PROTOCOL_CAPABILITIES.keys())[0]
         else:
-            backend_name = cls.__name__.lower().replace('backend', '').replace('storage', '')
+            backend_name = cls.__name__.lower().replace("backend", "").replace("storage", "")
 
         return {
             "backend": backend_name,
-            "schema": {
-                "fields": []
-            },
+            "schema": {"fields": []},
             "capabilities": caps_dict,
-            "description": "No description available"
+            "description": "No description available",
         }
 
     @abstractmethod
     def exists(self, path: str) -> bool:
         """Check if a file or directory exists.
-        
+
         Args:
             path: Relative path within this storage backend
-        
+
         Returns:
             bool: True if file or directory exists
-        
+
         Examples:
             >>> exists = backend.exists('documents/report.pdf')
         """
         pass
-    
+
     @abstractmethod
     def is_file(self, path: str) -> bool:
         """Check if path points to a file.
-        
+
         Args:
             path: Relative path within this storage backend
-        
+
         Returns:
             bool: True if path is a file, False otherwise
-        
+
         Examples:
             >>> if backend.is_file('documents/report.pdf'):
             ...     print("It's a file")
         """
         pass
-    
+
     @abstractmethod
     def is_dir(self, path: str) -> bool:
         """Check if path points to a directory.
-        
+
         Args:
             path: Relative path within this storage backend
-        
+
         Returns:
             bool: True if path is a directory, False otherwise
-        
+
         Examples:
             >>> if backend.is_dir('documents'):
             ...     print("It's a directory")
         """
         pass
-    
+
     @abstractmethod
     def size(self, path: str) -> int:
         """Get file size in bytes.
-        
+
         Args:
             path: Relative path to file
-        
+
         Returns:
             int: File size in bytes
-        
+
         Raises:
             FileNotFoundError: If file doesn't exist
             ValueError: If path is a directory
-        
+
         Examples:
             >>> size = backend.size('documents/report.pdf')
             >>> print(f"File is {size} bytes")
         """
         pass
-    
+
     @abstractmethod
     def mtime(self, path: str) -> float:
         """Get last modification time.
-        
+
         Args:
             path: Relative path to file or directory
-        
+
         Returns:
             float: Unix timestamp of last modification
-        
+
         Raises:
             FileNotFoundError: If path doesn't exist
-        
+
         Examples:
             >>> from datetime import datetime
             >>> timestamp = backend.mtime('documents/report.pdf')
             >>> mod_time = datetime.fromtimestamp(timestamp)
         """
         pass
-    
+
     @abstractmethod
-    def open(self, path: str, mode: str = 'rb') -> BinaryIO | TextIO:
+    def open(self, path: str, mode: str = "rb") -> BinaryIO | TextIO:
         """Open a file and return file-like object.
-        
+
         Args:
             path: Relative path to file
             mode: File mode ('r', 'rb', 'w', 'wb', 'a', 'ab')
-        
+
         Returns:
             BinaryIO | TextIO: File-like object supporting context manager
-        
+
         Raises:
             FileNotFoundError: If file doesn't exist (in read mode)
             PermissionError: If insufficient permissions
-        
+
         Examples:
             >>> with backend.open('file.txt', 'rb') as f:
             ...     data = f.read()
         """
         pass
-    
+
     @abstractmethod
     def read_bytes(self, path: str) -> bytes:
         """Read entire file as bytes.
-        
+
         Args:
             path: Relative path to file
-        
+
         Returns:
             bytes: Complete file contents
-        
+
         Raises:
             FileNotFoundError: If file doesn't exist
-        
+
         Examples:
             >>> data = backend.read_bytes('image.jpg')
         """
         pass
-    
+
     @abstractmethod
-    def read_text(self, path: str, encoding: str = 'utf-8') -> str:
+    def read_text(self, path: str, encoding: str = "utf-8") -> str:
         """Read entire file as text.
-        
+
         Args:
             path: Relative path to file
             encoding: Text encoding
-        
+
         Returns:
             str: Complete file contents as string
-        
+
         Raises:
             FileNotFoundError: If file doesn't exist
             UnicodeDecodeError: If encoding is incorrect
-        
+
         Examples:
             >>> content = backend.read_text('document.txt')
         """
         pass
-    
+
     @abstractmethod
     def write_bytes(self, path: str, data: bytes) -> None:
         """Write bytes to file.
-        
+
         Args:
             path: Relative path to file
             data: Bytes to write
-        
+
         Raises:
             PermissionError: If insufficient permissions
             FileNotFoundError: If parent directory doesn't exist
-        
+
         Examples:
             >>> backend.write_bytes('file.bin', b'Hello')
         """
         pass
-    
+
     @abstractmethod
-    def write_text(self, path: str, text: str, encoding: str = 'utf-8') -> None:
+    def write_text(self, path: str, text: str, encoding: str = "utf-8") -> None:
         """Write text to file.
-        
+
         Args:
             path: Relative path to file
             text: String to write
             encoding: Text encoding
-        
+
         Raises:
             PermissionError: If insufficient permissions
             FileNotFoundError: If parent directory doesn't exist
-        
+
         Examples:
             >>> backend.write_text('file.txt', 'Hello World')
         """
         pass
-    
+
     @abstractmethod
     def delete(self, path: str, recursive: bool = False) -> None:
         """Delete file or directory.
-        
+
         Args:
             path: Relative path to delete
             recursive: If True, delete directories recursively
-        
+
         Raises:
             FileNotFoundError: If path doesn't exist (implementation may choose to be idempotent)
             ValueError: If path is non-empty directory and recursive=False
-        
+
         Examples:
             >>> backend.delete('file.txt')
             >>> backend.delete('folder', recursive=True)
         """
         pass
-    
+
     @abstractmethod
     def list_dir(self, path: str) -> list[str]:
         """List directory contents.
-        
+
         Args:
             path: Relative path to directory
-        
+
         Returns:
             list[str]: List of names (not full paths) in the directory
-        
+
         Raises:
             FileNotFoundError: If directory doesn't exist
             ValueError: If path is not a directory
-        
+
         Examples:
             >>> names = backend.list_dir('documents')
             >>> for name in names:
             ...     print(name)  # Just 'report.pdf', not 'documents/report.pdf'
         """
         pass
-    
+
     @abstractmethod
     def mkdir(self, path: str, parents: bool = False, exist_ok: bool = False) -> None:
         """Create directory.
-        
+
         Args:
             path: Relative path to create
             parents: If True, create parent directories as needed
             exist_ok: If True, don't error if directory exists
-        
+
         Raises:
             FileExistsError: If exists and exist_ok=False
             FileNotFoundError: If parent doesn't exist and parents=False
-        
+
         Examples:
             >>> backend.mkdir('new_folder')
             >>> backend.mkdir('a/b/c', parents=True)
         """
         pass
-    
+
     @abstractmethod
-    def copy(self, src_path: str, dest_backend: 'StorageBackend', dest_path: str) -> str | None:
+    def copy(self, src_path: str, dest_backend: "StorageBackend", dest_path: str) -> str | None:
         """Copy file/directory to another backend.
 
         This method handles cross-backend copying efficiently, streaming
@@ -471,7 +469,7 @@ class StorageBackend(ABC):
             >>> backend.copy('file.txt', other_backend, 'file.txt')
         """
         pass
-    
+
     def get_hash(self, path: str) -> str | None:
         """Get MD5 hash from filesystem metadata if available.
 
@@ -547,10 +545,8 @@ class StorageBackend(ABC):
             - Cloud storage may have restrictions (e.g., max metadata size)
             - This typically replaces all metadata (not merge)
         """
-        raise PermissionError(
-            f"{self.__class__.__name__} does not support metadata operations"
-        )
-    
+        raise PermissionError(f"{self.__class__.__name__} does not support metadata operations")
+
     def get_versions(self, path: str) -> list[dict]:
         """Get list of available versions for a file.
 
@@ -569,7 +565,7 @@ class StorageBackend(ABC):
         """
         return []  # Default: no versioning
 
-    def open_version(self, path: str, version_id: str, mode: str = 'rb'):
+    def open_version(self, path: str, version_id: str, mode: str = "rb"):
         """Open a specific version of a file.
 
         Default implementation raises PermissionError. Override in subclasses
@@ -583,9 +579,7 @@ class StorageBackend(ABC):
         Raises:
             PermissionError: Always (base implementation)
         """
-        raise PermissionError(
-            f"{self.__class__.__name__} does not support versioning"
-        )
+        raise PermissionError(f"{self.__class__.__name__} does not support versioning")
 
     def delete_version(self, path: str, version_id: str) -> None:
         """Delete a specific version of a file.
@@ -615,9 +609,7 @@ class StorageBackend(ABC):
             - Some backends may have restrictions on version deletion
             - This operation is typically irreversible
         """
-        raise PermissionError(
-            f"{self.__class__.__name__} does not support version deletion"
-        )
+        raise PermissionError(f"{self.__class__.__name__} does not support version deletion")
 
     def url(self, path: str, expires_in: int = 3600, **kwargs) -> str | None:
         """Generate public URL for file access.
@@ -682,7 +674,7 @@ class StorageBackend(ABC):
         """
         return None  # Default: no internal URL
 
-    def local_path(self, path: str, mode: str = 'r'):
+    def local_path(self, path: str, mode: str = "r"):
         """Get a local filesystem path for the file.
 
         Returns a context manager that provides a local filesystem path

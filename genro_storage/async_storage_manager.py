@@ -96,9 +96,9 @@ class AsyncStorageManager:
             ... ])
         """
         for mount_config in mounts:
-            name = mount_config.pop('name')
-            protocol = mount_config.pop('protocol')
-            base_path = mount_config.pop('base_path', '')
+            name = mount_config.pop("name")
+            protocol = mount_config.pop("protocol")
+            base_path = mount_config.pop("base_path", "")
 
             # Get protocol configuration from registry
             try:
@@ -106,22 +106,20 @@ class AsyncStorageManager:
             except ValueError as e:
                 available = ProviderRegistry.list_protocols()
                 raise ValueError(
-                    f"Unknown protocol '{protocol}'. "
-                    f"Available protocols: {available}"
+                    f"Unknown protocol '{protocol}'. " f"Available protocols: {available}"
                 ) from e
 
             # Extract Model and Implementor classes
-            Model = protocol_config['model']
-            Implementor = protocol_config['implementor']
-            capabilities = protocol_config['capabilities']
+            Model = protocol_config["model"]
+            Implementor = protocol_config["implementor"]
+            capabilities = protocol_config["capabilities"]
 
             # Validate configuration with Pydantic
             try:
                 validated_config = Model(**mount_config)
             except ValidationError as e:
                 raise ValidationError(
-                    f"Invalid configuration for mount '{name}' (protocol: {protocol})",
-                    e.errors()
+                    f"Invalid configuration for mount '{name}' (protocol: {protocol})", e.errors()
                 )
 
             # Create implementor instance
@@ -129,11 +127,11 @@ class AsyncStorageManager:
 
             # Store in mounts registry
             self._mounts[name] = {
-                'implementor': implementor,
-                'base_path': base_path,
-                'protocol': protocol,
-                'capabilities': capabilities,
-                'config': validated_config
+                "implementor": implementor,
+                "base_path": base_path,
+                "protocol": protocol,
+                "capabilities": capabilities,
+                "config": validated_config,
             }
 
     def node(
@@ -141,7 +139,7 @@ class AsyncStorageManager:
         path: str,
         must_exist: bool | None = None,
         autocreate: bool = True,
-        cached: bool = False
+        cached: bool = False,
     ) -> AsyncStorageNode:
         """Create an AsyncStorageNode for the given path.
 
@@ -163,20 +161,18 @@ class AsyncStorageManager:
             >>> node = storage.node('uploads:file.txt', cached=True)
         """
         # Parse path
-        if ':' not in path:
+        if ":" not in path:
             raise ValueError(
-                f"Invalid path format: '{path}'. "
-                f"Expected format: 'mount_point:relative/path'"
+                f"Invalid path format: '{path}'. " f"Expected format: 'mount_point:relative/path'"
             )
 
-        mount_point, relative_path = path.split(':', 1)
+        mount_point, relative_path = path.split(":", 1)
 
         # Validate mount point exists
         if mount_point not in self._mounts:
             available = list(self._mounts.keys())
             raise ValueError(
-                f"Unknown mount point '{mount_point}'. "
-                f"Available mount points: {available}"
+                f"Unknown mount point '{mount_point}'. " f"Available mount points: {available}"
             )
 
         # Create and return node
@@ -186,7 +182,7 @@ class AsyncStorageManager:
             path=relative_path,
             must_exist=must_exist,
             autocreate=autocreate,
-            cached=cached
+            cached=cached,
         )
 
     def get_mount_info(self, mount_point: str) -> dict[str, Any]:
@@ -208,10 +204,7 @@ class AsyncStorageManager:
         """
         if mount_point not in self._mounts:
             available = list(self._mounts.keys())
-            raise ValueError(
-                f"Unknown mount point '{mount_point}'. "
-                f"Available: {available}"
-            )
+            raise ValueError(f"Unknown mount point '{mount_point}'. " f"Available: {available}")
 
         return self._mounts[mount_point].copy()
 
@@ -248,8 +241,8 @@ class AsyncStorageManager:
 
         # Close implementor if it has close method
         mount_info = self._mounts[mount_point]
-        implementor = mount_info['implementor']
-        if hasattr(implementor, 'close'):
+        implementor = mount_info["implementor"]
+        if hasattr(implementor, "close"):
             await implementor.close()
 
         del self._mounts[mount_point]
@@ -261,5 +254,5 @@ class AsyncStorageManager:
 
     def __repr__(self) -> str:
         """String representation."""
-        mounts_str = ', '.join(f"'{m}'" for m in self._mounts.keys())
+        mounts_str = ", ".join(f"'{m}'" for m in self._mounts.keys())
         return f"AsyncStorageManager(mounts=[{mounts_str}])"

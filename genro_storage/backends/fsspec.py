@@ -32,7 +32,7 @@ from ..capabilities import BackendCapabilities
 
 class FsspecBackend(StorageBackend):
     """Generic backend that wraps any fsspec filesystem.
-    
+
     This backend provides a unified interface to any fsspec-compatible
     filesystem, including:
     - Local filesystem (file://)
@@ -42,43 +42,43 @@ class FsspecBackend(StorageBackend):
     - HTTP/HTTPS (http://, https://)
     - In-memory (memory://)
     - And many more...
-    
+
     Args:
         protocol: Fsspec protocol (e.g., 'file', 's3', 'gcs', 'memory')
         base_path: Base path within the filesystem (optional)
         **kwargs: Additional arguments passed to fsspec.filesystem()
-    
+
     Examples:
         >>> # Local filesystem
         >>> backend = FsspecBackend('file', base_path='/home/user')
-        >>> 
+        >>>
         >>> # S3
         >>> backend = FsspecBackend('s3', base_path='my-bucket/uploads',
         ...                         anon=False, region='eu-west-1')
-        >>> 
+        >>>
         >>> # Memory (for testing)
         >>> backend = FsspecBackend('memory', base_path='/test')
     """
-    
-    def __init__(self, protocol: str, base_path: str = '', **kwargs):
+
+    def __init__(self, protocol: str, base_path: str = "", **kwargs):
         """Initialize FsspecBackend.
-        
+
         Args:
             protocol: Fsspec protocol name
             base_path: Base path prefix for all operations
             **kwargs: Additional arguments for fsspec.filesystem()
         """
         self.protocol = protocol
-        self.base_path = base_path.rstrip('/')
+        self.base_path = base_path.rstrip("/")
         self.fs_kwargs = kwargs
 
         # For S3, enable version awareness to support versioning
-        if protocol == 's3':
-            kwargs.setdefault('version_aware', True)
+        if protocol == "s3":
+            kwargs.setdefault("version_aware", True)
 
         # Create fsspec filesystem instance
         self.fs = fsspec.filesystem(protocol, **kwargs)
-    
+
     def _full_path(self, path: str) -> str:
         """Combine base_path with relative path.
 
@@ -89,11 +89,11 @@ class FsspecBackend(StorageBackend):
             str: Full path including base_path
         """
         if not path:
-            return self.base_path or '/'
+            return self.base_path or "/"
 
         if self.base_path:
             # Normalize path separators
-            clean_path = path.lstrip('/')
+            clean_path = path.lstrip("/")
             return f"{self.base_path}/{clean_path}"
 
         return path
@@ -111,7 +111,7 @@ class FsspecBackend(StorageBackend):
         protocol = self.protocol.lower()
 
         # S3 capabilities
-        if protocol == 's3':
+        if protocol == "s3":
             # Check if versioning is available
             has_versioning = self._check_s3_versioning()
 
@@ -121,353 +121,296 @@ class FsspecBackend(StorageBackend):
                 delete=True,
                 mkdir=True,
                 list_dir=True,
-
                 # Versioning (if enabled on bucket)
                 versioning=has_versioning,
                 version_listing=has_versioning,
                 version_access=has_versioning,
-
                 # S3 metadata
                 metadata=True,
-
                 # S3 URLs
                 presigned_urls=True,
                 public_urls=True,
-
                 # Advanced
                 atomic_operations=True,  # S3 PUT is atomic
                 symbolic_links=False,
                 copy_optimization=True,  # Server-side copy
                 hash_on_metadata=True,  # ETag = MD5
-
                 # Performance
                 append_mode=False,  # S3 doesn't support append
                 seek_support=True,
-
                 readonly=False,
-                temporary=False
+                temporary=False,
             )
 
         # GCS capabilities
-        elif protocol in ('gcs', 'gs'):
+        elif protocol in ("gcs", "gs"):
             return BackendCapabilities(
                 read=True,
                 write=True,
                 delete=True,
                 mkdir=True,
                 list_dir=True,
-
                 # GCS has different versioning model
                 versioning=False,
                 version_listing=False,
                 version_access=False,
-
                 metadata=True,
                 presigned_urls=True,
                 public_urls=True,
-
                 atomic_operations=True,
                 symbolic_links=False,
                 copy_optimization=True,
                 hash_on_metadata=True,  # GCS provides MD5
-
                 append_mode=False,
                 seek_support=True,
-
                 readonly=False,
-                temporary=False
+                temporary=False,
             )
 
         # Azure Blob Storage
-        elif protocol in ('az', 'abfs', 'azure'):
+        elif protocol in ("az", "abfs", "azure"):
             return BackendCapabilities(
                 read=True,
                 write=True,
                 delete=True,
                 mkdir=True,
                 list_dir=True,
-
                 versioning=False,
                 metadata=True,
                 presigned_urls=True,
                 public_urls=True,
-
                 atomic_operations=True,
                 symbolic_links=False,
                 copy_optimization=True,
                 hash_on_metadata=True,
-
                 append_mode=True,  # Azure supports append blobs
                 seek_support=True,
-
                 readonly=False,
-                temporary=False
+                temporary=False,
             )
 
         # HTTP/HTTPS (read-only)
-        elif protocol in ('http', 'https'):
+        elif protocol in ("http", "https"):
             return BackendCapabilities(
                 read=True,
                 write=False,
                 delete=False,
                 mkdir=False,
                 list_dir=False,
-
                 versioning=False,
                 metadata=False,
                 presigned_urls=False,
                 public_urls=True,
-
                 atomic_operations=False,
                 symbolic_links=False,
                 copy_optimization=False,
                 hash_on_metadata=False,
-
                 append_mode=False,
                 seek_support=True,  # Via range requests
-
                 readonly=True,
-                temporary=False
+                temporary=False,
             )
 
         # FTP/SFTP
-        elif protocol in ('ftp', 'sftp'):
+        elif protocol in ("ftp", "sftp"):
             return BackendCapabilities(
                 read=True,
                 write=True,
                 delete=True,
                 mkdir=True,
                 list_dir=True,
-
                 versioning=False,
                 metadata=False,
                 presigned_urls=False,
                 public_urls=False,
-
                 atomic_operations=False,
                 symbolic_links=False,
                 copy_optimization=False,
                 hash_on_metadata=False,
-
                 append_mode=True,
                 seek_support=True,
-
                 readonly=False,
-                temporary=False
+                temporary=False,
             )
 
         # SMB/CIFS
-        elif protocol == 'smb':
+        elif protocol == "smb":
             return BackendCapabilities(
                 read=True,
                 write=True,
                 delete=True,
                 mkdir=True,
                 list_dir=True,
-
                 versioning=False,
                 metadata=False,
                 presigned_urls=False,
                 public_urls=False,
-
                 atomic_operations=False,
                 symbolic_links=False,
                 copy_optimization=False,
                 hash_on_metadata=False,
-
                 append_mode=True,
                 seek_support=True,
-
                 readonly=False,
-                temporary=False
+                temporary=False,
             )
 
         # ZIP archives
-        elif protocol == 'zip':
+        elif protocol == "zip":
             return BackendCapabilities(
                 read=True,
                 write=True,  # ZIP supports write/append
                 delete=True,
                 mkdir=True,
                 list_dir=True,
-
                 versioning=False,
                 metadata=False,
                 presigned_urls=False,
                 public_urls=False,
-
                 atomic_operations=False,
                 symbolic_links=False,
                 copy_optimization=False,
                 hash_on_metadata=False,
-
                 append_mode=False,  # Must rewrite entire archive
                 seek_support=True,
-
                 readonly=False,
-                temporary=False
+                temporary=False,
             )
 
         # TAR archives
-        elif protocol == 'tar':
+        elif protocol == "tar":
             return BackendCapabilities(
                 read=True,
                 write=False,  # TAR is read-only in fsspec
                 delete=False,
                 mkdir=False,
                 list_dir=True,
-
                 versioning=False,
                 metadata=False,
                 presigned_urls=False,
                 public_urls=False,
-
                 atomic_operations=False,
                 symbolic_links=False,
                 copy_optimization=False,
                 hash_on_metadata=False,
-
                 append_mode=False,
                 seek_support=True,
-
                 readonly=True,  # TAR is read-only
-                temporary=False
+                temporary=False,
             )
 
         # Memory filesystem (testing)
-        elif protocol == 'memory':
+        elif protocol == "memory":
             return BackendCapabilities(
                 read=True,
                 write=True,
                 delete=True,
                 mkdir=True,
                 list_dir=True,
-
                 versioning=False,
                 metadata=False,
                 presigned_urls=False,
                 public_urls=False,
-
                 atomic_operations=True,
                 symbolic_links=False,
                 copy_optimization=True,
                 hash_on_metadata=False,
-
                 append_mode=True,
                 seek_support=True,
-
                 readonly=False,
-                temporary=True  # Ephemeral!
+                temporary=True,  # Ephemeral!
             )
 
         # Git local repositories (read-only)
-        elif protocol == 'git':
+        elif protocol == "git":
             return BackendCapabilities(
                 read=True,
                 write=False,  # Git is read-only
                 delete=False,
                 mkdir=False,
                 list_dir=True,
-
                 versioning=True,  # Access any commit/tag/branch
                 version_listing=False,  # Can't list all versions
                 version_access=True,  # Can access specific versions via ref
-
                 metadata=False,
                 presigned_urls=False,
                 public_urls=False,
-
                 atomic_operations=False,
                 symbolic_links=False,
                 copy_optimization=False,
                 hash_on_metadata=False,
-
                 append_mode=False,
                 seek_support=True,
-
                 readonly=True,
-                temporary=False
+                temporary=False,
             )
 
         # GitHub repositories (read-only, remote)
-        elif protocol == 'github':
+        elif protocol == "github":
             return BackendCapabilities(
                 read=True,
                 write=False,  # GitHub is read-only via API
                 delete=False,
                 mkdir=False,
                 list_dir=True,
-
                 versioning=True,  # Access any commit/tag/branch
                 version_listing=False,
                 version_access=True,  # Can access specific versions via sha
-
                 metadata=False,
                 presigned_urls=False,
                 public_urls=True,  # GitHub URLs are public
-
                 atomic_operations=False,
                 symbolic_links=False,
                 copy_optimization=False,
                 hash_on_metadata=False,
-
                 append_mode=False,
                 seek_support=True,
-
                 readonly=True,
-                temporary=False
+                temporary=False,
             )
 
         # WebDAV (Nextcloud, ownCloud, SharePoint)
-        elif protocol == 'webdav':
+        elif protocol == "webdav":
             return BackendCapabilities(
                 read=True,
                 write=True,
                 delete=True,
                 mkdir=True,
                 list_dir=True,
-
                 versioning=False,  # Depends on server
                 metadata=False,
                 presigned_urls=False,
                 public_urls=False,
-
                 atomic_operations=False,
                 symbolic_links=False,
                 copy_optimization=False,
                 hash_on_metadata=False,
-
                 append_mode=True,
                 seek_support=True,
-
                 readonly=False,
-                temporary=False
+                temporary=False,
             )
 
         # LibArchive (universal archive support: 7z, rar, iso, etc.)
-        elif protocol == 'libarchive':
+        elif protocol == "libarchive":
             return BackendCapabilities(
                 read=True,
                 write=False,  # LibArchive is read-only
                 delete=False,
                 mkdir=False,
                 list_dir=True,
-
                 versioning=False,
                 metadata=False,
                 presigned_urls=False,
                 public_urls=False,
-
                 atomic_operations=False,
                 symbolic_links=False,
                 copy_optimization=False,
                 hash_on_metadata=False,
-
                 append_mode=False,
                 seek_support=True,
-
                 readonly=True,
-                temporary=False
+                temporary=False,
             )
 
         # Default for unknown protocols (conservative)
@@ -478,22 +421,18 @@ class FsspecBackend(StorageBackend):
                 delete=True,
                 mkdir=True,
                 list_dir=True,
-
                 versioning=False,
                 metadata=False,
                 presigned_urls=False,
                 public_urls=False,
-
                 atomic_operations=True,
                 symbolic_links=False,
                 copy_optimization=False,
                 hash_on_metadata=False,
-
                 append_mode=True,
                 seek_support=True,
-
                 readonly=False,
-                temporary=False
+                temporary=False,
             )
 
     def _check_s3_versioning(self) -> bool:
@@ -504,7 +443,7 @@ class FsspecBackend(StorageBackend):
         """
         try:
             # Check if s3fs supports versioning methods
-            return hasattr(self.fs, 'object_version_info')
+            return hasattr(self.fs, "object_version_info")
         except Exception:
             return False
 
@@ -512,131 +451,133 @@ class FsspecBackend(StorageBackend):
         """Check if file or directory exists."""
         full_path = self._full_path(path)
         return self.fs.exists(full_path)
-    
+
     def is_file(self, path: str) -> bool:
         """Check if path points to a file."""
         full_path = self._full_path(path)
         try:
             info = self.fs.info(full_path)
-            return info['type'] == 'file'
+            return info["type"] == "file"
         except FileNotFoundError:
             return False
-    
+
     def is_dir(self, path: str) -> bool:
         """Check if path points to a directory."""
         full_path = self._full_path(path)
         try:
             info = self.fs.info(full_path)
-            return info['type'] == 'directory'
+            return info["type"] == "directory"
         except FileNotFoundError:
             return False
-    
+
     def size(self, path: str) -> int:
         """Get file size in bytes."""
         full_path = self._full_path(path)
-        
+
         info = self.fs.info(full_path)
-        
-        if info['type'] != 'file':
+
+        if info["type"] != "file":
             raise ValueError(f"Path is a directory, not a file: {path}")
-        
-        return info.get('size', 0)
-    
+
+        return info.get("size", 0)
+
     def mtime(self, path: str) -> float:
         """Get last modification time."""
         full_path = self._full_path(path)
-        
+
         info = self.fs.info(full_path)
-        
+
         # fsspec may return 'mtime' or 'LastModified' depending on backend
-        if 'mtime' in info:
-            return info['mtime']
-        elif 'LastModified' in info:
+        if "mtime" in info:
+            return info["mtime"]
+        elif "LastModified" in info:
             # S3-style timestamp
             import datetime
-            dt = info['LastModified']
+
+            dt = info["LastModified"]
             if isinstance(dt, datetime.datetime):
                 return dt.timestamp()
-        
+
         # Fallback: return current time
         import time
+
         return time.time()
-    
-    def open(self, path: str, mode: str = 'rb') -> BinaryIO | TextIO:
+
+    def open(self, path: str, mode: str = "rb") -> BinaryIO | TextIO:
         """Open file and return file-like object."""
         full_path = self._full_path(path)
         return self.fs.open(full_path, mode)
-    
+
     def read_bytes(self, path: str) -> bytes:
         """Read entire file as bytes."""
         full_path = self._full_path(path)
-        
-        with self.fs.open(full_path, 'rb') as f:
+
+        with self.fs.open(full_path, "rb") as f:
             return f.read()
-    
-    def read_text(self, path: str, encoding: str = 'utf-8') -> str:
+
+    def read_text(self, path: str, encoding: str = "utf-8") -> str:
         """Read entire file as text."""
         full_path = self._full_path(path)
-        
-        with self.fs.open(full_path, 'r', encoding=encoding) as f:
+
+        with self.fs.open(full_path, "r", encoding=encoding) as f:
             return f.read()
-    
+
     def write_bytes(self, path: str, data: bytes) -> None:
         """Write bytes to file."""
         full_path = self._full_path(path)
-        
-        with self.fs.open(full_path, 'wb') as f:
+
+        with self.fs.open(full_path, "wb") as f:
             f.write(data)
-    
-    def write_text(self, path: str, text: str, encoding: str = 'utf-8') -> None:
+
+    def write_text(self, path: str, text: str, encoding: str = "utf-8") -> None:
         """Write text to file."""
         full_path = self._full_path(path)
-        
-        with self.fs.open(full_path, 'w', encoding=encoding) as f:
+
+        with self.fs.open(full_path, "w", encoding=encoding) as f:
             f.write(text)
-    
+
     def delete(self, path: str, recursive: bool = False) -> None:
         """Delete file or directory."""
         full_path = self._full_path(path)
-        
+
         if not self.fs.exists(full_path):
             # Idempotent
             return
-        
+
         # fsspec's rm handles both files and directories
         self.fs.rm(full_path, recursive=recursive)
-    
+
     def list_dir(self, path: str) -> list[str]:
         """List directory contents."""
         full_path = self._full_path(path)
-        
+
         # Get all items in directory
         items = self.fs.ls(full_path, detail=False)
-        
+
         # Extract just the names (not full paths)
-        base = full_path.rstrip('/') + '/'
+        base = full_path.rstrip("/") + "/"
         names = []
         for item in items:
             if item.startswith(base):
-                name = item[len(base):]
+                name = item[len(base) :]
                 # Only direct children (no nested paths)
-                if '/' not in name:
+                if "/" not in name:
                     names.append(name)
             else:
                 # Fallback: use basename
-                names.append(item.split('/')[-1])
-        
+                names.append(item.split("/")[-1])
+
         return names
-    
+
     def mkdir(self, path: str, parents: bool = False, exist_ok: bool = False) -> None:
         """Create directory."""
         full_path = self._full_path(path)
-        
+
         if self.fs.exists(full_path):
             if not exist_ok:
                 raise FileExistsError(f"Directory already exists: {path}")
             return
-        
+
         # fsspec's makedirs handles parent creation
         if parents:
             self.fs.makedirs(full_path, exist_ok=True)
@@ -645,9 +586,9 @@ class FsspecBackend(StorageBackend):
             parent = str(PurePosixPath(full_path).parent)
             if parent and not self.fs.exists(parent):
                 raise FileNotFoundError(f"Parent directory does not exist: {parent}")
-            
+
             self.fs.mkdir(full_path)
-    
+
     def copy(self, src_path: str, dest_backend: StorageBackend, dest_path: str) -> str | None:
         """Copy file/directory to another backend."""
         src_full = self._full_path(src_path)
@@ -664,28 +605,28 @@ class FsspecBackend(StorageBackend):
         # Fallback: copy via read/write
         info = self.fs.info(src_full)
 
-        if info['type'] == 'file':
+        if info["type"] == "file":
             # Copy single file
             data = self.read_bytes(src_path)
             result = dest_backend.write_bytes(dest_path, data)
             return result  # Return new path if dest backend changed it
-        
-        elif info['type'] == 'directory':
+
+        elif info["type"] == "directory":
             # Copy directory recursively
             dest_backend.mkdir(dest_path, parents=True, exist_ok=True)
-            
+
             for item in self.fs.ls(src_full, detail=True):
-                item_name = item['name'].split('/')[-1]
-                
-                if item['type'] == 'file':
+                item_name = item["name"].split("/")[-1]
+
+                if item["type"] == "file":
                     src_item = f"{src_path}/{item_name}" if src_path else item_name
                     dest_item = f"{dest_path}/{item_name}" if dest_path else item_name
                     self.copy(src_item, dest_backend, dest_item)
-                elif item['type'] == 'directory':
+                elif item["type"] == "directory":
                     src_item = f"{src_path}/{item_name}" if src_path else item_name
                     dest_item = f"{dest_path}/{item_name}" if dest_path else item_name
                     self.copy(src_item, dest_backend, dest_item)
-    
+
     def get_versions(self, path: str) -> list[dict]:
         """Get list of available versions for a file.
 
@@ -715,24 +656,26 @@ class FsspecBackend(StorageBackend):
         full_path = self._full_path(path)
 
         # S3: Get version history
-        if self.protocol == 's3':
-            if hasattr(self.fs, 'object_version_info'):
+        if self.protocol == "s3":
+            if hasattr(self.fs, "object_version_info"):
                 try:
                     versions_info = self.fs.object_version_info(full_path)
                     # Convert to normalized format
                     versions_list = [
                         {
-                            'version_id': v.get('VersionId'),
-                            'is_latest': v.get('IsLatest', False),
-                            'last_modified': v.get('LastModified'),
-                            'size': v.get('Size', 0),
-                            'etag': v.get('ETag', '').strip('"')  # S3 ETag (MD5 for simple uploads)
+                            "version_id": v.get("VersionId"),
+                            "is_latest": v.get("IsLatest", False),
+                            "last_modified": v.get("LastModified"),
+                            "size": v.get("Size", 0),
+                            "etag": v.get("ETag", "").strip(
+                                '"'
+                            ),  # S3 ETag (MD5 for simple uploads)
                         }
                         for v in versions_info
                     ]
                     # Sort by timestamp (oldest first) for Python-style negative indexing
                     # where -1 = latest version, -len = oldest version
-                    versions_list.sort(key=lambda v: v['last_modified'])
+                    versions_list.sort(key=lambda v: v["last_modified"])
                     return versions_list
                 except Exception:
                     # Versioning not enabled or error
@@ -743,7 +686,7 @@ class FsspecBackend(StorageBackend):
         # Other protocols: no versioning
         return []
 
-    def open_version(self, path: str, version_id: str, mode: str = 'rb'):
+    def open_version(self, path: str, version_id: str, mode: str = "rb"):
         """Open a specific version of a file.
 
         Opens a historical version of a file from versioned storage.
@@ -767,22 +710,20 @@ class FsspecBackend(StorageBackend):
             >>> with backend.open_version('file.txt', 'xyz123') as f:
             ...     old_content = f.read()
         """
-        if 'w' in mode or 'a' in mode or '+' in mode:
+        if "w" in mode or "a" in mode or "+" in mode:
             raise ValueError("Cannot write to historical versions (read-only)")
 
         full_path = self._full_path(path)
 
         # S3: Open specific version
-        if self.protocol == 's3':
-            if hasattr(self.fs, 'open'):
+        if self.protocol == "s3":
+            if hasattr(self.fs, "open"):
                 return self.fs.open(full_path, mode, version_id=version_id)
             else:
                 raise PermissionError("S3 versioning not available")
 
         # Other protocols: not supported
-        raise PermissionError(
-            f"{self.protocol} backend does not support versioning"
-        )
+        raise PermissionError(f"{self.protocol} backend does not support versioning")
 
     def delete_version(self, path: str, version_id: str) -> None:
         """Delete a specific version of a file.
@@ -806,54 +747,46 @@ class FsspecBackend(StorageBackend):
         full_path = self._full_path(path)
 
         # S3: Delete specific version
-        if self.protocol == 's3':
+        if self.protocol == "s3":
             try:
                 # Create a synchronous boto3 client from stored configuration
                 import boto3
 
                 # Extract bucket and key from full_path (format: bucket/key)
-                parts = full_path.split('/', 1)
+                parts = full_path.split("/", 1)
                 bucket = parts[0]
-                key = parts[1] if len(parts) > 1 else ''
+                key = parts[1] if len(parts) > 1 else ""
 
                 # Build boto3 client kwargs from stored fs_kwargs
                 client_kwargs = {}
 
                 # Map s3fs parameter names to boto3 parameter names
-                if 'key' in self.fs_kwargs:
-                    client_kwargs['aws_access_key_id'] = self.fs_kwargs['key']
-                if 'secret' in self.fs_kwargs:
-                    client_kwargs['aws_secret_access_key'] = self.fs_kwargs['secret']
-                if 'token' in self.fs_kwargs:
-                    client_kwargs['aws_session_token'] = self.fs_kwargs['token']
-                if 'endpoint_url' in self.fs_kwargs:
-                    client_kwargs['endpoint_url'] = self.fs_kwargs['endpoint_url']
-                if 'region_name' in self.fs_kwargs:
-                    client_kwargs['region_name'] = self.fs_kwargs['region_name']
+                if "key" in self.fs_kwargs:
+                    client_kwargs["aws_access_key_id"] = self.fs_kwargs["key"]
+                if "secret" in self.fs_kwargs:
+                    client_kwargs["aws_secret_access_key"] = self.fs_kwargs["secret"]
+                if "token" in self.fs_kwargs:
+                    client_kwargs["aws_session_token"] = self.fs_kwargs["token"]
+                if "endpoint_url" in self.fs_kwargs:
+                    client_kwargs["endpoint_url"] = self.fs_kwargs["endpoint_url"]
+                if "region_name" in self.fs_kwargs:
+                    client_kwargs["region_name"] = self.fs_kwargs["region_name"]
 
                 # Create sync boto3 client
-                s3_client = boto3.client('s3', **client_kwargs)
+                s3_client = boto3.client("s3", **client_kwargs)
 
                 # Delete the specific version
-                s3_client.delete_object(
-                    Bucket=bucket,
-                    Key=key,
-                    VersionId=version_id
-                )
+                s3_client.delete_object(Bucket=bucket, Key=key, VersionId=version_id)
             except Exception as e:
                 # Re-raise with more context if it's a known error type
                 error_str = str(e)
-                if 'NoSuchKey' in error_str or 'NoSuchVersion' in error_str:
-                    raise FileNotFoundError(
-                        f"Version {version_id} not found for {path}"
-                    ) from e
+                if "NoSuchKey" in error_str or "NoSuchVersion" in error_str:
+                    raise FileNotFoundError(f"Version {version_id} not found for {path}") from e
                 raise
 
         # Other protocols: not supported
         else:
-            raise PermissionError(
-                f"{self.protocol} backend does not support version deletion"
-            )
+            raise PermissionError(f"{self.protocol} backend does not support version deletion")
 
     def get_hash(self, path: str) -> str | None:
         """Get MD5 hash from filesystem metadata if available.
@@ -877,12 +810,12 @@ class FsspecBackend(StorageBackend):
             return None
 
         # S3/MinIO/GCS: ETag is MD5 (wrapped in quotes)
-        if 'ETag' in info:
-            return info['ETag'].strip('"')
+        if "ETag" in info:
+            return info["ETag"].strip('"')
 
         # Azure Blob Storage: content_md5
-        if 'content_md5' in info:
-            return info['content_md5']
+        if "content_md5" in info:
+            return info["content_md5"]
 
         # No hash available in metadata
         return None
@@ -913,15 +846,15 @@ class FsspecBackend(StorageBackend):
             raise FileNotFoundError(f"File not found: {path}")
 
         # Extract metadata based on protocol
-        if self.protocol == 's3':
+        if self.protocol == "s3":
             # S3: metadata in 'Metadata' field (case-sensitive)
-            return info.get('Metadata', {})
-        elif self.protocol in ('gcs', 'gs'):
+            return info.get("Metadata", {})
+        elif self.protocol in ("gcs", "gs"):
             # GCS: metadata in 'metadata' field
-            return info.get('metadata', {})
-        elif self.protocol in ('azure', 'az', 'adl'):
+            return info.get("metadata", {})
+        elif self.protocol in ("azure", "az", "adl"):
             # Azure: metadata in 'metadata' field
-            return info.get('metadata', {})
+            return info.get("metadata", {})
         else:
             # Other protocols: no metadata support
             return {}
@@ -960,9 +893,9 @@ class FsspecBackend(StorageBackend):
                 raise ValueError("Metadata keys and values must be strings")
 
         # Set metadata based on protocol
-        if self.protocol == 's3':
+        if self.protocol == "s3":
             # S3: Use setxattr or update_metadata if available
-            if hasattr(self.fs, 'setxattr'):
+            if hasattr(self.fs, "setxattr"):
                 for key, value in metadata.items():
                     self.fs.setxattr(full_path, key, value)
             else:
@@ -971,17 +904,17 @@ class FsspecBackend(StorageBackend):
                     "Consider using boto3 directly for metadata operations."
                 )
 
-        elif self.protocol in ('gcs', 'gs'):
+        elif self.protocol in ("gcs", "gs"):
             # GCS: Use setxattr if available
-            if hasattr(self.fs, 'setxattr'):
+            if hasattr(self.fs, "setxattr"):
                 for key, value in metadata.items():
                     self.fs.setxattr(full_path, key, value)
             else:
                 raise PermissionError("GCS metadata update not available")
 
-        elif self.protocol in ('azure', 'az', 'adl'):
+        elif self.protocol in ("azure", "az", "adl"):
             # Azure: Use setxattr if available
-            if hasattr(self.fs, 'setxattr'):
+            if hasattr(self.fs, "setxattr"):
                 for key, value in metadata.items():
                     self.fs.setxattr(full_path, key, value)
             else:
@@ -989,9 +922,7 @@ class FsspecBackend(StorageBackend):
 
         else:
             # Other protocols don't support metadata
-            raise PermissionError(
-                f"{self.protocol} backend does not support metadata operations"
-            )
+            raise PermissionError(f"{self.protocol} backend does not support metadata operations")
 
     def url(self, path: str, expires_in: int = 3600, **kwargs) -> str | None:
         """Generate public URL for file access.
@@ -1012,8 +943,8 @@ class FsspecBackend(StorageBackend):
         full_path = self._full_path(path)
 
         # S3: Generate presigned URL
-        if self.protocol == 's3':
-            if hasattr(self.fs, 'sign'):
+        if self.protocol == "s3":
+            if hasattr(self.fs, "sign"):
                 # s3fs supports signing
                 return self.fs.sign(full_path, expiration=expires_in)
             else:
@@ -1021,13 +952,13 @@ class FsspecBackend(StorageBackend):
                 return None
 
         # HTTP: Return direct URL
-        elif self.protocol in ('http', 'https'):
+        elif self.protocol in ("http", "https"):
             # For HTTP, the path IS the URL
             return full_path
 
         # GCS: Generate signed URL
-        elif self.protocol in ('gcs', 'gs'):
-            if hasattr(self.fs, 'sign'):
+        elif self.protocol in ("gcs", "gs"):
+            if hasattr(self.fs, "sign"):
                 return self.fs.sign(full_path, expiration=expires_in)
             else:
                 return None
@@ -1054,7 +985,7 @@ class FsspecBackend(StorageBackend):
         # Return None by default
         return None
 
-    def local_path(self, path: str, mode: str = 'r'):
+    def local_path(self, path: str, mode: str = "r"):
         """Get local filesystem path for remote file.
 
         Downloads the file to a temporary location, yields the local path,
@@ -1090,16 +1021,16 @@ class FsspecBackend(StorageBackend):
 
             # Create temporary file
             suffix = os.path.splitext(path)[1]  # Preserve extension
-            with tempfile.NamedTemporaryFile(mode='w+b', suffix=suffix, delete=False) as tmp:
+            with tempfile.NamedTemporaryFile(mode="w+b", suffix=suffix, delete=False) as tmp:
                 tmp_path = tmp.name
 
             try:
                 # Download file if reading
-                if mode in ('r', 'rw'):
+                if mode in ("r", "rw"):
                     if self.fs.exists(full_path):
                         # Download from remote to temp
-                        with self.fs.open(full_path, 'rb') as remote_file:
-                            with open(tmp_path, 'wb') as local_file:
+                        with self.fs.open(full_path, "rb") as remote_file:
+                            with open(tmp_path, "wb") as local_file:
                                 # Stream in chunks to handle large files
                                 chunk_size = 8 * 1024 * 1024  # 8MB chunks
                                 while True:
@@ -1107,7 +1038,7 @@ class FsspecBackend(StorageBackend):
                                     if not chunk:
                                         break
                                     local_file.write(chunk)
-                    elif mode == 'rw':
+                    elif mode == "rw":
                         # File doesn't exist but mode is rw - create empty
                         pass
 
@@ -1115,17 +1046,17 @@ class FsspecBackend(StorageBackend):
                 yield tmp_path
 
                 # Upload file if writing
-                if mode in ('w', 'rw'):
+                if mode in ("w", "rw"):
                     # Upload from temp to remote
                     if os.path.exists(tmp_path):
                         # Ensure parent directory exists
                         parent = str(PurePosixPath(full_path).parent)
-                        if parent and parent != '.':
+                        if parent and parent != ".":
                             self.fs.makedirs(parent, exist_ok=True)
 
                         # Upload
-                        with open(tmp_path, 'rb') as local_file:
-                            with self.fs.open(full_path, 'wb') as remote_file:
+                        with open(tmp_path, "rb") as local_file:
+                            with self.fs.open(full_path, "wb") as remote_file:
                                 # Stream in chunks
                                 chunk_size = 8 * 1024 * 1024  # 8MB chunks
                                 while True:
@@ -1145,7 +1076,7 @@ class FsspecBackend(StorageBackend):
         """Close filesystem connection if needed."""
         # Most fsspec filesystems don't need explicit closing
         # but S3 and others might have session cleanup
-        if hasattr(self.fs, 'close'):
+        if hasattr(self.fs, "close"):
             self.fs.close()
 
     def __repr__(self) -> str:

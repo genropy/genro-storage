@@ -17,12 +17,14 @@ from genro_storage.exceptions import StorageConfigError
 # Check for optional dependencies
 try:
     import smbprotocol
+
     HAS_SMB = True
 except ImportError:
     HAS_SMB = False
 
 try:
     import paramiko
+
     HAS_SFTP = True
 except ImportError:
     HAS_SFTP = False
@@ -36,22 +38,14 @@ class TestSMBConfiguration:
         storage = StorageManager()
 
         with pytest.raises(StorageConfigError, match="missing required field: 'host'"):
-            storage.configure([{
-                'name': 'smb_test',
-                'type': 'smb',
-                'share': 'documents'
-            }])
+            storage.configure([{"name": "smb_test", "type": "smb", "share": "documents"}])
 
     def test_smb_requires_share(self):
         """SMB backend requires 'share' field."""
         storage = StorageManager()
 
         with pytest.raises(StorageConfigError, match="missing required field: 'share'"):
-            storage.configure([{
-                'name': 'smb_test',
-                'type': 'smb',
-                'host': '192.168.1.100'
-            }])
+            storage.configure([{"name": "smb_test", "type": "smb", "host": "192.168.1.100"}])
 
     @pytest.mark.skipif(not HAS_SMB, reason="smbprotocol not installed")
     @pytest.mark.integration
@@ -59,23 +53,27 @@ class TestSMBConfiguration:
         """Test basic SMB configuration with Docker container."""
         storage = StorageManager()
 
-        storage.configure([{
-            'name': 'smb_test',
-            'type': 'smb',
-            'host': 'localhost',
-            'share': 'share',
-            'username': 'testuser',
-            'password': 'testpass'
-        }])
+        storage.configure(
+            [
+                {
+                    "name": "smb_test",
+                    "type": "smb",
+                    "host": "localhost",
+                    "share": "share",
+                    "username": "testuser",
+                    "password": "testpass",
+                }
+            ]
+        )
 
-        assert 'smb_test' in storage._mounts
+        assert "smb_test" in storage._mounts
 
         # Test basic file operation
-        node = storage.node('smb_test:test.txt')
-        node.write('Hello SMB!', mode='w')
+        node = storage.node("smb_test:test.txt")
+        node.write("Hello SMB!", mode="w")
         assert node.exists
-        content = node.read(mode='r')
-        assert content == 'Hello SMB!'
+        content = node.read(mode="r")
+        assert content == "Hello SMB!"
 
     @pytest.mark.skipif(not HAS_SMB, reason="smbprotocol not installed")
     @pytest.mark.integration
@@ -83,17 +81,21 @@ class TestSMBConfiguration:
         """Test SMB configuration with authentication."""
         storage = StorageManager()
 
-        storage.configure([{
-            'name': 'smb_test',
-            'type': 'smb',
-            'host': 'localhost',
-            'share': 'share',
-            'username': 'testuser',
-            'password': 'testpass',
-            'port': 445
-        }])
+        storage.configure(
+            [
+                {
+                    "name": "smb_test",
+                    "type": "smb",
+                    "host": "localhost",
+                    "share": "share",
+                    "username": "testuser",
+                    "password": "testpass",
+                    "port": 445,
+                }
+            ]
+        )
 
-        assert 'smb_test' in storage._mounts
+        assert "smb_test" in storage._mounts
 
 
 class TestSFTPConfiguration:
@@ -104,22 +106,14 @@ class TestSFTPConfiguration:
         storage = StorageManager()
 
         with pytest.raises(StorageConfigError, match="missing required field: 'host'"):
-            storage.configure([{
-                'name': 'sftp_test',
-                'type': 'sftp',
-                'username': 'user'
-            }])
+            storage.configure([{"name": "sftp_test", "type": "sftp", "username": "user"}])
 
     def test_sftp_requires_username(self):
         """SFTP backend requires 'username' field."""
         storage = StorageManager()
 
         with pytest.raises(StorageConfigError, match="missing required field: 'username'"):
-            storage.configure([{
-                'name': 'sftp_test',
-                'type': 'sftp',
-                'host': 'server.example.com'
-            }])
+            storage.configure([{"name": "sftp_test", "type": "sftp", "host": "server.example.com"}])
 
     @pytest.mark.skipif(not HAS_SFTP, reason="paramiko not installed")
     @pytest.mark.integration
@@ -127,37 +121,45 @@ class TestSFTPConfiguration:
         """Test basic SFTP configuration with Docker container."""
         storage = StorageManager()
 
-        storage.configure([{
-            'name': 'sftp_test',
-            'type': 'sftp',
-            'host': 'localhost',
-            'port': 2222,
-            'username': 'testuser',
-            'password': 'testpass'
-        }])
+        storage.configure(
+            [
+                {
+                    "name": "sftp_test",
+                    "type": "sftp",
+                    "host": "localhost",
+                    "port": 2222,
+                    "username": "testuser",
+                    "password": "testpass",
+                }
+            ]
+        )
 
-        assert 'sftp_test' in storage._mounts
+        assert "sftp_test" in storage._mounts
 
     @pytest.mark.skip(reason="SFTP Docker container volume has permission issues")
     def test_sftp_file_operations(self):
         """Test SFTP file operations (skipped due to Docker permissions)."""
         storage = StorageManager()
 
-        storage.configure([{
-            'name': 'sftp_test',
-            'type': 'sftp',
-            'host': 'localhost',
-            'port': 2222,
-            'username': 'testuser',
-            'password': 'testpass'
-        }])
+        storage.configure(
+            [
+                {
+                    "name": "sftp_test",
+                    "type": "sftp",
+                    "host": "localhost",
+                    "port": 2222,
+                    "username": "testuser",
+                    "password": "testpass",
+                }
+            ]
+        )
 
         # Test basic file operation
-        node = storage.node('sftp_test:upload/test.txt')
-        node.write('Hello SFTP!', mode='w')
+        node = storage.node("sftp_test:upload/test.txt")
+        node.write("Hello SFTP!", mode="w")
         assert node.exists
-        content = node.read(mode='r')
-        assert content == 'Hello SFTP!'
+        content = node.read(mode="r")
+        assert content == "Hello SFTP!"
 
     @pytest.mark.skipif(not HAS_SFTP, reason="paramiko not installed")
     @pytest.mark.integration
@@ -165,33 +167,41 @@ class TestSFTPConfiguration:
         """Test SFTP configuration with password."""
         storage = StorageManager()
 
-        storage.configure([{
-            'name': 'sftp_test',
-            'type': 'sftp',
-            'host': 'localhost',
-            'port': 2222,
-            'username': 'testuser',
-            'password': 'testpass'
-        }])
+        storage.configure(
+            [
+                {
+                    "name": "sftp_test",
+                    "type": "sftp",
+                    "host": "localhost",
+                    "port": 2222,
+                    "username": "testuser",
+                    "password": "testpass",
+                }
+            ]
+        )
 
-        assert 'sftp_test' in storage._mounts
+        assert "sftp_test" in storage._mounts
 
     @pytest.mark.skip(reason="SSH key auth not configured in Docker container")
     def test_sftp_configuration_with_key(self):
         """Test SFTP configuration with SSH key."""
         storage = StorageManager()
 
-        storage.configure([{
-            'name': 'sftp_test',
-            'type': 'sftp',
-            'host': 'localhost',
-            'port': 2222,
-            'username': 'testuser',
-            'key_filename': '/home/user/.ssh/id_rsa',
-            'passphrase': 'keypassword'
-        }])
+        storage.configure(
+            [
+                {
+                    "name": "sftp_test",
+                    "type": "sftp",
+                    "host": "localhost",
+                    "port": 2222,
+                    "username": "testuser",
+                    "key_filename": "/home/user/.ssh/id_rsa",
+                    "passphrase": "keypassword",
+                }
+            ]
+        )
 
-        assert 'sftp_test' in storage._mounts
+        assert "sftp_test" in storage._mounts
 
 
 class TestZIPBackend:
@@ -202,36 +212,28 @@ class TestZIPBackend:
         storage = StorageManager()
 
         with pytest.raises(StorageConfigError, match="missing required field: 'file'"):
-            storage.configure([{
-                'name': 'zip_test',
-                'type': 'zip'
-            }])
+            storage.configure([{"name": "zip_test", "type": "zip"}])
 
     def test_zip_configuration_basic(self):
         """Test basic ZIP configuration."""
         storage = StorageManager()
 
-        with tempfile.NamedTemporaryFile(suffix='.zip', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp:
             zip_path = tmp.name
 
         try:
             # Create a test ZIP file
-            with zipfile.ZipFile(zip_path, 'w') as zf:
-                zf.writestr('test.txt', 'Hello ZIP!')
+            with zipfile.ZipFile(zip_path, "w") as zf:
+                zf.writestr("test.txt", "Hello ZIP!")
 
-            storage.configure([{
-                'name': 'zip_test',
-                'type': 'zip',
-                'file': zip_path,
-                'mode': 'r'
-            }])
+            storage.configure([{"name": "zip_test", "type": "zip", "file": zip_path, "mode": "r"}])
 
-            assert 'zip_test' in storage._mounts
+            assert "zip_test" in storage._mounts
 
             # Test reading from ZIP
-            node = storage.node('zip_test:test.txt')
-            content = node.read(mode='r')
-            assert content == 'Hello ZIP!'
+            node = storage.node("zip_test:test.txt")
+            content = node.read(mode="r")
+            assert content == "Hello ZIP!"
 
         finally:
             Path(zip_path).unlink(missing_ok=True)
@@ -245,21 +247,16 @@ class TestZIPBackend:
         """
         storage = StorageManager()
 
-        with tempfile.NamedTemporaryFile(suffix='.zip', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp:
             zip_path = tmp.name
 
         try:
-            storage.configure([{
-                'name': 'zip_write',
-                'type': 'zip',
-                'file': zip_path,
-                'mode': 'w'
-            }])
+            storage.configure([{"name": "zip_write", "type": "zip", "file": zip_path, "mode": "w"}])
 
-            assert 'zip_write' in storage._mounts
+            assert "zip_write" in storage._mounts
 
             # Verify backend is configured with write capabilities
-            backend = storage._mounts['zip_write']
+            backend = storage._mounts["zip_write"]
             assert backend.capabilities.write is True
 
         finally:
@@ -274,41 +271,34 @@ class TestTARBackend:
         storage = StorageManager()
 
         with pytest.raises(StorageConfigError, match="missing required field: 'file'"):
-            storage.configure([{
-                'name': 'tar_test',
-                'type': 'tar'
-            }])
+            storage.configure([{"name": "tar_test", "type": "tar"}])
 
     def test_tar_configuration_basic(self):
         """Test basic TAR configuration."""
         storage = StorageManager()
 
-        with tempfile.NamedTemporaryFile(suffix='.tar', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".tar", delete=False) as tmp:
             tar_path = tmp.name
 
         try:
             # Create a test TAR file
-            with tarfile.open(tar_path, 'w') as tf:
+            with tarfile.open(tar_path, "w") as tf:
                 # Create a temporary file to add to tar
-                with tempfile.NamedTemporaryFile(mode='w', delete=False) as content_file:
-                    content_file.write('Hello TAR!')
+                with tempfile.NamedTemporaryFile(mode="w", delete=False) as content_file:
+                    content_file.write("Hello TAR!")
                     content_path = content_file.name
 
-                tf.add(content_path, arcname='test.txt')
+                tf.add(content_path, arcname="test.txt")
                 Path(content_path).unlink()
 
-            storage.configure([{
-                'name': 'tar_test',
-                'type': 'tar',
-                'file': tar_path
-            }])
+            storage.configure([{"name": "tar_test", "type": "tar", "file": tar_path}])
 
-            assert 'tar_test' in storage._mounts
+            assert "tar_test" in storage._mounts
 
             # Test reading from TAR
-            node = storage.node('tar_test:test.txt')
-            content = node.read(mode='r')
-            assert content == 'Hello TAR!'
+            node = storage.node("tar_test:test.txt")
+            content = node.read(mode="r")
+            assert content == "Hello TAR!"
 
         finally:
             Path(tar_path).unlink(missing_ok=True)
@@ -317,32 +307,36 @@ class TestTARBackend:
         """Test TAR.GZ configuration."""
         storage = StorageManager()
 
-        with tempfile.NamedTemporaryFile(suffix='.tar.gz', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".tar.gz", delete=False) as tmp:
             tar_path = tmp.name
 
         try:
             # Create a test TAR.GZ file
-            with tarfile.open(tar_path, 'w:gz') as tf:
-                with tempfile.NamedTemporaryFile(mode='w', delete=False) as content_file:
-                    content_file.write('Compressed!')
+            with tarfile.open(tar_path, "w:gz") as tf:
+                with tempfile.NamedTemporaryFile(mode="w", delete=False) as content_file:
+                    content_file.write("Compressed!")
                     content_path = content_file.name
 
-                tf.add(content_path, arcname='compressed.txt')
+                tf.add(content_path, arcname="compressed.txt")
                 Path(content_path).unlink()
 
-            storage.configure([{
-                'name': 'tar_gz_test',
-                'type': 'tar',
-                'file': tar_path
-                # Compression is auto-detected from .tar.gz extension
-            }])
+            storage.configure(
+                [
+                    {
+                        "name": "tar_gz_test",
+                        "type": "tar",
+                        "file": tar_path,
+                        # Compression is auto-detected from .tar.gz extension
+                    }
+                ]
+            )
 
-            assert 'tar_gz_test' in storage._mounts
+            assert "tar_gz_test" in storage._mounts
 
             # Test reading from TAR.GZ
-            node = storage.node('tar_gz_test:compressed.txt')
-            content = node.read(mode='r')
-            assert content == 'Compressed!'
+            node = storage.node("tar_gz_test:compressed.txt")
+            content = node.read(mode="r")
+            assert content == "Compressed!"
 
         finally:
             Path(tar_path).unlink(missing_ok=True)
@@ -351,21 +345,17 @@ class TestTARBackend:
         """Verify TAR is read-only."""
         storage = StorageManager()
 
-        with tempfile.NamedTemporaryFile(suffix='.tar', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".tar", delete=False) as tmp:
             tar_path = tmp.name
 
         try:
             # Create empty TAR
-            with tarfile.open(tar_path, 'w') as tf:
+            with tarfile.open(tar_path, "w") as tf:
                 pass
 
-            storage.configure([{
-                'name': 'tar_test',
-                'type': 'tar',
-                'file': tar_path
-            }])
+            storage.configure([{"name": "tar_test", "type": "tar", "file": tar_path}])
 
-            backend = storage._mounts['tar_test']
+            backend = storage._mounts["tar_test"]
             assert backend.capabilities.readonly is True
             assert backend.capabilities.write is False
 
@@ -381,16 +371,20 @@ class TestBackendCapabilities:
     def test_smb_capabilities(self):
         """Test SMB backend capabilities."""
         storage = StorageManager()
-        storage.configure([{
-            'name': 'smb_test',
-            'type': 'smb',
-            'host': 'localhost',
-            'share': 'share',
-            'username': 'testuser',
-            'password': 'testpass'
-        }])
+        storage.configure(
+            [
+                {
+                    "name": "smb_test",
+                    "type": "smb",
+                    "host": "localhost",
+                    "share": "share",
+                    "username": "testuser",
+                    "password": "testpass",
+                }
+            ]
+        )
 
-        backend = storage._mounts['smb_test']
+        backend = storage._mounts["smb_test"]
         caps = backend.capabilities
 
         assert caps.read is True
@@ -405,16 +399,20 @@ class TestBackendCapabilities:
     def test_sftp_capabilities(self):
         """Test SFTP backend capabilities."""
         storage = StorageManager()
-        storage.configure([{
-            'name': 'sftp_test',
-            'type': 'sftp',
-            'host': 'localhost',
-            'port': 2222,
-            'username': 'testuser',
-            'password': 'testpass'
-        }])
+        storage.configure(
+            [
+                {
+                    "name": "sftp_test",
+                    "type": "sftp",
+                    "host": "localhost",
+                    "port": 2222,
+                    "username": "testuser",
+                    "password": "testpass",
+                }
+            ]
+        )
 
-        backend = storage._mounts['sftp_test']
+        backend = storage._mounts["sftp_test"]
         caps = backend.capabilities
 
         assert caps.read is True
@@ -427,20 +425,16 @@ class TestBackendCapabilities:
         """Test ZIP backend capabilities."""
         storage = StorageManager()
 
-        with tempfile.NamedTemporaryFile(suffix='.zip', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp:
             zip_path = tmp.name
 
         try:
-            with zipfile.ZipFile(zip_path, 'w') as zf:
-                zf.writestr('dummy.txt', 'test')
+            with zipfile.ZipFile(zip_path, "w") as zf:
+                zf.writestr("dummy.txt", "test")
 
-            storage.configure([{
-                'name': 'zip_test',
-                'type': 'zip',
-                'file': zip_path
-            }])
+            storage.configure([{"name": "zip_test", "type": "zip", "file": zip_path}])
 
-            backend = storage._mounts['zip_test']
+            backend = storage._mounts["zip_test"]
             caps = backend.capabilities
 
             assert caps.read is True
@@ -456,20 +450,16 @@ class TestBackendCapabilities:
         """Test TAR backend capabilities."""
         storage = StorageManager()
 
-        with tempfile.NamedTemporaryFile(suffix='.tar', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".tar", delete=False) as tmp:
             tar_path = tmp.name
 
         try:
-            with tarfile.open(tar_path, 'w') as tf:
+            with tarfile.open(tar_path, "w") as tf:
                 pass
 
-            storage.configure([{
-                'name': 'tar_test',
-                'type': 'tar',
-                'file': tar_path
-            }])
+            storage.configure([{"name": "tar_test", "type": "tar", "file": tar_path}])
 
-            backend = storage._mounts['tar_test']
+            backend = storage._mounts["tar_test"]
             caps = backend.capabilities
 
             assert caps.read is True

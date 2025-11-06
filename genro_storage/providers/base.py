@@ -75,17 +75,20 @@ class AsyncProvider(ABC):
             ...     # Return model, implementor, capabilities
             ...     pass
         """
+
         def decorator(func: Callable) -> Callable:
             # Store protocol method
-            if not hasattr(cls, '_protocols'):
+            if not hasattr(cls, "_protocols"):
                 cls._protocols = {}
             cls._protocols[name] = func
 
             # Auto-register in global registry when decorated
             from .registry import ProviderRegistry
+
             ProviderRegistry.register(name, cls, func)
 
             return func
+
         return decorator
 
     @classmethod
@@ -184,7 +187,7 @@ class AsyncImplementor(ABC):
         pass
 
     @abstractmethod
-    async def read_text(self, path: str, encoding: str = 'utf-8') -> str:
+    async def read_text(self, path: str, encoding: str = "utf-8") -> str:
         """Read entire file as text."""
         pass
 
@@ -194,7 +197,7 @@ class AsyncImplementor(ABC):
         pass
 
     @abstractmethod
-    async def write_text(self, path: str, text: str, encoding: str = 'utf-8') -> None:
+    async def write_text(self, path: str, text: str, encoding: str = "utf-8") -> None:
         """Write text to file."""
         pass
 
@@ -215,10 +218,7 @@ class AsyncImplementor(ABC):
 
     @abstractmethod
     async def copy(
-        self,
-        src_path: str,
-        dest_implementor: 'AsyncImplementor',
-        dest_path: str
+        self, src_path: str, dest_implementor: "AsyncImplementor", dest_path: str
     ) -> str | None:
         """Copy file to another implementor."""
         pass
@@ -238,7 +238,7 @@ class AsyncImplementor(ABC):
         data = await self.read_bytes(path)
         yield data
 
-    async def open_write(self, path: str) -> 'AsyncFileWriter':
+    async def open_write(self, path: str) -> "AsyncFileWriter":
         """Open file for streaming write.
 
         Returns:
@@ -248,9 +248,7 @@ class AsyncImplementor(ABC):
             >>> async with implementor.open_write('file.txt') as writer:
             ...     await writer.write(b'data')
         """
-        raise NotImplementedError(
-            f"{self.__class__.__name__} does not support streaming write"
-        )
+        raise NotImplementedError(f"{self.__class__.__name__} does not support streaming write")
 
     # Optional advanced features
 
@@ -273,9 +271,7 @@ class AsyncImplementor(ABC):
 
         Default: Raises PermissionError (no metadata support)
         """
-        raise PermissionError(
-            f"{self.__class__.__name__} does not support metadata operations"
-        )
+        raise PermissionError(f"{self.__class__.__name__} does not support metadata operations")
 
     async def get_versions(self, path: str) -> list[dict]:
         """Get list of file versions.
@@ -289,18 +285,14 @@ class AsyncImplementor(ABC):
 
         Default: Raises PermissionError (no versioning)
         """
-        raise PermissionError(
-            f"{self.__class__.__name__} does not support versioning"
-        )
+        raise PermissionError(f"{self.__class__.__name__} does not support versioning")
 
     async def delete_version(self, path: str, version_id: str) -> None:
         """Delete specific version of file.
 
         Default: Raises PermissionError (no versioning)
         """
-        raise PermissionError(
-            f"{self.__class__.__name__} does not support version deletion"
-        )
+        raise PermissionError(f"{self.__class__.__name__} does not support version deletion")
 
     async def url(self, path: str, expires_in: int = 3600, **kwargs) -> str | None:
         """Generate public URL for file.
@@ -316,7 +308,7 @@ class AsyncImplementor(ABC):
         """
         return None
 
-    def local_path(self, path: str, mode: str = 'r'):
+    def local_path(self, path: str, mode: str = "r"):
         """Get async context manager for local filesystem path.
 
         For local storage: returns direct path
@@ -324,9 +316,7 @@ class AsyncImplementor(ABC):
 
         Default: Raises NotImplementedError (must override)
         """
-        raise NotImplementedError(
-            f"{self.__class__.__name__} must implement local_path"
-        )
+        raise NotImplementedError(f"{self.__class__.__name__} must implement local_path")
 
     async def close(self) -> None:
         """Close resources.

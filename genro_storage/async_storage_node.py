@@ -78,7 +78,7 @@ class AsyncStorageNode:
         path: str,
         must_exist: bool | None = None,
         autocreate: bool = True,
-        cached: bool = False
+        cached: bool = False,
     ):
         """Initialize AsyncStorageNode with eager resolution."""
         self.manager = manager
@@ -92,12 +92,12 @@ class AsyncStorageNode:
 
         # Eager resolution (cheap: dict lookup + string concat)
         mount_info = manager._mounts[mount_point]
-        self.implementor: AsyncImplementor = mount_info['implementor']
-        base_path = mount_info.get('base_path', '')
+        self.implementor: AsyncImplementor = mount_info["implementor"]
+        base_path = mount_info.get("base_path", "")
 
         # Calculate full_path (what we pass to implementor)
         if base_path:
-            self.full_path = f"{base_path}/{path}".strip('/')
+            self.full_path = f"{base_path}/{path}".strip("/")
         else:
             self.full_path = path
 
@@ -149,15 +149,15 @@ class AsyncStorageNode:
     def parent(self) -> AsyncStorageNode:
         """Parent directory as AsyncStorageNode."""
         parent_path = str(PurePosixPath(self.path).parent)
-        if parent_path == '.':
-            parent_path = ''
+        if parent_path == ".":
+            parent_path = ""
         return AsyncStorageNode(
             self.manager,
             self.mount_point,
             parent_path,
             must_exist=False,
             autocreate=self.autocreate,
-            cached=self._cached
+            cached=self._cached,
         )
 
     # METHODS - Actions (all async)
@@ -172,7 +172,7 @@ class AsyncStorageNode:
         return await self.implementor.read_bytes(self.full_path)
 
     @resolved()  # Auto must_exist for read
-    async def read_text(self, encoding: str = 'utf-8') -> str:
+    async def read_text(self, encoding: str = "utf-8") -> str:
         """Read entire file as text.
 
         Args:
@@ -198,7 +198,7 @@ class AsyncStorageNode:
         await self.implementor.write_bytes(self.full_path, data)
 
     @resolved(autocreate=True)
-    async def write_text(self, text: str, encoding: str = 'utf-8', parents: bool = True) -> None:
+    async def write_text(self, text: str, encoding: str = "utf-8", parents: bool = True) -> None:
         """Write text to file.
 
         Args:
@@ -277,13 +277,13 @@ class AsyncStorageNode:
                     child_path,
                     must_exist=False,
                     autocreate=self.autocreate,
-                    cached=self._cached
+                    cached=self._cached,
                 )
             )
 
         return nodes
 
-    def local_path(self, mode: str = 'r'):
+    def local_path(self, mode: str = "r"):
         """Get async context manager for local filesystem path.
 
         For local storage: returns direct path
@@ -333,7 +333,7 @@ class AsyncStorageNode:
         """Invalidate all cached property values."""
         if self._cached:
             for attr in list(vars(self).keys()):
-                if attr.startswith('_cache_'):
+                if attr.startswith("_cache_"):
                     delattr(self, attr)
 
     def refresh(self) -> None:
@@ -344,10 +344,10 @@ class AsyncStorageNode:
 
     def _get_parent_path(self) -> str:
         """Get parent path for this node's full_path."""
-        parts = self.full_path.split('/')
+        parts = self.full_path.split("/")
         if len(parts) > 1:
-            return '/'.join(parts[:-1])
-        return ''
+            return "/".join(parts[:-1])
+        return ""
 
     def __repr__(self) -> str:
         """String representation."""

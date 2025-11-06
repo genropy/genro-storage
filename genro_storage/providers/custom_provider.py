@@ -39,7 +39,7 @@ class CustomProvider(AsyncProvider):
     - Future: cache, encrypted, etc.
     """
 
-    @AsyncProvider.protocol('base64')
+    @AsyncProvider.protocol("base64")
     def protocol_base64(self) -> dict[str, Any]:
         """Base64 inline encoding backend.
 
@@ -61,6 +61,7 @@ class CustomProvider(AsyncProvider):
 
         class Base64Model(BaseModel):
             """Configuration for base64 backend."""
+
             # Base64 has no configuration, just needs to exist
             pass
 
@@ -92,7 +93,7 @@ class CustomProvider(AsyncProvider):
                     ValueError: If path is not valid base64
                 """
                 if not path:
-                    return b''
+                    return b""
 
                 try:
                     return base64.b64decode(path, validate=True)
@@ -108,7 +109,7 @@ class CustomProvider(AsyncProvider):
                 Returns:
                     Base64 encoded string
                 """
-                return base64.b64encode(data).decode('ascii')
+                return base64.b64encode(data).decode("ascii")
 
             # Core async operations
 
@@ -144,7 +145,7 @@ class CustomProvider(AsyncProvider):
                 """Read (decode) base64 data."""
                 return self._decode_path(path)
 
-            async def read_text(self, path: str, encoding: str = 'utf-8') -> str:
+            async def read_text(self, path: str, encoding: str = "utf-8") -> str:
                 """Read (decode) base64 data as text."""
                 data = self._decode_path(path)
                 return data.decode(encoding)
@@ -163,7 +164,7 @@ class CustomProvider(AsyncProvider):
                 # The implementor just validates/stores the concept
                 pass
 
-            async def write_text(self, path: str, text: str, encoding: str = 'utf-8') -> None:
+            async def write_text(self, path: str, text: str, encoding: str = "utf-8") -> None:
                 """Write (encode) text to base64."""
                 await self.write_bytes(path, text.encode(encoding))
 
@@ -185,10 +186,7 @@ class CustomProvider(AsyncProvider):
                 raise NotImplementedError("Base64 backend doesn't support directories")
 
             async def copy(
-                self,
-                src_path: str,
-                dest_implementor: AsyncImplementor,
-                dest_path: str
+                self, src_path: str, dest_implementor: AsyncImplementor, dest_path: str
             ) -> str | None:
                 """Copy base64 data to another implementor.
 
@@ -212,7 +210,7 @@ class CustomProvider(AsyncProvider):
 
                 return None
 
-            async def local_path(self, path: str, mode: str = 'r'):
+            async def local_path(self, path: str, mode: str = "r"):
                 """Base64 doesn't support local_path (data is inline)."""
                 raise NotImplementedError(
                     "Base64 backend doesn't support local_path(). "
@@ -220,12 +218,13 @@ class CustomProvider(AsyncProvider):
                 )
 
         return {
-            'model': Base64Model,
-            'implementor': Base64Implementor,
-            'capabilities': [
-                'read', 'write',
+            "model": Base64Model,
+            "implementor": Base64Implementor,
+            "capabilities": [
+                "read",
+                "write",
                 # NO: delete, mkdir, list_dir (not a filesystem)
-            ]
+            ],
         }
 
 

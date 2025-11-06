@@ -116,6 +116,10 @@ Documentation Contents
 
    configuration
    backends
+   guide/operations
+   guide/copy-strategies
+   guide/virtual-nodes
+   guide/async
    examples
    advanced
 
@@ -139,6 +143,7 @@ Documentation Contents
    api_reference
    capabilities
    versioning
+   appendix/architecture
 
 Indices and tables
 ==================

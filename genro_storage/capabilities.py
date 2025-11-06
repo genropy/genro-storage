@@ -50,31 +50,34 @@ def capability(*names: str) -> Callable:
         ...     # Capabilities are now automatically registered:
         ...     # MyBackend.PROTOCOL_CAPABILITIES == {'mybackend': {'read', 'write', 'metadata'}}
     """
+
     def decorator(func: Callable) -> Callable:
         # Access the class namespace during class construction
         import sys
+
         frame = sys._getframe(1)
         namespace = frame.f_locals
 
         # Get the protocol for this class (default to class name in lowercase)
-        protocol = namespace.get('_default_protocol')
+        protocol = namespace.get("_default_protocol")
         if protocol is None:
             # Try to infer from class name (remove 'Backend' or 'Storage' suffix)
-            class_name = namespace.get('__qualname__', 'unknown')
-            protocol = class_name.lower().replace('backend', '').replace('storage', '') or 'unknown'
+            class_name = namespace.get("__qualname__", "unknown")
+            protocol = class_name.lower().replace("backend", "").replace("storage", "") or "unknown"
 
         # Initialize PROTOCOL_CAPABILITIES dict if needed
-        if 'PROTOCOL_CAPABILITIES' not in namespace:
-            namespace['PROTOCOL_CAPABILITIES'] = {}
+        if "PROTOCOL_CAPABILITIES" not in namespace:
+            namespace["PROTOCOL_CAPABILITIES"] = {}
 
         # Initialize capability set for this protocol
-        if protocol not in namespace['PROTOCOL_CAPABILITIES']:
-            namespace['PROTOCOL_CAPABILITIES'][protocol] = set()
+        if protocol not in namespace["PROTOCOL_CAPABILITIES"]:
+            namespace["PROTOCOL_CAPABILITIES"][protocol] = set()
 
         # Register these capability names
-        namespace['PROTOCOL_CAPABILITIES'][protocol].update(names)
+        namespace["PROTOCOL_CAPABILITIES"][protocol].update(names)
 
         return func
+
     return decorator
 
 

@@ -18,13 +18,7 @@ async def async_storage():
     """Fixture for async storage manager with local backend."""
     with tempfile.TemporaryDirectory() as tmpdir:
         storage = AsyncStorageManager()
-        await storage.configure([
-            {
-                'name': 'local',
-                'protocol': 'local',
-                'root_path': tmpdir
-            }
-        ])
+        await storage.configure([{"name": "local", "protocol": "local", "root_path": tmpdir}])
         yield storage
         await storage.close_all()
 
@@ -33,12 +27,7 @@ async def async_storage():
 async def memory_storage():
     """Fixture for async storage manager with memory backend."""
     storage = AsyncStorageManager()
-    await storage.configure([
-        {
-            'name': 'mem',
-            'protocol': 'memory'
-        }
-    ])
+    await storage.configure([{"name": "mem", "protocol": "memory"}])
     yield storage
     await storage.close_all()
 
@@ -49,30 +38,30 @@ class TestAsyncBasicOperations:
     @pytest.mark.asyncio
     async def test_async_write_and_read(self, async_storage):
         """Test async write and read operations."""
-        node = async_storage.node('local:test.txt')
+        node = async_storage.node("local:test.txt")
 
         # Write
-        await node.write(b'Hello Async World')
+        await node.write(b"Hello Async World")
 
         # Read
         content = await node.read()
-        assert content == b'Hello Async World'
+        assert content == b"Hello Async World"
 
     @pytest.mark.asyncio
     async def test_async_text_operations(self, async_storage):
         """Test async text operations."""
-        node = async_storage.node('local:test.txt')
+        node = async_storage.node("local:test.txt")
 
-        await node.write_text('Hello Async Text')
+        await node.write_text("Hello Async Text")
         text = await node.read_text()
 
-        assert text == 'Hello Async Text'
+        assert text == "Hello Async Text"
 
     @pytest.mark.asyncio
     async def test_async_properties(self, async_storage):
         """Test async properties."""
-        node = async_storage.node('local:test.txt')
-        await node.write(b'test data')
+        node = async_storage.node("local:test.txt")
+        await node.write(b"test data")
 
         # All properties should be awaitable
         exists = await node.exists
@@ -88,40 +77,40 @@ class TestAsyncBasicOperations:
     @pytest.mark.asyncio
     async def test_async_mkdir_and_list(self, async_storage):
         """Test async directory operations."""
-        dir_node = async_storage.node('local:testdir')
+        dir_node = async_storage.node("local:testdir")
         await dir_node.mkdir()
 
         # Create files in directory
-        file1 = async_storage.node('local:testdir/file1.txt')
-        file2 = async_storage.node('local:testdir/file2.txt')
+        file1 = async_storage.node("local:testdir/file1.txt")
+        file2 = async_storage.node("local:testdir/file2.txt")
 
-        await file1.write(b'content1')
-        await file2.write(b'content2')
+        await file1.write(b"content1")
+        await file2.write(b"content2")
 
         # List directory
         children = await dir_node.list()
         names = sorted([c.basename for c in children])
 
-        assert names == ['file1.txt', 'file2.txt']
+        assert names == ["file1.txt", "file2.txt"]
 
     @pytest.mark.asyncio
     async def test_async_copy(self, async_storage):
         """Test async copy operation."""
-        src = async_storage.node('local:source.txt')
-        await src.write(b'copy me')
+        src = async_storage.node("local:source.txt")
+        await src.write(b"copy me")
 
-        dest = async_storage.node('local:dest.txt')
+        dest = async_storage.node("local:dest.txt")
         await src.copy(dest)
 
         # Verify copy
         dest_content = await dest.read()
-        assert dest_content == b'copy me'
+        assert dest_content == b"copy me"
 
     @pytest.mark.asyncio
     async def test_async_delete(self, async_storage):
         """Test async delete operation."""
-        node = async_storage.node('local:delete_me.txt')
-        await node.write(b'temporary')
+        node = async_storage.node("local:delete_me.txt")
+        await node.write(b"temporary")
 
         assert await node.exists
 
@@ -137,20 +126,13 @@ class TestAsyncParallelOperations:
     async def test_parallel_writes(self, memory_storage):
         """Test multiple parallel write operations."""
         # Create 10 nodes
-        nodes = [
-            memory_storage.node(f'mem:file_{i}.txt')
-            for i in range(10)
-        ]
+        nodes = [memory_storage.node(f"mem:file_{i}.txt") for i in range(10)]
 
         # Write in parallel
-        await asyncio.gather(
-            *[node.write(f'content_{i}'.encode()) for i, node in enumerate(nodes)]
-        )
+        await asyncio.gather(*[node.write(f"content_{i}".encode()) for i, node in enumerate(nodes)])
 
         # Verify all files exist
-        exists_results = await asyncio.gather(
-            *[node.exists for node in nodes]
-        )
+        exists_results = await asyncio.gather(*[node.exists for node in nodes])
 
         assert all(exists_results)
 
@@ -160,18 +142,16 @@ class TestAsyncParallelOperations:
         # Create files
         nodes = []
         for i in range(10):
-            node = memory_storage.node(f'mem:file_{i}.txt')
-            await node.write(f'content_{i}'.encode())
+            node = memory_storage.node(f"mem:file_{i}.txt")
+            await node.write(f"content_{i}".encode())
             nodes.append(node)
 
         # Read in parallel
-        contents = await asyncio.gather(
-            *[node.read() for node in nodes]
-        )
+        contents = await asyncio.gather(*[node.read() for node in nodes])
 
         # Verify content
         for i, content in enumerate(contents):
-            assert content == f'content_{i}'.encode()
+            assert content == f"content_{i}".encode()
 
     @pytest.mark.asyncio
     async def test_parallel_copy(self, memory_storage):
@@ -179,21 +159,17 @@ class TestAsyncParallelOperations:
         # Create source files
         sources = []
         for i in range(5):
-            node = memory_storage.node(f'mem:src_{i}.txt')
-            await node.write(f'data_{i}'.encode())
+            node = memory_storage.node(f"mem:src_{i}.txt")
+            await node.write(f"data_{i}".encode())
             sources.append(node)
 
         # Parallel copy
-        dests = [memory_storage.node(f'mem:dst_{i}.txt') for i in range(5)]
+        dests = [memory_storage.node(f"mem:dst_{i}.txt") for i in range(5)]
 
-        await asyncio.gather(
-            *[src.copy(dst) for src, dst in zip(sources, dests)]
-        )
+        await asyncio.gather(*[src.copy(dst) for src, dst in zip(sources, dests)])
 
         # Verify all destinations
-        dest_exists = await asyncio.gather(
-            *[dst.exists for dst in dests]
-        )
+        dest_exists = await asyncio.gather(*[dst.exists for dst in dests])
 
         assert all(dest_exists)
 
@@ -201,22 +177,22 @@ class TestAsyncParallelOperations:
     async def test_parallel_mixed_operations(self, memory_storage):
         """Test mixed parallel operations."""
         # Mix of write, read, copy operations
-        node1 = memory_storage.node('mem:file1.txt')
-        node2 = memory_storage.node('mem:file2.txt')
-        node3 = memory_storage.node('mem:file3.txt')
+        node1 = memory_storage.node("mem:file1.txt")
+        node2 = memory_storage.node("mem:file2.txt")
+        node3 = memory_storage.node("mem:file3.txt")
 
         # Setup
-        await node1.write(b'data1')
+        await node1.write(b"data1")
 
         # Parallel mixed operations
         results = await asyncio.gather(
-            node2.write(b'data2'),          # Write
-            node1.read(),                    # Read
-            node1.copy(node3),               # Copy
+            node2.write(b"data2"),  # Write
+            node1.read(),  # Read
+            node1.copy(node3),  # Copy
         )
 
         # Verify
-        assert results[1] == b'data1'  # Read result
+        assert results[1] == b"data1"  # Read result
         assert await node2.exists
         assert await node3.exists
 
@@ -232,16 +208,14 @@ class TestAsyncPerformance:
         # Sequential writes
         start_seq = time.time()
         for i in range(num_files):
-            node = memory_storage.node(f'mem:seq_{i}.txt')
-            await node.write(b'x' * 1000)
+            node = memory_storage.node(f"mem:seq_{i}.txt")
+            await node.write(b"x" * 1000)
         seq_time = time.time() - start_seq
 
         # Parallel writes
         start_par = time.time()
-        nodes = [memory_storage.node(f'mem:par_{i}.txt') for i in range(num_files)]
-        await asyncio.gather(
-            *[node.write(b'x' * 1000) for node in nodes]
-        )
+        nodes = [memory_storage.node(f"mem:par_{i}.txt") for i in range(num_files)]
+        await asyncio.gather(*[node.write(b"x" * 1000) for node in nodes])
         par_time = time.time() - start_par
 
         # Parallel should be faster or similar
@@ -256,8 +230,8 @@ class TestAsyncCaching:
     @pytest.mark.asyncio
     async def test_cached_properties(self, memory_storage):
         """Test that cached properties work with async."""
-        node = memory_storage.node('mem:cached.txt', cached=True)
-        await node.write(b'test data')
+        node = memory_storage.node("mem:cached.txt", cached=True)
+        await node.write(b"test data")
 
         # First access - should query
         size1 = await node.size
@@ -268,7 +242,7 @@ class TestAsyncCaching:
         assert size1 == size2 == 9
 
         # Modify file
-        await node.write(b'new longer data')
+        await node.write(b"new longer data")
 
         # Should still return cached value
         size3 = await node.size
@@ -288,25 +262,27 @@ class TestAsyncContextManager:
     @pytest.mark.asyncio
     async def test_local_path_context(self, async_storage):
         """Test async local_path context manager."""
-        node = async_storage.node('local:test.txt')
-        await node.write(b'test content')
+        node = async_storage.node("local:test.txt")
+        await node.write(b"test content")
 
         # Use async context manager
-        async with node.local_path(mode='r') as local_path:
+        async with node.local_path(mode="r") as local_path:
             # Should be a real file path
             assert Path(local_path).exists()
 
             # Read using standard file operations
-            with open(local_path, 'rb') as f:
+            with open(local_path, "rb") as f:
                 content = f.read()
 
-            assert content == b'test content'
+            assert content == b"test content"
 
 
 class TestAsyncMemoryBackend:
     """Test memory backend specific features."""
 
-    @pytest.mark.skip(reason="fsspec MemoryFileSystem uses shared class-level storage, isolation not possible without custom implementation")
+    @pytest.mark.skip(
+        reason="fsspec MemoryFileSystem uses shared class-level storage, isolation not possible without custom implementation"
+    )
     @pytest.mark.asyncio
     async def test_memory_backend_isolation(self):
         """Test that memory backends with private stores are isolated.
@@ -318,17 +294,17 @@ class TestAsyncMemoryBackend:
         To support true isolation, we would need to implement a custom memory backend.
         """
         storage1 = AsyncStorageManager()
-        await storage1.configure([{'name': 'mem1', 'protocol': 'memory'}])
+        await storage1.configure([{"name": "mem1", "protocol": "memory"}])
 
         storage2 = AsyncStorageManager()
-        await storage2.configure([{'name': 'mem2', 'protocol': 'memory'}])
+        await storage2.configure([{"name": "mem2", "protocol": "memory"}])
 
         # Write to storage1
-        node1 = storage1.node('mem1:test.txt')
-        await node1.write(b'data1')
+        node1 = storage1.node("mem1:test.txt")
+        await node1.write(b"data1")
 
         # storage2 should have its own empty storage (but doesn't due to fsspec limitation)
-        node2 = storage2.node('mem2:test.txt')
+        node2 = storage2.node("mem2:test.txt")
         assert not await node2.exists
 
         await storage1.close_all()
@@ -342,10 +318,10 @@ class TestAsyncMemoryBackend:
         start = time.time()
 
         # Many parallel operations
-        nodes = [memory_storage.node(f'mem:file_{i}.txt') for i in range(num_ops)]
+        nodes = [memory_storage.node(f"mem:file_{i}.txt") for i in range(num_ops)]
 
         # Write
-        await asyncio.gather(*[node.write(b'x') for node in nodes])
+        await asyncio.gather(*[node.write(b"x") for node in nodes])
 
         # Read
         await asyncio.gather(*[node.read() for node in nodes])
@@ -367,7 +343,7 @@ class TestAsyncErrorHandling:
     @pytest.mark.asyncio
     async def test_async_file_not_found(self, memory_storage):
         """Test FileNotFoundError with async."""
-        node = memory_storage.node('mem:nonexistent.txt')
+        node = memory_storage.node("mem:nonexistent.txt")
 
         with pytest.raises(FileNotFoundError):
             await node.read()
@@ -375,19 +351,19 @@ class TestAsyncErrorHandling:
     @pytest.mark.asyncio
     async def test_async_parent_not_found_without_autocreate(self, memory_storage):
         """Test parent directory creation."""
-        node = memory_storage.node('mem:deep/nested/file.txt', autocreate=False)
+        node = memory_storage.node("mem:deep/nested/file.txt", autocreate=False)
 
         with pytest.raises(FileNotFoundError):
-            await node.write(b'data', parents=False)
+            await node.write(b"data", parents=False)
 
     @pytest.mark.asyncio
     async def test_async_directory_delete_not_recursive(self, memory_storage):
         """Test directory delete requires recursive flag."""
-        dir_node = memory_storage.node('mem:testdir')
+        dir_node = memory_storage.node("mem:testdir")
         await dir_node.mkdir()
 
-        file_node = memory_storage.node('mem:testdir/file.txt')
-        await file_node.write(b'data')
+        file_node = memory_storage.node("mem:testdir/file.txt")
+        await file_node.write(b"data")
 
         # Should fail without recursive
         with pytest.raises(ValueError):

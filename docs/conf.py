@@ -20,6 +20,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx',
+    'sphinxcontrib.mermaid',  # Mermaid diagrams support
     'myst_parser',
 ]
 
@@ -41,7 +42,9 @@ language = 'en'
 # HTML output options
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
+html_logo = '_static/logo.png'
 html_theme_options = {
+    'logo_only': False,
     'navigation_depth': 4,
     'collapse_navigation': False,
     'sticky_navigation': True,

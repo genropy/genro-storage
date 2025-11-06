@@ -29,8 +29,8 @@ class TestHTTPServer:
     def __enter__(self):
         # Create temp directory with test files
         self.tmpdir = tempfile.mkdtemp()
-        test_file = Path(self.tmpdir) / 'test.txt'
-        test_file.write_text('Hello HTTP!')
+        test_file = Path(self.tmpdir) / "test.txt"
+        test_file.write_text("Hello HTTP!")
 
         # Start HTTP server
         Handler = http.server.SimpleHTTPRequestHandler
@@ -41,6 +41,7 @@ class TestHTTPServer:
 
         # Change to temp dir so server serves those files
         import os
+
         self.original_dir = os.getcwd()
         os.chdir(self.tmpdir)
 
@@ -51,7 +52,7 @@ class TestHTTPServer:
         # Give server time to start
         time.sleep(0.5)
 
-        return f'http://localhost:{self.port}'
+        return f"http://localhost:{self.port}"
 
     def __exit__(self, *args):
         import os
@@ -72,49 +73,34 @@ class TestHTTPBackend:
     def test_http_configuration_basic(self):
         """Test basic HTTP configuration."""
         storage = StorageManager()
-        storage.configure([{
-            'name': 'http_test',
-            'type': 'http',
-            'base_url': 'http://example.com'
-        }])
+        storage.configure([{"name": "http_test", "type": "http", "base_url": "http://example.com"}])
 
-        assert 'http_test' in storage._mounts
+        assert "http_test" in storage._mounts
 
     def test_http_configuration_missing_base_url(self):
         """Test HTTP configuration with missing base_url raises error."""
         storage = StorageManager()
         with pytest.raises(StorageConfigError, match="missing required field: 'base_url'"):
-            storage.configure([{
-                'name': 'http_test',
-                'type': 'http'
-            }])
+            storage.configure([{"name": "http_test", "type": "http"}])
 
     @pytest.mark.integration
     def test_http_read_file(self):
         """Test reading file from HTTP server."""
         with TestHTTPServer() as base_url:
             storage = StorageManager()
-            storage.configure([{
-                'name': 'http_test',
-                'type': 'http',
-                'base_url': base_url
-            }])
+            storage.configure([{"name": "http_test", "type": "http", "base_url": base_url}])
 
-            node = storage.node('http_test:test.txt')
-            content = node.read(mode='r')
-            assert content == 'Hello HTTP!'
+            node = storage.node("http_test:test.txt")
+            content = node.read(mode="r")
+            assert content == "Hello HTTP!"
 
     @pytest.mark.integration
     def test_http_capabilities(self):
         """Test HTTP backend capabilities."""
         storage = StorageManager()
-        storage.configure([{
-            'name': 'http_test',
-            'type': 'http',
-            'base_url': 'http://example.com'
-        }])
+        storage.configure([{"name": "http_test", "type": "http", "base_url": "http://example.com"}])
 
-        backend = storage._mounts['http_test']
+        backend = storage._mounts["http_test"]
         caps = backend.capabilities
 
         # HTTP is read-only

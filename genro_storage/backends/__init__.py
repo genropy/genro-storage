@@ -32,8 +32,8 @@ from .base64 import Base64Backend
 from .relative import RelativeMountBackend
 
 __all__ = [
-    'StorageBackend',
-    'LocalStorage',
-    'Base64Backend',
-    'RelativeMountBackend',
+    "StorageBackend",
+    "LocalStorage",
+    "Base64Backend",
+    "RelativeMountBackend",
 ]
