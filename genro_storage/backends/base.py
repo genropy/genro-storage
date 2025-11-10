@@ -674,6 +674,43 @@ class StorageBackend(ABC):
         """
         return None  # Default: no internal URL
 
+    def resolved_path(self, path: str) -> str | None:
+        """Get resolved absolute filesystem path.
+
+        Returns the absolute filesystem path for local storage backends.
+        For remote storage (S3, GCS, Azure, HTTP), returns None.
+
+        This is useful for:
+        - Passing paths to external tools and commands
+        - Integrating with legacy code expecting file paths
+        - Using with Python standard library functions
+
+        Args:
+            path: Relative path within the storage
+
+        Returns:
+            str | None: Absolute filesystem path for local storage, None for remote
+
+        Examples:
+            >>> # Local storage
+            >>> backend = LocalStorage('/var/www/static')
+            >>> abs_path = backend.resolved_path('css/style.css')
+            >>> print(abs_path)
+            '/var/www/static/css/style.css'
+            >>>
+            >>> # Remote storage (S3, etc.)
+            >>> backend = S3Backend('bucket-name')
+            >>> abs_path = backend.resolved_path('file.txt')
+            >>> print(abs_path)
+            None
+
+        Notes:
+            - Only local filesystem backends return a path
+            - Remote backends return None (use local_path() for temp access)
+            - The path may not exist yet (e.g., for write operations)
+        """
+        return None  # Default: not supported for remote storage
+
     def local_path(self, path: str, mode: str = "r"):
         """Get a local filesystem path for the file.
 

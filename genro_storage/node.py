@@ -162,6 +162,45 @@ class StorageNode:
         return self._path
 
     @property
+    def resolved_path(self) -> str | None:
+        """Resolved absolute filesystem path (local storage only).
+
+        Returns the absolute filesystem path for local storage backends.
+        For remote storage (S3, GCS, Azure, HTTP), returns None.
+
+        This is useful for:
+        - Passing paths to external tools and commands
+        - Integrating with legacy code expecting file paths
+        - Using with Python standard library functions
+
+        Returns:
+            str | None: Absolute filesystem path for local storage, None for remote
+
+        Examples:
+            >>> # Local storage
+            >>> node = storage.node('static:css/style.css')
+            >>> print(node.resolved_path)
+            '/var/www/static/css/style.css'
+            >>>
+            >>> # Remote storage (S3, etc.)
+            >>> node = storage.node('s3:file.txt')
+            >>> print(node.resolved_path)
+            None
+            >>>
+            >>> # Use with external tools
+            >>> import subprocess
+            >>> if node.resolved_path:
+            ...     subprocess.run(['file', node.resolved_path])
+
+        Notes:
+            - Only local filesystem backends return a path
+            - Remote backends return None (use local_path() for temporary access)
+            - The path may not exist yet (e.g., for new files to be written)
+            - Replaces need to access private _backend._resolve_path()
+        """
+        return self._backend.resolved_path(self._path)
+
+    @property
     def exists(self) -> bool:
         """True if file or directory exists.
 

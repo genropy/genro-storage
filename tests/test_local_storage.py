@@ -266,6 +266,78 @@ class TestFileOperations:
         url = node.url()
         assert url == "/assets/images/icons/favicon.ico"
 
+    def test_resolved_path_returns_absolute_path(self, temp_dir):
+        """Test resolved_path returns absolute filesystem path.
+
+        Related to issue #59.
+        """
+        mgr = StorageManager()
+        mgr.configure([{
+            "name": "test",
+            "type": "local",
+            "path": temp_dir
+        }])
+
+        # Test with simple path
+        node = mgr.node("test:file.txt")
+        node.write("content")
+
+        resolved = node.resolved_path
+        assert resolved is not None
+        assert resolved.startswith('/')  # Absolute path
+        assert resolved.endswith('/file.txt')
+        assert temp_dir in resolved
+
+    def test_resolved_path_with_nested_directories(self, temp_dir):
+        """Test resolved_path with nested directory structure.
+
+        Related to issue #59.
+        """
+        mgr = StorageManager()
+        mgr.configure([{
+            "name": "test",
+            "type": "local",
+            "path": temp_dir
+        }])
+
+        node = mgr.node("test:deep/nested/path/file.txt")
+        node.write("content")
+
+        resolved = node.resolved_path
+        assert resolved is not None
+        assert resolved.endswith('/deep/nested/path/file.txt')
+        assert temp_dir in resolved
+
+    def test_resolved_path_for_nonexistent_file(self, temp_dir):
+        """Test resolved_path works for files that don't exist yet.
+
+        Related to issue #59.
+        """
+        mgr = StorageManager()
+        mgr.configure([{
+            "name": "test",
+            "type": "local",
+            "path": temp_dir
+        }])
+
+        # File doesn't exist yet
+        node = mgr.node("test:future_file.txt")
+        assert not node.exists
+
+        # But resolved_path still returns the path
+        resolved = node.resolved_path
+        assert resolved is not None
+        assert resolved.endswith('/future_file.txt')
+        assert temp_dir in resolved
+
+        # Can use it to create the file
+        with open(resolved, 'w') as f:
+            f.write("created via resolved_path")
+
+        # Now it exists via genro-storage too
+        assert node.exists
+        assert node.read() == "created via resolved_path"
+
 
 class TestDirectoryOperations:
     """Test directory operations."""

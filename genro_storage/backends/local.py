@@ -439,6 +439,31 @@ class LocalStorage(StorageBackend):
         # Combine with /
         return f"{base}/{normalized_path}"
 
+    def resolved_path(self, path: str) -> str:
+        """Get resolved absolute filesystem path.
+
+        Returns the absolute filesystem path for the given relative path.
+
+        Args:
+            path: Relative path within this storage
+
+        Returns:
+            str: Absolute filesystem path
+
+        Examples:
+            >>> backend = LocalStorage('/var/www/static')
+            >>> abs_path = backend.resolved_path('css/style.css')
+            >>> print(abs_path)
+            '/var/www/static/css/style.css'
+
+        Notes:
+            - Path may not exist yet (e.g., for write operations)
+            - Always returns a string (never None) for local storage
+            - Handles callable paths and routing correctly
+        """
+        resolved = self._resolve_path(path)
+        return str(resolved)
+
     def local_path(self, path: str, mode: str = "r"):
         """Get local filesystem path (returns the actual path).
 
