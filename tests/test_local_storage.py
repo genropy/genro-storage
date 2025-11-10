@@ -192,6 +192,80 @@ class TestFileOperations:
         # Delete again (idempotent)
         node.delete()  # Should not raise error
 
+    def test_url_without_base_url(self, storage):
+        """Test URL generation returns None when no base_url configured.
+
+        Related to issue #55.
+        """
+        node = storage.node("test:static/css/style.css")
+        node.write("body { color: red; }")
+
+        # Without base_url, should return None
+        url = node.url()
+        assert url is None
+
+    def test_url_with_base_url(self, temp_dir):
+        """Test URL generation with base_url configured.
+
+        Related to issue #55.
+        """
+        # Create storage with base_url
+        mgr = StorageManager()
+        mgr.configure([{
+            "name": "static",
+            "type": "local",
+            "path": temp_dir,
+            "base_url": "/static"
+        }])
+
+        # Create file
+        node = mgr.node("static:css/style.css")
+        node.write("body { color: blue; }")
+
+        # Should generate URL with base_url
+        url = node.url()
+        assert url == "/static/css/style.css"
+
+    def test_url_with_base_url_trailing_slash(self, temp_dir):
+        """Test URL generation handles trailing slashes correctly.
+
+        Related to issue #55.
+        """
+        # Create storage with base_url that has trailing slash
+        mgr = StorageManager()
+        mgr.configure([{
+            "name": "static",
+            "type": "local",
+            "path": temp_dir,
+            "base_url": "/static/"  # trailing slash
+        }])
+
+        node = mgr.node("static:js/app.js")
+        node.write("console.log('test');")
+
+        url = node.url()
+        # Should normalize to single slash
+        assert url == "/static/js/app.js"
+
+    def test_url_with_nested_path(self, temp_dir):
+        """Test URL generation with deeply nested paths.
+
+        Related to issue #55.
+        """
+        mgr = StorageManager()
+        mgr.configure([{
+            "name": "assets",
+            "type": "local",
+            "path": temp_dir,
+            "base_url": "/assets"
+        }])
+
+        node = mgr.node("assets:images/icons/favicon.ico")
+        node.write(b"\x00", mode="wb")
+
+        url = node.url()
+        assert url == "/assets/images/icons/favicon.ico"
+
 
 class TestDirectoryOperations:
     """Test directory operations."""

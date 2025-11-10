@@ -79,11 +79,12 @@ class LocalStorage(StorageBackend):
     # Default protocol name for this backend
     _default_protocol = "local"
 
-    def __init__(self, path: Union[str, Callable[[], str]]):
+    def __init__(self, path: Union[str, Callable[[], str]], base_url: str | None = None):
         """Initialize LocalStorage backend.
 
         Args:
             path: Absolute path or callable returning absolute path
+            base_url: Optional base URL for generating file URLs (e.g., '/static')
 
         Raises:
             ValueError: If path (string only) is not absolute or not a directory
@@ -94,6 +95,7 @@ class LocalStorage(StorageBackend):
             This allows configuration before the context (e.g., current user) is available.
         """
         self._path_or_callable = path
+        self._base_url = base_url
 
         # Validate immediately only if path is a string (not callable)
         if not callable(path):
@@ -397,6 +399,45 @@ class LocalStorage(StorageBackend):
                 item_rel_path = f"{src_path}/{item.name}" if src_path else item.name
                 dest_item_path = f"{dest_path}/{item.name}" if dest_path else item.name
                 self.copy(item_rel_path, dest_backend, dest_item_path)
+
+    def url(self, path: str, expires_in: int = 3600, **kwargs) -> str | None:
+        """Generate URL for file access.
+
+        Returns a URL based on the configured base_url. If no base_url was
+        configured, returns None.
+
+        Args:
+            path: Relative path to file
+            expires_in: Ignored for local storage (no expiration)
+            **kwargs: Ignored for local storage
+
+        Returns:
+            str | None: URL string if base_url configured, None otherwise
+
+        Examples:
+            >>> # With base_url='/static'
+            >>> backend = LocalStorage('/var/www/static', base_url='/static')
+            >>> url = backend.url('css/style.css')
+            >>> print(url)
+            '/static/css/style.css'
+            >>>
+            >>> # Without base_url
+            >>> backend = LocalStorage('/var/www/static')
+            >>> url = backend.url('css/style.css')
+            >>> print(url)
+            None
+        """
+        if self._base_url is None:
+            return None
+
+        # Normalize base_url (ensure no trailing slash)
+        base = self._base_url.rstrip('/')
+
+        # Normalize path (ensure leading slash removed)
+        normalized_path = path.lstrip('/')
+
+        # Combine with /
+        return f"{base}/{normalized_path}"
 
     def local_path(self, path: str, mode: str = "r"):
         """Get local filesystem path (returns the actual path).

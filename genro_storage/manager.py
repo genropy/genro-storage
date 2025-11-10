@@ -352,7 +352,11 @@ class StorageManager:
                     f"Local storage '{mount_name}' missing required field: 'path'"
                 )
             # LocalStorage supports both string paths and callables
-            backend = LocalStorage(path=config["path"])
+            # Optional base_url for URL generation
+            backend = LocalStorage(
+                path=config["path"],
+                base_url=config.get("base_url")
+            )
 
         elif backend_type == "memory":
             backend = FsspecBackend("memory", base_path=config.get("base_path", ""))
