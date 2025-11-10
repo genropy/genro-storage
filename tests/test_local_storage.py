@@ -545,6 +545,30 @@ class TestEdgeCases:
         with pytest.raises(FileNotFoundError):
             _ = node.size
 
+    def test_mtime_of_nonexistent_file(self, storage):
+        """Test getting mtime of nonexistent file raises FileNotFoundError.
+
+        This is the correct behavior: metadata properties that require
+        the file to exist should raise FileNotFoundError, consistent
+        with read operations.
+
+        Boolean properties (exists, isfile, isdir) return False instead.
+        See issue #58.
+        """
+        node = storage.node("test:missing.txt")
+
+        # Boolean properties should not raise
+        assert node.exists is False
+        assert node.isfile is False
+        assert node.isdir is False
+
+        # Metadata properties should raise
+        with pytest.raises(FileNotFoundError):
+            _ = node.mtime
+
+        with pytest.raises(FileNotFoundError):
+            _ = node.size
+
     def test_size_of_directory(self, storage):
         """Test getting size of directory (should error)."""
         node = storage.node("test:mydir")
