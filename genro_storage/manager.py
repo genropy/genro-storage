@@ -347,14 +347,16 @@ class StorageManager:
 
         # Create appropriate backend
         if backend_type == "local":
-            if "path" not in config:
+            # Accept 'base_path' as standard
+            base_path = config.get("base_path") or config.get("path")
+            if not base_path:
                 raise StorageConfigError(
-                    f"Local storage '{mount_name}' missing required field: 'path'"
+                    f"Local storage '{mount_name}' missing required field: 'base_path'"
                 )
             # LocalStorage supports both string paths and callables
             # Optional base_url for URL generation
             backend = LocalStorage(
-                path=config["path"],
+                path=base_path,
                 base_url=config.get("base_url")
             )
 
@@ -366,33 +368,44 @@ class StorageManager:
                 raise StorageConfigError(
                     f"S3 storage '{mount_name}' missing required field: 'bucket'"
                 )
-            # Build S3 path: bucket/prefix
-            base_path = config["bucket"]
-            if "prefix" in config:
-                base_path = f"{base_path}/{config['prefix'].strip('/')}"
+            # Build S3 path: bucket/base_path
+            path = config["bucket"]
+            # Accept 'base_path' as standard, 'prefix' for legacy
+            if config.get("base_path"):
+                path = f"{path}/{config['base_path'].strip('/')}"
+            elif config.get("prefix"):
+                path = f"{path}/{config['prefix'].strip('/')}"
 
             kwargs = {}
             if "region" in config:
                 kwargs["client_kwargs"] = {"region_name": config["region"]}
             if "anon" in config:
                 kwargs["anon"] = config["anon"]
-            if "key" in config:
+            # Accept 'access_key'/'secret_key' as standard, 'key'/'secret' for legacy
+            if config.get("access_key"):
+                kwargs["key"] = config["access_key"]
+            elif config.get("key"):
                 kwargs["key"] = config["key"]
-            if "secret" in config:
+            if config.get("secret_key"):
+                kwargs["secret"] = config["secret_key"]
+            elif config.get("secret"):
                 kwargs["secret"] = config["secret"]
             if "endpoint_url" in config:
                 kwargs["endpoint_url"] = config["endpoint_url"]
 
-            backend = FsspecBackend("s3", base_path=base_path, **kwargs)
+            backend = FsspecBackend("s3", base_path=path, **kwargs)
 
         elif backend_type == "gcs":
             if "bucket" not in config:
                 raise StorageConfigError(
                     f"GCS storage '{mount_name}' missing required field: 'bucket'"
                 )
-            base_path = config["bucket"]
-            if "prefix" in config:
-                base_path = f"{base_path}/{config['prefix'].strip('/')}"
+            path = config["bucket"]
+            # Accept 'base_path' as standard, 'prefix' for legacy
+            if config.get("base_path"):
+                path = f"{path}/{config['base_path'].strip('/')}"
+            elif config.get("prefix"):
+                path = f"{path}/{config['prefix'].strip('/')}"
 
             kwargs = {}
             if "token" in config:
@@ -402,7 +415,7 @@ class StorageManager:
             if "endpoint_url" in config:
                 kwargs["endpoint_url"] = config["endpoint_url"]
 
-            backend = FsspecBackend("gcs", base_path=base_path, **kwargs)
+            backend = FsspecBackend("gcs", base_path=path, **kwargs)
 
         elif backend_type == "azure":
             if "container" not in config:
