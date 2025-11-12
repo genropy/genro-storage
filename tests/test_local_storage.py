@@ -44,11 +44,17 @@ class TestStorageManager:
             storage.configure([{"type": "local", "path": "/tmp"}])
 
     def test_configure_missing_type(self):
-        """Test error when type is missing."""
+        """Test error when protocol is missing."""
         storage = StorageManager()
 
-        with pytest.raises(StorageConfigError, match="missing required field: 'type'"):
+        with pytest.raises(StorageConfigError, match="missing required field: 'protocol'"):
             storage.configure([{"name": "test", "path": "/tmp"}])
+
+    def test_configure_with_protocol_field(self, temp_dir):
+        """Test configuring with 'protocol' field (new standard)."""
+        storage = StorageManager()
+        storage.configure([{"name": "test", "protocol": "local", "base_path": temp_dir}])
+        assert "test" in storage._mounts
 
     def test_configure_missing_local_path(self):
         """Test error when local storage path is missing."""

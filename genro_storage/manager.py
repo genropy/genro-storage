@@ -338,12 +338,12 @@ class StorageManager:
             self._configure_relative_mount(mount_name, config)
             return
 
-        if "type" not in config:
+        # Accept 'protocol' as standard, 'type' for legacy
+        backend_type = config.get("protocol") or config.get("type")
+        if not backend_type:
             raise StorageConfigError(
-                f"Mount configuration for '{config['name']}' missing required field: 'type'"
+                f"Mount configuration for '{config['name']}' missing required field: 'protocol'"
             )
-
-        backend_type = config["type"]
 
         # Create appropriate backend
         if backend_type == "local":
