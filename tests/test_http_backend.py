@@ -80,7 +80,7 @@ class TestHTTPBackend:
     def test_http_configuration_missing_base_url(self):
         """Test HTTP configuration with missing base_url raises error."""
         storage = StorageManager()
-        with pytest.raises(StorageConfigError, match="missing required field: 'base_url'"):
+        with pytest.raises(StorageConfigError, match="missing required field: 'base_path'"):
             storage.configure([{"name": "http_test", "type": "http"}])
 
     @pytest.mark.integration

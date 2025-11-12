@@ -441,11 +441,13 @@ class StorageManager:
             backend = FsspecBackend("az", base_path=base_path, **kwargs)
 
         elif backend_type == "http":
-            if "base_url" not in config:
+            # Accept 'base_path' as standard, 'base_url' for legacy
+            base_path_value = config.get("base_path") or config.get("base_url")
+            if not base_path_value:
                 raise StorageConfigError(
-                    f"HTTP storage '{mount_name}' missing required field: 'base_url'"
+                    f"HTTP storage '{mount_name}' missing required field: 'base_path'"
                 )
-            backend = FsspecBackend("http", base_path=config["base_url"])
+            backend = FsspecBackend("http", base_path=base_path_value)
 
         elif backend_type == "smb":
             if "host" not in config:
@@ -457,10 +459,13 @@ class StorageManager:
                     f"SMB storage '{mount_name}' missing required field: 'share'"
                 )
 
-            # Build SMB path: /share/path
-            base_path = f"/{config['share']}"
-            if "path" in config:
-                base_path = f"{base_path}/{config['path'].strip('/')}"
+            # Build SMB path: /share/base_path
+            path = f"/{config['share']}"
+            # Accept 'base_path' as standard, 'path' for legacy
+            if config.get("base_path"):
+                path = f"{path}/{config['base_path'].strip('/')}"
+            elif config.get("path"):
+                path = f"{path}/{config['path'].strip('/')}"
 
             kwargs = {"host": config["host"]}
             if "username" in config:
@@ -472,7 +477,7 @@ class StorageManager:
             if "port" in config:
                 kwargs["port"] = config["port"]
 
-            backend = FsspecBackend("smb", base_path=base_path, **kwargs)
+            backend = FsspecBackend("smb", base_path=path, **kwargs)
 
         elif backend_type == "sftp":
             if "host" not in config:
@@ -484,8 +489,9 @@ class StorageManager:
                     f"SFTP storage '{mount_name}' missing required field: 'username'"
                 )
 
-            # Build SFTP path: host:/path
-            base_path = config.get("path", "/")
+            # Build SFTP path: host:/base_path
+            # Accept 'base_path' as standard, 'path' for legacy
+            path = config.get("base_path") or config.get("path", "/")
 
             kwargs = {"host": config["host"], "username": config["username"]}
             if "password" in config:
@@ -499,7 +505,7 @@ class StorageManager:
             if "timeout" in config:
                 kwargs["timeout"] = config["timeout"]
 
-            backend = FsspecBackend("sftp", base_path=base_path, **kwargs)
+            backend = FsspecBackend("sftp", base_path=path, **kwargs)
 
         elif backend_type == "zip":
             if "file" not in config:
@@ -536,13 +542,15 @@ class StorageManager:
             backend = FsspecBackend("tar", base_path="", **kwargs)
 
         elif backend_type == "git":
-            if "path" not in config:
+            # Accept 'base_path' as standard, 'path' for legacy
+            git_path = config.get("base_path") or config.get("path")
+            if not git_path:
                 raise StorageConfigError(
-                    f"Git storage '{mount_name}' missing required field: 'path'"
+                    f"Git storage '{mount_name}' missing required field: 'base_path'"
                 )
 
             # Git backend accesses local Git repositories
-            kwargs = {"path": config["path"]}
+            kwargs = {"path": git_path}
             if "ref" in config:
                 kwargs["ref"] = config["ref"]  # commit, tag, or branch
             if "fo" in config:

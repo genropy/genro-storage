@@ -54,7 +54,7 @@ class TestStorageManager:
         """Test error when local storage path is missing."""
         storage = StorageManager()
 
-        with pytest.raises(StorageConfigError, match="missing required field: 'path'"):
+        with pytest.raises(StorageConfigError, match="missing required field: 'base_path'"):
             storage.configure([{"name": "test", "type": "local"}])
 
     def test_configure_unknown_type(self):

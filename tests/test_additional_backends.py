@@ -162,7 +162,7 @@ class TestGitBackend:
     def test_git_configuration_missing_path(self):
         """Test Git configuration with missing path raises error."""
         storage = StorageManager()
-        with pytest.raises(StorageConfigError, match="missing required field: 'path'"):
+        with pytest.raises(StorageConfigError, match="missing required field: 'base_path'"):
             storage.configure([{"name": "git_test", "type": "git"}])
 
     @pytest.mark.skipif(not HAS_PYGIT2, reason="pygit2 not installed")
