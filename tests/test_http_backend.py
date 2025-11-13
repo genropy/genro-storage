@@ -73,7 +73,7 @@ class TestHTTPBackend:
     def test_http_configuration_basic(self):
         """Test basic HTTP configuration."""
         storage = StorageManager()
-        storage.configure([{"name": "http_test", "type": "http", "base_url": "http://example.com"}])
+        storage.configure([{"name": "http_test", "protocol": "http", "base_url": "http://example.com"}])
 
         assert "http_test" in storage._mounts
 
@@ -81,14 +81,14 @@ class TestHTTPBackend:
         """Test HTTP configuration with missing base_url raises error."""
         storage = StorageManager()
         with pytest.raises(StorageConfigError, match="missing required field: 'base_path'"):
-            storage.configure([{"name": "http_test", "type": "http"}])
+            storage.configure([{"name": "http_test", "protocol": "http"}])
 
     @pytest.mark.integration
     def test_http_read_file(self):
         """Test reading file from HTTP server."""
         with TestHTTPServer() as base_url:
             storage = StorageManager()
-            storage.configure([{"name": "http_test", "type": "http", "base_url": base_url}])
+            storage.configure([{"name": "http_test", "protocol": "http", "base_url": base_url}])
 
             node = storage.node("http_test:test.txt")
             content = node.read(mode="r")
@@ -98,7 +98,7 @@ class TestHTTPBackend:
     def test_http_capabilities(self):
         """Test HTTP backend capabilities."""
         storage = StorageManager()
-        storage.configure([{"name": "http_test", "type": "http", "base_url": "http://example.com"}])
+        storage.configure([{"name": "http_test", "protocol": "http", "base_url": "http://example.com"}])
 
         backend = storage._mounts["http_test"]
         caps = backend.capabilities

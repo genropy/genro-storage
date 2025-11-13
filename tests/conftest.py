@@ -189,7 +189,7 @@ def s3_storage_config(minio_bucket, minio_config):
     """
     return {
         "name": "test-s3",
-        "type": "s3",
+        "protocol": "s3",
         "bucket": minio_bucket,
         "endpoint_url": minio_config["endpoint_url"],
         "key": minio_config["aws_access_key_id"],

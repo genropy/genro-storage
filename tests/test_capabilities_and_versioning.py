@@ -13,7 +13,7 @@ class TestCapabilities:
     def test_memory_backend_capabilities(self):
         """Memory backend has correct capabilities."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         caps = node.capabilities
@@ -31,7 +31,7 @@ class TestCapabilities:
         """Local backend has correct capabilities."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         node = storage.node("local:test.txt")
         caps = node.capabilities
@@ -48,7 +48,7 @@ class TestCapabilities:
     def test_base64_backend_capabilities(self):
         """Base64 backend has correct capabilities."""
         storage = StorageManager()
-        storage.configure([{"name": "b64", "type": "base64"}])
+        storage.configure([{"name": "b64", "protocol": "base64"}])
 
         node = storage.node("b64:dGVzdA==")
         caps = node.capabilities
@@ -63,7 +63,7 @@ class TestCapabilities:
     def test_capabilities_string_representation(self):
         """Capabilities have string representation."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         caps_str = str(node.capabilities)
@@ -80,7 +80,7 @@ class TestVersionCount:
     def test_version_count_zero_for_nonversioned(self):
         """version_count returns 0 for non-versioned backends."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write("content")
@@ -91,7 +91,7 @@ class TestVersionCount:
         """version_count returns 0 for local storage."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         node = storage.node("local:test.txt")
         node.write("content")
@@ -105,7 +105,7 @@ class TestWriteIfChanged:
     def test_write_bytes_skip_if_unchanged_creates_file(self):
         """write_bytes(skip_if_unchanged=True) creates file if it doesn't exist."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
 
@@ -118,7 +118,7 @@ class TestWriteIfChanged:
     def test_write_bytes_skip_if_unchanged_skips_duplicate(self):
         """write_bytes(skip_if_unchanged=True) skips if content is identical."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write(b"Hello", mode="wb")
@@ -132,7 +132,7 @@ class TestWriteIfChanged:
     def test_write_bytes_skip_if_unchanged_updates_different_content(self):
         """write_bytes(skip_if_unchanged=True) writes if content is different."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write(b"Hello", mode="wb")
@@ -145,7 +145,7 @@ class TestWriteIfChanged:
     def test_write_text_skip_if_unchanged_creates_file(self):
         """write_text(skip_if_unchanged=True) creates file if it doesn't exist."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
 
@@ -156,7 +156,7 @@ class TestWriteIfChanged:
     def test_write_text_skip_if_unchanged_updates_different_content(self):
         """write_text(skip_if_unchanged=True) writes if content is different."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write("Hello")
@@ -172,7 +172,7 @@ class TestOpenWithVersion:
     def test_open_with_version_raises_on_nonversioned(self):
         """open(version=...) raises PermissionError on non-versioned backend."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write("content")
@@ -184,7 +184,7 @@ class TestOpenWithVersion:
     def test_open_with_as_of_raises_on_nonversioned(self):
         """open(as_of=...) raises PermissionError on non-versioned backend."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write("content")
@@ -198,7 +198,7 @@ class TestOpenWithVersion:
     def test_open_with_both_version_and_as_of_raises(self):
         """open() with both version and as_of raises ValueError."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
 
@@ -213,7 +213,7 @@ class TestCompactVersions:
     def test_compact_versions_raises_on_nonversioned(self):
         """compact_versions raises PermissionError on non-versioned backend."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write("content")
@@ -224,7 +224,7 @@ class TestCompactVersions:
     def test_compact_versions_dry_run_on_nonversioned(self):
         """compact_versions with dry_run raises PermissionError on non-versioned backend."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write("content")
@@ -239,7 +239,7 @@ class TestDeleteVersion:
     def test_delete_version_raises_on_memory(self):
         """delete_version raises PermissionError on memory backend."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write("content")
@@ -251,7 +251,7 @@ class TestDeleteVersion:
         """delete_version raises PermissionError on local backend."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         node = storage.node("local:test.txt")
         node.write("content")

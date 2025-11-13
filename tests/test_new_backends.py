@@ -38,14 +38,14 @@ class TestSMBConfiguration:
         storage = StorageManager()
 
         with pytest.raises(StorageConfigError, match="missing required field: 'host'"):
-            storage.configure([{"name": "smb_test", "type": "smb", "share": "documents"}])
+            storage.configure([{"name": "smb_test", "protocol": "smb", "share": "documents"}])
 
     def test_smb_requires_share(self):
         """SMB backend requires 'share' field."""
         storage = StorageManager()
 
         with pytest.raises(StorageConfigError, match="missing required field: 'share'"):
-            storage.configure([{"name": "smb_test", "type": "smb", "host": "192.168.1.100"}])
+            storage.configure([{"name": "smb_test", "protocol": "smb", "host": "192.168.1.100"}])
 
     @pytest.mark.skipif(not HAS_SMB, reason="smbprotocol not installed")
     @pytest.mark.integration
@@ -57,7 +57,7 @@ class TestSMBConfiguration:
             [
                 {
                     "name": "smb_test",
-                    "type": "smb",
+                    "protocol": "smb",
                     "host": "localhost",
                     "share": "share",
                     "username": "testuser",
@@ -85,7 +85,7 @@ class TestSMBConfiguration:
             [
                 {
                     "name": "smb_test",
-                    "type": "smb",
+                    "protocol": "smb",
                     "host": "localhost",
                     "share": "share",
                     "username": "testuser",
@@ -106,14 +106,14 @@ class TestSFTPConfiguration:
         storage = StorageManager()
 
         with pytest.raises(StorageConfigError, match="missing required field: 'host'"):
-            storage.configure([{"name": "sftp_test", "type": "sftp", "username": "user"}])
+            storage.configure([{"name": "sftp_test", "protocol": "sftp", "username": "user"}])
 
     def test_sftp_requires_username(self):
         """SFTP backend requires 'username' field."""
         storage = StorageManager()
 
         with pytest.raises(StorageConfigError, match="missing required field: 'username'"):
-            storage.configure([{"name": "sftp_test", "type": "sftp", "host": "server.example.com"}])
+            storage.configure([{"name": "sftp_test", "protocol": "sftp", "host": "server.example.com"}])
 
     @pytest.mark.skipif(not HAS_SFTP, reason="paramiko not installed")
     @pytest.mark.integration
@@ -125,7 +125,7 @@ class TestSFTPConfiguration:
             [
                 {
                     "name": "sftp_test",
-                    "type": "sftp",
+                    "protocol": "sftp",
                     "host": "localhost",
                     "port": 2222,
                     "username": "testuser",
@@ -145,7 +145,7 @@ class TestSFTPConfiguration:
             [
                 {
                     "name": "sftp_test",
-                    "type": "sftp",
+                    "protocol": "sftp",
                     "host": "localhost",
                     "port": 2222,
                     "username": "testuser",
@@ -171,7 +171,7 @@ class TestSFTPConfiguration:
             [
                 {
                     "name": "sftp_test",
-                    "type": "sftp",
+                    "protocol": "sftp",
                     "host": "localhost",
                     "port": 2222,
                     "username": "testuser",
@@ -191,7 +191,7 @@ class TestSFTPConfiguration:
             [
                 {
                     "name": "sftp_test",
-                    "type": "sftp",
+                    "protocol": "sftp",
                     "host": "localhost",
                     "port": 2222,
                     "username": "testuser",
@@ -212,7 +212,7 @@ class TestZIPBackend:
         storage = StorageManager()
 
         with pytest.raises(StorageConfigError, match="missing required field: 'file'"):
-            storage.configure([{"name": "zip_test", "type": "zip"}])
+            storage.configure([{"name": "zip_test", "protocol": "zip"}])
 
     def test_zip_configuration_basic(self):
         """Test basic ZIP configuration."""
@@ -226,7 +226,7 @@ class TestZIPBackend:
             with zipfile.ZipFile(zip_path, "w") as zf:
                 zf.writestr("test.txt", "Hello ZIP!")
 
-            storage.configure([{"name": "zip_test", "type": "zip", "file": zip_path, "mode": "r"}])
+            storage.configure([{"name": "zip_test", "protocol": "zip", "file": zip_path, "mode": "r"}])
 
             assert "zip_test" in storage._mounts
 
@@ -251,7 +251,7 @@ class TestZIPBackend:
             zip_path = tmp.name
 
         try:
-            storage.configure([{"name": "zip_write", "type": "zip", "file": zip_path, "mode": "w"}])
+            storage.configure([{"name": "zip_write", "protocol": "zip", "file": zip_path, "mode": "w"}])
 
             assert "zip_write" in storage._mounts
 
@@ -271,7 +271,7 @@ class TestTARBackend:
         storage = StorageManager()
 
         with pytest.raises(StorageConfigError, match="missing required field: 'file'"):
-            storage.configure([{"name": "tar_test", "type": "tar"}])
+            storage.configure([{"name": "tar_test", "protocol": "tar"}])
 
     def test_tar_configuration_basic(self):
         """Test basic TAR configuration."""
@@ -291,7 +291,7 @@ class TestTARBackend:
                 tf.add(content_path, arcname="test.txt")
                 Path(content_path).unlink()
 
-            storage.configure([{"name": "tar_test", "type": "tar", "file": tar_path}])
+            storage.configure([{"name": "tar_test", "protocol": "tar", "file": tar_path}])
 
             assert "tar_test" in storage._mounts
 
@@ -324,7 +324,7 @@ class TestTARBackend:
                 [
                     {
                         "name": "tar_gz_test",
-                        "type": "tar",
+                        "protocol": "tar",
                         "file": tar_path,
                         # Compression is auto-detected from .tar.gz extension
                     }
@@ -353,7 +353,7 @@ class TestTARBackend:
             with tarfile.open(tar_path, "w") as tf:
                 pass
 
-            storage.configure([{"name": "tar_test", "type": "tar", "file": tar_path}])
+            storage.configure([{"name": "tar_test", "protocol": "tar", "file": tar_path}])
 
             backend = storage._mounts["tar_test"]
             assert backend.capabilities.readonly is True
@@ -375,7 +375,7 @@ class TestBackendCapabilities:
             [
                 {
                     "name": "smb_test",
-                    "type": "smb",
+                    "protocol": "smb",
                     "host": "localhost",
                     "share": "share",
                     "username": "testuser",
@@ -403,7 +403,7 @@ class TestBackendCapabilities:
             [
                 {
                     "name": "sftp_test",
-                    "type": "sftp",
+                    "protocol": "sftp",
                     "host": "localhost",
                     "port": 2222,
                     "username": "testuser",
@@ -432,7 +432,7 @@ class TestBackendCapabilities:
             with zipfile.ZipFile(zip_path, "w") as zf:
                 zf.writestr("dummy.txt", "test")
 
-            storage.configure([{"name": "zip_test", "type": "zip", "file": zip_path}])
+            storage.configure([{"name": "zip_test", "protocol": "zip", "file": zip_path}])
 
             backend = storage._mounts["zip_test"]
             caps = backend.capabilities
@@ -457,7 +457,7 @@ class TestBackendCapabilities:
             with tarfile.open(tar_path, "w") as tf:
                 pass
 
-            storage.configure([{"name": "tar_test", "type": "tar", "file": tar_path}])
+            storage.configure([{"name": "tar_test", "protocol": "tar", "file": tar_path}])
 
             backend = storage._mounts["tar_test"]
             caps = backend.capabilities

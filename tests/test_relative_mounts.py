@@ -10,7 +10,7 @@ from genro_storage.exceptions import StorageConfigError, StoragePermissionError
 def storage():
     """Create StorageManager with parent mount."""
     manager = StorageManager()
-    manager.configure([{"name": "data", "type": "memory", "base_path": "/data"}])
+    manager.configure([{"name": "data", "protocol": "memory", "base_path": "/data"}])
     return manager
 
 

@@ -10,7 +10,7 @@ from genro_storage import StorageManager
 def storage():
     """Create a StorageManager with memory storage."""
     mgr = StorageManager()
-    mgr.configure([{"name": "mem", "type": "memory"}])
+    mgr.configure([{"name": "mem", "protocol": "memory"}])
     return mgr
 
 
@@ -19,7 +19,7 @@ def temp_storage():
     """Create a StorageManager with local storage."""
     tmpdir = tempfile.mkdtemp()
     mgr = StorageManager()
-    mgr.configure([{"name": "local", "type": "local", "path": tmpdir}])
+    mgr.configure([{"name": "local", "protocol": "local", "path": tmpdir}])
     yield mgr
     shutil.rmtree(tmpdir)
 

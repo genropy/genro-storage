@@ -15,7 +15,7 @@ class TestLocalBackendPermissions:
         with tempfile.TemporaryDirectory() as tmpdir:
             storage = StorageManager()
             storage.configure(
-                [{"name": "local", "type": "local", "path": tmpdir, "permissions": "readonly"}]
+                [{"name": "local", "protocol": "local", "path": tmpdir, "permissions": "readonly"}]
             )
 
             node = storage.node("local:test.txt")
@@ -29,7 +29,7 @@ class TestLocalBackendPermissions:
         with tempfile.TemporaryDirectory() as tmpdir:
             storage = StorageManager()
             storage.configure(
-                [{"name": "local", "type": "local", "path": tmpdir, "permissions": "readwrite"}]
+                [{"name": "local", "protocol": "local", "path": tmpdir, "permissions": "readwrite"}]
             )
 
             # Write should work
@@ -46,7 +46,7 @@ class TestLocalBackendPermissions:
         with tempfile.TemporaryDirectory() as tmpdir:
             storage = StorageManager()
             storage.configure(
-                [{"name": "local", "type": "local", "path": tmpdir, "permissions": "delete"}]
+                [{"name": "local", "protocol": "local", "path": tmpdir, "permissions": "delete"}]
             )
 
             # All operations should work
@@ -62,7 +62,7 @@ class TestLocalBackendPermissions:
             storage = StorageManager()
             storage.configure(
                 [
-                    {"name": "local", "type": "local", "path": tmpdir}
+                    {"name": "local", "protocol": "local", "path": tmpdir}
                     # No permissions field - should have full access
                 ]
             )
@@ -81,7 +81,7 @@ class TestMemoryBackendPermissions:
     def test_memory_readonly_permission(self):
         """Memory backend with readonly permission blocks writes."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory", "permissions": "readonly"}])
+        storage.configure([{"name": "mem", "protocol": "memory", "permissions": "readonly"}])
 
         node = storage.node("mem:test.txt")
 
@@ -92,11 +92,11 @@ class TestMemoryBackendPermissions:
         """Memory backend with readwrite permission allows write but blocks delete."""
         storage = StorageManager()
         # First configure without permission to write data
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
         storage.node("mem:test.txt").write("content")
 
         # Reconfigure with readwrite permission
-        storage.configure([{"name": "mem", "type": "memory", "permissions": "readwrite"}])
+        storage.configure([{"name": "mem", "protocol": "memory", "permissions": "readwrite"}])
 
         node = storage.node("mem:test.txt")
         # Write should work
@@ -110,7 +110,7 @@ class TestMemoryBackendPermissions:
     def test_memory_delete_permission(self):
         """Memory backend with delete permission allows all operations."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory", "permissions": "delete"}])
+        storage.configure([{"name": "mem", "protocol": "memory", "permissions": "delete"}])
 
         node = storage.node("mem:test.txt")
         node.write("content")
@@ -130,7 +130,7 @@ class TestS3BackendPermissions:
             [
                 {
                     "name": "s3_temp",
-                    "type": "s3",
+                    "protocol": "s3",
                     "bucket": minio_bucket,
                     "endpoint_url": minio_config["endpoint_url"],
                     "key": minio_config["aws_access_key_id"],
@@ -145,7 +145,7 @@ class TestS3BackendPermissions:
             [
                 {
                     "name": "s3",
-                    "type": "s3",
+                    "protocol": "s3",
                     "bucket": minio_bucket,
                     "endpoint_url": minio_config["endpoint_url"],
                     "key": minio_config["aws_access_key_id"],
@@ -168,7 +168,7 @@ class TestS3BackendPermissions:
             [
                 {
                     "name": "s3",
-                    "type": "s3",
+                    "protocol": "s3",
                     "bucket": minio_bucket,
                     "endpoint_url": minio_config["endpoint_url"],
                     "key": minio_config["aws_access_key_id"],
@@ -192,7 +192,7 @@ class TestS3BackendPermissions:
             [
                 {
                     "name": "s3",
-                    "type": "s3",
+                    "protocol": "s3",
                     "bucket": minio_bucket,
                     "endpoint_url": minio_config["endpoint_url"],
                     "key": minio_config["aws_access_key_id"],
@@ -220,7 +220,7 @@ class TestReadOnlyBackendValidation:
             [
                 {
                     "name": "http",
-                    "type": "http",
+                    "protocol": "http",
                     "base_url": "http://example.com",
                     "permissions": "readonly",
                 }
@@ -239,7 +239,7 @@ class TestReadOnlyBackendValidation:
                 [
                     {
                         "name": "http",
-                        "type": "http",
+                        "protocol": "http",
                         "base_url": "http://example.com",
                         "permissions": "readwrite",
                     }
@@ -255,7 +255,7 @@ class TestReadOnlyBackendValidation:
                 [
                     {
                         "name": "http",
-                        "type": "http",
+                        "protocol": "http",
                         "base_url": "http://example.com",
                         "permissions": "delete",
                     }
@@ -271,7 +271,7 @@ class TestInvalidPermissions:
         storage = StorageManager()
 
         with pytest.raises(StorageConfigError, match="Invalid permissions"):
-            storage.configure([{"name": "local", "type": "memory", "permissions": "invalid_value"}])
+            storage.configure([{"name": "local", "protocol": "memory", "permissions": "invalid_value"}])
 
 
 class TestPermissionMixedOperations:
@@ -282,7 +282,7 @@ class TestPermissionMixedOperations:
         with tempfile.TemporaryDirectory() as tmpdir:
             storage = StorageManager()
             storage.configure(
-                [{"name": "local", "type": "local", "path": tmpdir, "permissions": "readonly"}]
+                [{"name": "local", "protocol": "local", "path": tmpdir, "permissions": "readonly"}]
             )
 
             node = storage.node("local:subdir/file.txt")
@@ -297,8 +297,8 @@ class TestPermissionMixedOperations:
             storage = StorageManager()
             storage.configure(
                 [
-                    {"name": "source", "type": "memory"},
-                    {"name": "dest", "type": "local", "path": tmpdir, "permissions": "readonly"},
+                    {"name": "source", "protocol": "memory"},
+                    {"name": "dest", "protocol": "local", "path": tmpdir, "permissions": "readonly"},
                 ]
             )
 
@@ -317,8 +317,8 @@ class TestPermissionMixedOperations:
             storage = StorageManager()
             storage.configure(
                 [
-                    {"name": "source", "type": "memory"},
-                    {"name": "dest", "type": "local", "path": tmpdir, "permissions": "readwrite"},
+                    {"name": "source", "protocol": "memory"},
+                    {"name": "dest", "protocol": "local", "path": tmpdir, "permissions": "readwrite"},
                 ]
             )
 
@@ -333,7 +333,7 @@ class TestPermissionMixedOperations:
     def test_readonly_blocks_open_write_mode(self):
         """Readonly permission blocks open() in write mode."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory", "permissions": "readonly"}])
+        storage.configure([{"name": "mem", "protocol": "memory", "permissions": "readonly"}])
 
         node = storage.node("mem:file.txt")
 
@@ -345,11 +345,11 @@ class TestPermissionMixedOperations:
         """Readonly permission allows open() in read mode."""
         storage = StorageManager()
         # First create file without restrictions
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
         storage.node("mem:file.txt").write("content")
 
         # Reconfigure with readonly
-        storage.configure([{"name": "mem", "type": "memory", "permissions": "readonly"}])
+        storage.configure([{"name": "mem", "protocol": "memory", "permissions": "readonly"}])
 
         node = storage.node("mem:file.txt")
 
@@ -367,7 +367,7 @@ class TestRelativeBackendCompleteCoverage:
             storage = StorageManager()
             storage.configure(
                 [
-                    {"name": "data", "type": "local", "path": tmpdir},
+                    {"name": "data", "protocol": "local", "path": tmpdir},
                     {"name": "readonly", "path": "data:subdir", "permissions": "readonly"},
                 ]
             )
@@ -389,7 +389,7 @@ class TestRelativeBackendCompleteCoverage:
             storage = StorageManager()
             storage.configure(
                 [
-                    {"name": "data", "type": "local", "path": tmpdir},
+                    {"name": "data", "protocol": "local", "path": tmpdir},
                     {"name": "readonly", "path": "data:subdir", "permissions": "readonly"},
                 ]
             )
@@ -407,7 +407,7 @@ class TestRelativeBackendCompleteCoverage:
             storage = StorageManager()
             storage.configure(
                 [
-                    {"name": "data", "type": "local", "path": tmpdir},
+                    {"name": "data", "protocol": "local", "path": tmpdir},
                     {"name": "readonly", "path": "data:subdir", "permissions": "readonly"},
                     {"name": "readwrite", "path": "data:subdir2", "permissions": "readwrite"},
                 ]
@@ -429,7 +429,7 @@ class TestRelativeBackendCompleteCoverage:
             storage = StorageManager()
             storage.configure(
                 [
-                    {"name": "data", "type": "local", "path": tmpdir},
+                    {"name": "data", "protocol": "local", "path": tmpdir},
                     {"name": "readonly", "path": "data:subdir", "permissions": "readonly"},
                     {"name": "readwrite", "path": "data:subdir2", "permissions": "readwrite"},
                 ]
@@ -450,7 +450,7 @@ class TestRelativeBackendCompleteCoverage:
         storage = StorageManager()
         storage.configure(
             [
-                {"name": "mem", "type": "memory"},
+                {"name": "mem", "protocol": "memory"},
                 {"name": "readonly", "path": "mem:data", "permissions": "readonly"},
             ]
         )
@@ -470,7 +470,7 @@ class TestRelativeBackendCompleteCoverage:
             [
                 {
                     "name": "s3_parent",
-                    "type": "s3",
+                    "protocol": "s3",
                     "bucket": minio_bucket,
                     "endpoint_url": minio_config["endpoint_url"],
                     "key": minio_config["aws_access_key_id"],
@@ -511,7 +511,7 @@ class TestRelativeBackendCompleteCoverage:
             [
                 {
                     "name": "s3_parent",
-                    "type": "s3",
+                    "protocol": "s3",
                     "bucket": minio_versioned_bucket,
                     "endpoint_url": minio_config["endpoint_url"],
                     "key": minio_config["aws_access_key_id"],
@@ -569,7 +569,7 @@ class TestRelativeBackendCompleteCoverage:
             [
                 {
                     "name": "s3_parent",
-                    "type": "s3",
+                    "protocol": "s3",
                     "bucket": minio_bucket,
                     "endpoint_url": minio_config["endpoint_url"],
                     "key": minio_config["aws_access_key_id"],
@@ -602,7 +602,7 @@ class TestRelativeBackendCompleteCoverage:
             storage = StorageManager()
             storage.configure(
                 [
-                    {"name": "data", "type": "local", "path": tmpdir},
+                    {"name": "data", "protocol": "local", "path": tmpdir},
                     {"name": "readonly", "path": "data:subdir", "permissions": "readonly"},
                 ]
             )
@@ -625,8 +625,8 @@ class TestRelativeBackendCompleteCoverage:
         storage = StorageManager()
         storage.configure(
             [
-                {"name": "source", "type": "memory"},
-                {"name": "dest", "type": "memory"},
+                {"name": "source", "protocol": "memory"},
+                {"name": "dest", "protocol": "memory"},
                 {"name": "source_ro", "path": "source:", "permissions": "readonly"},
             ]
         )
@@ -650,7 +650,7 @@ class TestRelativeBackendCompleteCoverage:
         storage = StorageManager()
         storage.configure(
             [
-                {"name": "data", "type": "memory"},
+                {"name": "data", "protocol": "memory"},
                 {"name": "child", "path": "data:subdir", "permissions": "readonly"},
             ]
         )

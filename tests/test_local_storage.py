@@ -21,7 +21,7 @@ def temp_dir():
 def storage(temp_dir):
     """Create a StorageManager with local storage."""
     mgr = StorageManager()
-    mgr.configure([{"name": "test", "type": "local", "path": temp_dir}])
+    mgr.configure([{"name": "test", "protocol": "local", "path": temp_dir}])
     return mgr
 
 
@@ -31,7 +31,7 @@ class TestStorageManager:
     def test_configure_from_list(self, temp_dir):
         """Test configuring from Python list."""
         storage = StorageManager()
-        storage.configure([{"name": "test", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "test", "protocol": "local", "path": temp_dir}])
 
         assert storage.has_mount("test")
         assert "test" in storage.get_mount_names()
@@ -41,7 +41,7 @@ class TestStorageManager:
         storage = StorageManager()
 
         with pytest.raises(StorageConfigError, match="missing required field: 'name'"):
-            storage.configure([{"type": "local", "path": "/tmp"}])
+            storage.configure([{"protocol": "local", "path": "/tmp"}])
 
     def test_configure_missing_type(self):
         """Test error when protocol is missing."""
@@ -61,22 +61,22 @@ class TestStorageManager:
         storage = StorageManager()
 
         with pytest.raises(StorageConfigError, match="missing required field: 'base_path'"):
-            storage.configure([{"name": "test", "type": "local"}])
+            storage.configure([{"name": "test", "protocol": "local"}])
 
     def test_configure_unknown_type(self):
         """Test error for unknown storage type."""
         storage = StorageManager()
 
         with pytest.raises(StorageConfigError, match="Unknown storage type"):
-            storage.configure([{"name": "test", "type": "unknown"}])
+            storage.configure([{"name": "test", "protocol": "unknown"}])
 
     def test_configure_replace_mount(self, temp_dir):
         """Test that configuring same mount name replaces it."""
         storage = StorageManager()
-        storage.configure([{"name": "test", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "test", "protocol": "local", "path": temp_dir}])
 
         # Configure again with same name
-        storage.configure([{"name": "test", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "test", "protocol": "local", "path": temp_dir}])
 
         # Should still have only one mount
         assert len(storage.get_mount_names()) == 1
@@ -219,7 +219,7 @@ class TestFileOperations:
         mgr = StorageManager()
         mgr.configure([{
             "name": "static",
-            "type": "local",
+            "protocol": "local",
             "path": temp_dir,
             "base_url": "/static"
         }])
@@ -241,7 +241,7 @@ class TestFileOperations:
         mgr = StorageManager()
         mgr.configure([{
             "name": "static",
-            "type": "local",
+            "protocol": "local",
             "path": temp_dir,
             "base_url": "/static/"  # trailing slash
         }])
@@ -261,7 +261,7 @@ class TestFileOperations:
         mgr = StorageManager()
         mgr.configure([{
             "name": "assets",
-            "type": "local",
+            "protocol": "local",
             "path": temp_dir,
             "base_url": "/assets"
         }])
@@ -280,7 +280,7 @@ class TestFileOperations:
         mgr = StorageManager()
         mgr.configure([{
             "name": "test",
-            "type": "local",
+            "protocol": "local",
             "path": temp_dir
         }])
 
@@ -302,7 +302,7 @@ class TestFileOperations:
         mgr = StorageManager()
         mgr.configure([{
             "name": "test",
-            "type": "local",
+            "protocol": "local",
             "path": temp_dir
         }])
 
@@ -322,7 +322,7 @@ class TestFileOperations:
         mgr = StorageManager()
         mgr.configure([{
             "name": "test",
-            "type": "local",
+            "protocol": "local",
             "path": temp_dir
         }])
 

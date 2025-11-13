@@ -16,8 +16,8 @@ class TestCopyIncludePatterns:
         temp_dest = tempfile.mkdtemp()
         storage.configure(
             [
-                {"name": "src", "type": "local", "path": temp_src},
-                {"name": "dest", "type": "local", "path": temp_dest},
+                {"name": "src", "protocol": "local", "path": temp_src},
+                {"name": "dest", "protocol": "local", "path": temp_dest},
             ]
         )
 
@@ -43,8 +43,8 @@ class TestCopyIncludePatterns:
         temp_dest = tempfile.mkdtemp()
         storage.configure(
             [
-                {"name": "src", "type": "local", "path": temp_src},
-                {"name": "dest", "type": "local", "path": temp_dest},
+                {"name": "src", "protocol": "local", "path": temp_src},
+                {"name": "dest", "protocol": "local", "path": temp_dest},
             ]
         )
 
@@ -70,8 +70,8 @@ class TestCopyIncludePatterns:
         temp_dest = tempfile.mkdtemp()
         storage.configure(
             [
-                {"name": "src", "type": "local", "path": temp_src},
-                {"name": "dest", "type": "local", "path": temp_dest},
+                {"name": "src", "protocol": "local", "path": temp_src},
+                {"name": "dest", "protocol": "local", "path": temp_dest},
             ]
         )
 
@@ -99,8 +99,8 @@ class TestCopyExcludePatterns:
         temp_dest = tempfile.mkdtemp()
         storage.configure(
             [
-                {"name": "src", "type": "local", "path": temp_src},
-                {"name": "dest", "type": "local", "path": temp_dest},
+                {"name": "src", "protocol": "local", "path": temp_src},
+                {"name": "dest", "protocol": "local", "path": temp_dest},
             ]
         )
 
@@ -124,8 +124,8 @@ class TestCopyExcludePatterns:
         temp_dest = tempfile.mkdtemp()
         storage.configure(
             [
-                {"name": "src", "type": "local", "path": temp_src},
-                {"name": "dest", "type": "local", "path": temp_dest},
+                {"name": "src", "protocol": "local", "path": temp_src},
+                {"name": "dest", "protocol": "local", "path": temp_dest},
             ]
         )
 
@@ -151,8 +151,8 @@ class TestCopyExcludePatterns:
         temp_dest = tempfile.mkdtemp()
         storage.configure(
             [
-                {"name": "src", "type": "local", "path": temp_src},
-                {"name": "dest", "type": "local", "path": temp_dest},
+                {"name": "src", "protocol": "local", "path": temp_src},
+                {"name": "dest", "protocol": "local", "path": temp_dest},
             ]
         )
 
@@ -180,8 +180,8 @@ class TestCopyIncludeAndExclude:
         temp_dest = tempfile.mkdtemp()
         storage.configure(
             [
-                {"name": "src", "type": "local", "path": temp_src},
-                {"name": "dest", "type": "local", "path": temp_dest},
+                {"name": "src", "protocol": "local", "path": temp_src},
+                {"name": "dest", "protocol": "local", "path": temp_dest},
             ]
         )
 
@@ -211,8 +211,8 @@ class TestCopyCustomFilter:
         temp_dest = tempfile.mkdtemp()
         storage.configure(
             [
-                {"name": "src", "type": "local", "path": temp_src},
-                {"name": "dest", "type": "local", "path": temp_dest},
+                {"name": "src", "protocol": "local", "path": temp_src},
+                {"name": "dest", "protocol": "local", "path": temp_dest},
             ]
         )
 
@@ -238,8 +238,8 @@ class TestCopyCustomFilter:
         temp_dest = tempfile.mkdtemp()
         storage.configure(
             [
-                {"name": "src", "type": "local", "path": temp_src},
-                {"name": "dest", "type": "local", "path": temp_dest},
+                {"name": "src", "protocol": "local", "path": temp_src},
+                {"name": "dest", "protocol": "local", "path": temp_dest},
             ]
         )
 
@@ -267,8 +267,8 @@ class TestCopyCustomFilter:
         temp_dest = tempfile.mkdtemp()
         storage.configure(
             [
-                {"name": "src", "type": "local", "path": temp_src},
-                {"name": "dest", "type": "local", "path": temp_dest},
+                {"name": "src", "protocol": "local", "path": temp_src},
+                {"name": "dest", "protocol": "local", "path": temp_dest},
             ]
         )
 
@@ -298,8 +298,8 @@ class TestCopyCombinedFiltering:
         temp_dest = tempfile.mkdtemp()
         storage.configure(
             [
-                {"name": "src", "type": "local", "path": temp_src},
-                {"name": "dest", "type": "local", "path": temp_dest},
+                {"name": "src", "protocol": "local", "path": temp_src},
+                {"name": "dest", "protocol": "local", "path": temp_dest},
             ]
         )
 
@@ -335,8 +335,8 @@ class TestCopyCombinedFiltering:
         temp_dest = tempfile.mkdtemp()
         storage.configure(
             [
-                {"name": "src", "type": "local", "path": temp_src},
-                {"name": "dest", "type": "local", "path": temp_dest},
+                {"name": "src", "protocol": "local", "path": temp_src},
+                {"name": "dest", "protocol": "local", "path": temp_dest},
             ]
         )
 
@@ -372,8 +372,8 @@ class TestCopyFilteringEdgeCases:
         temp_dest = tempfile.mkdtemp()
         storage.configure(
             [
-                {"name": "src", "type": "local", "path": temp_src},
-                {"name": "dest", "type": "local", "path": temp_dest},
+                {"name": "src", "protocol": "local", "path": temp_src},
+                {"name": "dest", "protocol": "local", "path": temp_dest},
             ]
         )
 
@@ -394,8 +394,8 @@ class TestCopyFilteringEdgeCases:
         temp_dest = tempfile.mkdtemp()
         storage.configure(
             [
-                {"name": "src", "type": "local", "path": temp_src},
-                {"name": "dest", "type": "local", "path": temp_dest},
+                {"name": "src", "protocol": "local", "path": temp_src},
+                {"name": "dest", "protocol": "local", "path": temp_dest},
             ]
         )
 
@@ -434,8 +434,8 @@ class TestCopyFilteringEdgeCases:
         temp_dest = tempfile.mkdtemp()
         storage.configure(
             [
-                {"name": "src", "type": "local", "path": temp_src},
-                {"name": "dest", "type": "local", "path": temp_dest},
+                {"name": "src", "protocol": "local", "path": temp_src},
+                {"name": "dest", "protocol": "local", "path": temp_dest},
             ]
         )
 

@@ -16,7 +16,7 @@ class TestLocalPath:
         """LocalStorage local_path returns the actual filesystem path."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         node = storage.node("local:test.txt")
         node.write("Hello World")
@@ -32,7 +32,7 @@ class TestLocalPath:
     def test_local_path_memory_downloads_and_uploads(self):
         """Memory storage local_path downloads to temp and uploads changes."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write("Original")
@@ -49,7 +49,7 @@ class TestLocalPath:
     def test_local_path_memory_read_write_mode(self):
         """Memory storage local_path with rw mode downloads and uploads."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write("Original")
@@ -71,7 +71,7 @@ class TestLocalPath:
     def test_local_path_memory_write_mode(self):
         """Memory storage local_path with w mode only uploads."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:newfile.txt")
 
@@ -87,7 +87,7 @@ class TestLocalPath:
     def test_local_path_base64_read_only(self):
         """Base64 backend local_path creates temp file with decoded content."""
         storage = StorageManager()
-        storage.configure([{"name": "b64", "type": "base64"}])
+        storage.configure([{"name": "b64", "protocol": "base64"}])
 
         data = base64.b64encode(b"Test data").decode()
         node = storage.node(f"b64:{data}")
@@ -103,7 +103,7 @@ class TestLocalPath:
     def test_local_path_base64_write_raises_error(self):
         """Base64 backend local_path raises error for write modes."""
         storage = StorageManager()
-        storage.configure([{"name": "b64", "type": "base64"}])
+        storage.configure([{"name": "b64", "protocol": "base64"}])
 
         node = storage.node("b64:dGVzdA==")
 
@@ -114,7 +114,7 @@ class TestLocalPath:
     def test_local_path_preserves_file_extension(self):
         """local_path preserves file extension in temp file."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:video.mp4")
         node.write(b"fake video data", mode="wb")
@@ -139,7 +139,7 @@ class TestCallablePaths:
             os.makedirs(user_dir, exist_ok=True)
             return user_dir
 
-        storage.configure([{"name": "user", "type": "local", "path": get_user_path}])
+        storage.configure([{"name": "user", "protocol": "local", "path": get_user_path}])
 
         # User 1
         context["user_id"] = 123
@@ -176,7 +176,7 @@ class TestCallablePaths:
             raise ValueError("Should not be called during configure")
 
         # Should not raise during configure
-        storage.configure([{"name": "deferred", "type": "local", "path": get_path_later}])
+        storage.configure([{"name": "deferred", "protocol": "local", "path": get_path_later}])
 
         # Should raise when accessing
         # (we won't actually call it to avoid failing the test)
@@ -187,7 +187,7 @@ class TestCallablePaths:
 
         with pytest.raises(FileNotFoundError):
             storage.configure(
-                [{"name": "bad", "type": "local", "path": "/nonexistent/path/xyz123"}]
+                [{"name": "bad", "protocol": "local", "path": "/nonexistent/path/xyz123"}]
             )
 
 
@@ -197,7 +197,7 @@ class TestMetadata:
     def test_metadata_memory_returns_empty_dict(self):
         """Memory storage returns empty dict for metadata."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write("test")
@@ -209,7 +209,7 @@ class TestMetadata:
         """Local storage returns empty dict for metadata."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         node = storage.node("local:test.txt")
         node.write("test")
@@ -220,7 +220,7 @@ class TestMetadata:
     def test_metadata_set_raises_permission_error_memory(self):
         """Setting metadata on memory storage raises PermissionError."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write("test")
@@ -232,7 +232,7 @@ class TestMetadata:
         """Setting metadata on local storage raises PermissionError."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         node = storage.node("local:test.txt")
         node.write("test")
@@ -243,7 +243,7 @@ class TestMetadata:
     def test_metadata_validation(self):
         """Metadata validation checks dict with string keys/values."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write("test")
@@ -258,7 +258,7 @@ class TestURLGeneration:
     def test_url_returns_none_for_memory(self):
         """Memory storage url() returns None."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write("test")
@@ -270,7 +270,7 @@ class TestURLGeneration:
         """Local storage url() returns None."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         node = storage.node("local:test.txt")
         node.write("test")
@@ -281,7 +281,7 @@ class TestURLGeneration:
     def test_internal_url_returns_none_for_memory(self):
         """Memory storage internal_url() returns None."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write("test")
@@ -292,7 +292,7 @@ class TestURLGeneration:
     def test_internal_url_nocache_parameter(self):
         """internal_url accepts nocache parameter."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write("test")
@@ -309,7 +309,7 @@ class TestBase64Encoding:
         """to_base64() creates data URI by default."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         node = storage.node("local:test.txt")
         node.write("Hello World")
@@ -325,7 +325,7 @@ class TestBase64Encoding:
         """to_base64(include_uri=False) returns raw base64."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         node = storage.node("local:test.txt")
         node.write("Hello World")
@@ -340,7 +340,7 @@ class TestBase64Encoding:
         """to_base64() accepts custom MIME type."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         node = storage.node("local:data.json")
         node.write('{"key": "value"}')
@@ -352,7 +352,7 @@ class TestBase64Encoding:
         """to_base64() auto-detects MIME type from extension."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         # JSON file
         node = storage.node("local:data.json")
@@ -364,7 +364,7 @@ class TestBase64Encoding:
         """to_base64() raises FileNotFoundError if file doesn't exist."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         node = storage.node("local:nonexistent.txt")
 
@@ -375,7 +375,7 @@ class TestBase64Encoding:
         """to_base64() raises ValueError for directories."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         node = storage.node("local:subdir")
         node.mkdir()
@@ -392,7 +392,7 @@ class TestFillFromURL:
         """fill_from_url() downloads and writes content."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         # Mock HTTP response
         mock_response = MagicMock()
@@ -413,7 +413,7 @@ class TestFillFromURL:
         """fill_from_url() accepts custom timeout."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         mock_response = MagicMock()
         mock_response.read.return_value = b"data"
@@ -432,7 +432,7 @@ class TestFillFromURL:
         """fill_from_url() raises ValueError for invalid URLs."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         node = storage.node("local:file.txt")
 
@@ -449,7 +449,7 @@ class TestFillFromURL:
 
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         mock_urlopen.side_effect = urllib.error.URLError("Connection failed")
 
@@ -465,7 +465,7 @@ class TestS3Versioning:
     def test_versions_returns_empty_list_for_memory(self):
         """Memory storage returns empty list for versions."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write("test")
@@ -477,7 +477,7 @@ class TestS3Versioning:
         """Local storage returns empty list for versions."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         node = storage.node("local:test.txt")
         node.write("test")
@@ -488,7 +488,7 @@ class TestS3Versioning:
     def test_open_with_version_raises_permission_error_memory(self):
         """Memory storage raises PermissionError for open(version=...)."""
         storage = StorageManager()
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         node = storage.node("mem:test.txt")
         node.write("test")
@@ -500,7 +500,7 @@ class TestS3Versioning:
         """Local storage raises PermissionError for open(version=...)."""
         storage = StorageManager()
         temp_dir = tempfile.mkdtemp()
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         node = storage.node("local:test.txt")
         node.write("test")

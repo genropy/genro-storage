@@ -19,8 +19,8 @@ class TestCopySkipStrategies:
         manager = StorageManager()
         manager.configure(
             [
-                {"name": "src", "type": "local", "path": str(src_dir)},
-                {"name": "dest", "type": "local", "path": str(dest_dir)},
+                {"name": "src", "protocol": "local", "path": str(src_dir)},
+                {"name": "dest", "protocol": "local", "path": str(dest_dir)},
             ]
         )
         return manager
@@ -372,8 +372,8 @@ class TestCopySkipEdgeCases:
         manager = StorageManager()
         manager.configure(
             [
-                {"name": "src", "type": "local", "path": str(src_dir)},
-                {"name": "dest", "type": "local", "path": str(dest_dir)},
+                {"name": "src", "protocol": "local", "path": str(src_dir)},
+                {"name": "dest", "protocol": "local", "path": str(dest_dir)},
             ]
         )
         return manager

@@ -10,7 +10,7 @@ from genro_storage import StorageManager, StorageNotFoundError
 def storage():
     """Create a StorageManager with base64 backend."""
     mgr = StorageManager()
-    mgr.configure([{"name": "b64", "type": "base64"}])
+    mgr.configure([{"name": "b64", "protocol": "base64"}])
     return mgr
 
 
@@ -20,7 +20,7 @@ class TestBase64Backend:
     def test_configure_base64_backend(self):
         """Test configuring base64 backend."""
         storage = StorageManager()
-        storage.configure([{"name": "data", "type": "base64"}])
+        storage.configure([{"name": "data", "protocol": "base64"}])
 
         assert storage.has_mount("data")
         assert "data" in storage.get_mount_names()
@@ -197,7 +197,7 @@ class TestBase64Backend:
     def test_copy_to_memory_backend(self, storage):
         """Test copying base64 data to another backend."""
         # Setup memory backend for destination
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         # Create base64 source
         data = b"Test data for copy"
@@ -337,7 +337,7 @@ class TestBase64Backend:
     def test_copy_from_memory_to_base64(self, storage):
         """Test copying from memory backend to base64 (the main use case)."""
         # Setup memory backend with source data
-        storage.configure([{"name": "mem", "type": "memory"}])
+        storage.configure([{"name": "mem", "protocol": "memory"}])
 
         # Create source file in memory
         src = storage.node("mem:test.txt")

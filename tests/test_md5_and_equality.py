@@ -10,7 +10,7 @@ class TestMD5Hash:
     def test_md5hash_local_file(self, storage_manager, tmp_path):
         """Test MD5 hash computation for local file."""
         # Configure local storage
-        storage_manager.configure([{"name": "local", "type": "local", "path": str(tmp_path)}])
+        storage_manager.configure([{"name": "local", "protocol": "local", "path": str(tmp_path)}])
 
         # Create test file with known content
         test_content = b"Hello, World!"
@@ -33,7 +33,7 @@ class TestMD5Hash:
             [
                 {
                     "name": "s3",
-                    "type": "s3",
+                    "protocol": "s3",
                     "bucket": "test-bucket",
                     "key": "minioadmin",
                     "secret": "minioadmin",
@@ -64,7 +64,7 @@ class TestMD5Hash:
 
     def test_md5hash_nonexistent_file(self, storage_manager, tmp_path):
         """Test MD5 hash on non-existent file raises error."""
-        storage_manager.configure([{"name": "local", "type": "local", "path": str(tmp_path)}])
+        storage_manager.configure([{"name": "local", "protocol": "local", "path": str(tmp_path)}])
 
         node = storage_manager.node("local:nonexistent.txt")
 
@@ -73,7 +73,7 @@ class TestMD5Hash:
 
     def test_md5hash_directory_raises_error(self, storage_manager, tmp_path):
         """Test MD5 hash on directory raises error."""
-        storage_manager.configure([{"name": "local", "type": "local", "path": str(tmp_path)}])
+        storage_manager.configure([{"name": "local", "protocol": "local", "path": str(tmp_path)}])
 
         # Create directory
         node = storage_manager.node("local:testdir")
@@ -84,7 +84,7 @@ class TestMD5Hash:
 
     def test_md5hash_large_file(self, storage_manager, tmp_path):
         """Test MD5 hash on large file (tests block reading)."""
-        storage_manager.configure([{"name": "local", "type": "local", "path": str(tmp_path)}])
+        storage_manager.configure([{"name": "local", "protocol": "local", "path": str(tmp_path)}])
 
         # Create 1MB file
         large_content = b"x" * (1024 * 1024)
@@ -103,7 +103,7 @@ class TestMD5Hash:
 
     def test_md5hash_empty_file(self, storage_manager, tmp_path):
         """Test MD5 hash of empty file."""
-        storage_manager.configure([{"name": "local", "type": "local", "path": str(tmp_path)}])
+        storage_manager.configure([{"name": "local", "protocol": "local", "path": str(tmp_path)}])
 
         node = storage_manager.node("local:empty.txt")
         node.write(b"", mode="wb")
@@ -119,7 +119,7 @@ class TestNodeEquality:
 
     def test_equality_same_content(self, storage_manager, tmp_path):
         """Test two files with same content are equal."""
-        storage_manager.configure([{"name": "local", "type": "local", "path": str(tmp_path)}])
+        storage_manager.configure([{"name": "local", "protocol": "local", "path": str(tmp_path)}])
 
         content = b"Same content"
 
@@ -134,7 +134,7 @@ class TestNodeEquality:
 
     def test_inequality_different_content(self, storage_manager, tmp_path):
         """Test two files with different content are not equal."""
-        storage_manager.configure([{"name": "local", "type": "local", "path": str(tmp_path)}])
+        storage_manager.configure([{"name": "local", "protocol": "local", "path": str(tmp_path)}])
 
         node1 = storage_manager.node("local:file1.txt")
         node1.write(b"Content A", mode="wb")
@@ -147,7 +147,7 @@ class TestNodeEquality:
 
     def test_equality_same_path(self, storage_manager, tmp_path):
         """Test node equals itself (same path)."""
-        storage_manager.configure([{"name": "local", "type": "local", "path": str(tmp_path)}])
+        storage_manager.configure([{"name": "local", "protocol": "local", "path": str(tmp_path)}])
 
         node1 = storage_manager.node("local:file.txt")
         node1.write(b"Content", mode="wb")
@@ -165,8 +165,8 @@ class TestNodeEquality:
         local_path.mkdir()
         backup_path.mkdir()
 
-        storage_manager.configure([{"name": "local", "type": "local", "path": str(local_path)}])
-        storage_manager.configure([{"name": "backup", "type": "local", "path": str(backup_path)}])
+        storage_manager.configure([{"name": "local", "protocol": "local", "path": str(local_path)}])
+        storage_manager.configure([{"name": "backup", "protocol": "local", "path": str(backup_path)}])
 
         content = b"Cross-backend content"
 
@@ -181,12 +181,12 @@ class TestNodeEquality:
     def test_equality_s3_to_local(self, storage_manager, tmp_path, s3_fs):
         """Test equality between S3 and local file with same content."""
         # Configure both storages
-        storage_manager.configure([{"name": "local", "type": "local", "path": str(tmp_path)}])
+        storage_manager.configure([{"name": "local", "protocol": "local", "path": str(tmp_path)}])
         storage_manager.configure(
             [
                 {
                     "name": "s3",
-                    "type": "s3",
+                    "protocol": "s3",
                     "bucket": "test-bucket",
                     "key": "minioadmin",
                     "secret": "minioadmin",
@@ -208,7 +208,7 @@ class TestNodeEquality:
 
     def test_inequality_with_non_storagenode(self, storage_manager, tmp_path):
         """Test comparison with non-StorageNode returns NotImplemented."""
-        storage_manager.configure([{"name": "local", "type": "local", "path": str(tmp_path)}])
+        storage_manager.configure([{"name": "local", "protocol": "local", "path": str(tmp_path)}])
 
         node = storage_manager.node("local:file.txt")
         node.write(b"Content", mode="wb")
@@ -223,7 +223,7 @@ class TestNodeEquality:
 
     def test_equality_nonexistent_files(self, storage_manager, tmp_path):
         """Test equality of non-existent files returns False."""
-        storage_manager.configure([{"name": "local", "type": "local", "path": str(tmp_path)}])
+        storage_manager.configure([{"name": "local", "protocol": "local", "path": str(tmp_path)}])
 
         node1 = storage_manager.node("local:missing1.txt")
         node2 = storage_manager.node("local:missing2.txt")
@@ -234,7 +234,7 @@ class TestNodeEquality:
 
     def test_equality_directory_returns_false(self, storage_manager, tmp_path):
         """Test directories are never equal (can't compare content)."""
-        storage_manager.configure([{"name": "local", "type": "local", "path": str(tmp_path)}])
+        storage_manager.configure([{"name": "local", "protocol": "local", "path": str(tmp_path)}])
 
         dir1 = storage_manager.node("local:dir1")
         dir1.mkdir()
@@ -248,7 +248,7 @@ class TestNodeEquality:
 
     def test_equality_file_to_directory(self, storage_manager, tmp_path):
         """Test file vs directory comparison returns False."""
-        storage_manager.configure([{"name": "local", "type": "local", "path": str(tmp_path)}])
+        storage_manager.configure([{"name": "local", "protocol": "local", "path": str(tmp_path)}])
 
         file_node = storage_manager.node("local:file.txt")
         file_node.write(b"Content", mode="wb")
@@ -269,7 +269,7 @@ class TestMD5Performance:
             [
                 {
                     "name": "s3",
-                    "type": "s3",
+                    "protocol": "s3",
                     "bucket": "test-bucket",
                     "key": "minioadmin",
                     "secret": "minioadmin",
@@ -298,7 +298,7 @@ class TestMD5Performance:
 
     def test_multiple_hash_calls_consistent(self, storage_manager, tmp_path):
         """Test multiple calls to md5hash return same value."""
-        storage_manager.configure([{"name": "local", "type": "local", "path": str(tmp_path)}])
+        storage_manager.configure([{"name": "local", "protocol": "local", "path": str(tmp_path)}])
 
         node = storage_manager.node("local:file.txt")
         node.write(b"Test content", mode="wb")

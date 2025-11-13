@@ -144,7 +144,7 @@ class TestS3Storage:
             [
                 {
                     "name": "test-s3-prefix",
-                    "type": "s3",
+                    "protocol": "s3",
                     "bucket": minio_bucket,
                     "prefix": "uploads/",
                     "endpoint_url": minio_config["endpoint_url"],
@@ -170,7 +170,7 @@ class TestS3ToLocalCopy:
         """Test copying file from S3 to local storage."""
         # Setup both storages
         storage = storage_with_s3
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         # Create file on S3
         s3_node = storage.node("test-s3:source.txt")
@@ -188,7 +188,7 @@ class TestS3ToLocalCopy:
         """Test copying file from local to S3."""
         # Setup both storages
         storage = storage_with_s3
-        storage.configure([{"name": "local", "type": "local", "path": temp_dir}])
+        storage.configure([{"name": "local", "protocol": "local", "path": temp_dir}])
 
         # Create file locally
         local_node = storage.node("local:source.txt")
@@ -210,7 +210,7 @@ class TestMemoryStorage:
     def memory_storage(self):
         """Create storage with memory backend."""
         storage = StorageManager()
-        storage.configure([{"name": "memory", "type": "memory"}])
+        storage.configure([{"name": "memory", "protocol": "memory"}])
         return storage
 
     def test_memory_backend_creation(self, memory_storage):

@@ -16,7 +16,7 @@ class TestServeMethod:
         manager = StorageManager()
         manager.configure(
             [
-                {"name": "data", "type": "local", "path": str(data_dir)},
+                {"name": "data", "protocol": "local", "path": str(data_dir)},
             ]
         )
         return manager

@@ -12,7 +12,7 @@ class TestVersioningOnNonVersionedBackends:
         """versions property returns empty list for local backend."""
         with tempfile.TemporaryDirectory() as tmpdir:
             storage = StorageManager()
-            storage.configure([{"name": "local", "type": "local", "path": tmpdir}])
+            storage.configure([{"name": "local", "protocol": "local", "path": tmpdir}])
 
             node = storage.node("local:test.txt")
             node.write("content", mode="w")
@@ -24,7 +24,7 @@ class TestVersioningOnNonVersionedBackends:
     def test_versions_on_memory_backend_returns_empty(self):
         """versions property returns empty list for memory backend."""
         storage = StorageManager()
-        storage.configure([{"name": "memory", "type": "memory"}])
+        storage.configure([{"name": "memory", "protocol": "memory"}])
 
         node = storage.node("memory:test.txt")
         node.write("content", mode="w")
@@ -37,7 +37,7 @@ class TestVersioningOnNonVersionedBackends:
         """version_count property returns 0 for non-versioned backends."""
         with tempfile.TemporaryDirectory() as tmpdir:
             storage = StorageManager()
-            storage.configure([{"name": "local", "type": "local", "path": tmpdir}])
+            storage.configure([{"name": "local", "protocol": "local", "path": tmpdir}])
 
             node = storage.node("local:test.txt")
             node.write("content", mode="w")

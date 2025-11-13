@@ -127,7 +127,7 @@ class TestSwitchedMountViaStorageManager:
 
         # Configure manager with switched mount
         storage = StorageManager()
-        storage.add_mount({"name": "resources", "type": "local", "path": resource_resolver})
+        storage.add_mount({"name": "resources", "protocol": "local", "path": resource_resolver})
 
         # Access through storage manager
         sys_node = storage.node("resources:sys/sys_file.txt")
@@ -143,7 +143,7 @@ class TestSwitchedMountViaStorageManager:
             return temp_dirs.get(prefix, temp_dirs["base"])
 
         storage = StorageManager()
-        storage.add_mount({"name": "pkg", "type": "local", "path": resource_resolver})
+        storage.add_mount({"name": "pkg", "protocol": "local", "path": resource_resolver})
 
         # Test various node operations
         sys_root = storage.node("pkg:sys")

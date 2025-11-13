@@ -19,7 +19,7 @@ def temp_dir():
 def storage(temp_dir):
     """Create a StorageManager with local storage."""
     mgr = StorageManager()
-    mgr.configure([{"name": "test", "type": "local", "path": temp_dir}])
+    mgr.configure([{"name": "test", "protocol": "local", "path": temp_dir}])
     return mgr
 
 

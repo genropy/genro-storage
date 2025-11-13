@@ -19,7 +19,7 @@ class TestCallMethod:
         manager = StorageManager()
         manager.configure(
             [
-                {"name": "data", "type": "local", "path": str(data_dir)},
+                {"name": "data", "protocol": "local", "path": str(data_dir)},
             ]
         )
         return manager
@@ -235,7 +235,7 @@ class TestMimetypeProperty:
         manager = StorageManager()
         manager.configure(
             [
-                {"name": "data", "type": "local", "path": str(data_dir)},
+                {"name": "data", "protocol": "local", "path": str(data_dir)},
             ]
         )
         return manager
@@ -323,7 +323,7 @@ class TestMimetypeProperty:
         import base64
 
         # Configure base64 backend
-        storage.configure([{"name": "b64", "type": "base64"}])
+        storage.configure([{"name": "b64", "protocol": "base64"}])
 
         # Create base64 node with .pdf extension in path
         content = b"PDF content"

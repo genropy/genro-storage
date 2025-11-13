@@ -31,7 +31,7 @@ def storage_with_versioning(minio_versioned_bucket, minio_config):
         [
             {
                 "name": "s3",
-                "type": "s3",
+                "protocol": "s3",
                 "bucket": minio_versioned_bucket,
                 "endpoint_url": minio_config["endpoint_url"],
                 "key": minio_config["aws_access_key_id"],
@@ -407,7 +407,7 @@ class TestS3VersioningEdgeCases:
             [
                 {
                     "name": "s3",
-                    "type": "s3",
+                    "protocol": "s3",
                     "bucket": minio_bucket,  # This bucket does NOT have versioning
                     "endpoint_url": minio_config["endpoint_url"],
                     "key": minio_config["aws_access_key_id"],

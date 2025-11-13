@@ -145,7 +145,7 @@ class TestGitBackend:
     def test_git_configuration_basic(self, temp_git_repo):
         """Test basic Git configuration."""
         storage = StorageManager()
-        storage.configure([{"name": "git_test", "type": "git", "path": temp_git_repo}])
+        storage.configure([{"name": "git_test", "protocol": "git", "path": temp_git_repo}])
         assert "git_test" in storage._mounts
         backend = storage._mounts["git_test"]
         assert backend is not None
@@ -155,7 +155,7 @@ class TestGitBackend:
         """Test Git configuration with ref (branch/tag/commit)."""
         storage = StorageManager()
         storage.configure(
-            [{"name": "git_test", "type": "git", "path": temp_git_repo, "ref": "main"}]
+            [{"name": "git_test", "protocol": "git", "path": temp_git_repo, "ref": "main"}]
         )
         assert "git_test" in storage._mounts
 
@@ -163,13 +163,13 @@ class TestGitBackend:
         """Test Git configuration with missing path raises error."""
         storage = StorageManager()
         with pytest.raises(StorageConfigError, match="missing required field: 'base_path'"):
-            storage.configure([{"name": "git_test", "type": "git"}])
+            storage.configure([{"name": "git_test", "protocol": "git"}])
 
     @pytest.mark.skipif(not HAS_PYGIT2, reason="pygit2 not installed")
     def test_git_capabilities(self, temp_git_repo):
         """Test Git backend capabilities."""
         storage = StorageManager()
-        storage.configure([{"name": "git_test", "type": "git", "path": temp_git_repo}])
+        storage.configure([{"name": "git_test", "protocol": "git", "path": temp_git_repo}])
         backend = storage._mounts["git_test"]
         caps = backend.capabilities
 
@@ -191,7 +191,7 @@ class TestGitHubBackend:
         """Test basic GitHub configuration."""
         storage = StorageManager()
         storage.configure(
-            [{"name": "gh_test", "type": "github", "org": "genropy", "repo": "genro-storage"}]
+            [{"name": "gh_test", "protocol": "github", "org": "genropy", "repo": "genro-storage"}]
         )
         assert "gh_test" in storage._mounts
         backend = storage._mounts["gh_test"]
@@ -204,7 +204,7 @@ class TestGitHubBackend:
             [
                 {
                     "name": "gh_test",
-                    "type": "github",
+                    "protocol": "github",
                     "org": "genropy",
                     "repo": "genro-storage",
                     "ref": "main",
@@ -220,7 +220,7 @@ class TestGitHubBackend:
             [
                 {
                     "name": "gh_test",
-                    "type": "github",
+                    "protocol": "github",
                     "org": "genropy",
                     "repo": "genro-storage",
                     "username": "testuser",
@@ -234,19 +234,19 @@ class TestGitHubBackend:
         """Test GitHub configuration with missing org raises error."""
         storage = StorageManager()
         with pytest.raises(StorageConfigError, match="missing required field: 'org'"):
-            storage.configure([{"name": "gh_test", "type": "github", "repo": "genro-storage"}])
+            storage.configure([{"name": "gh_test", "protocol": "github", "repo": "genro-storage"}])
 
     def test_github_configuration_missing_repo(self):
         """Test GitHub configuration with missing repo raises error."""
         storage = StorageManager()
         with pytest.raises(StorageConfigError, match="missing required field: 'repo'"):
-            storage.configure([{"name": "gh_test", "type": "github", "org": "genropy"}])
+            storage.configure([{"name": "gh_test", "protocol": "github", "org": "genropy"}])
 
     def test_github_capabilities(self):
         """Test GitHub backend capabilities."""
         storage = StorageManager()
         storage.configure(
-            [{"name": "gh_test", "type": "github", "org": "genropy", "repo": "genro-storage"}]
+            [{"name": "gh_test", "protocol": "github", "org": "genropy", "repo": "genro-storage"}]
         )
         backend = storage._mounts["gh_test"]
         caps = backend.capabilities
@@ -276,7 +276,7 @@ class TestGCSBackend:
             [
                 {
                     "name": "gcs_test",
-                    "type": "gcs",
+                    "protocol": "gcs",
                     "bucket": "test-bucket",
                     "endpoint_url": "http://localhost:4443",
                     "token": "anon",
@@ -304,7 +304,7 @@ class TestGCSBackend:
             [
                 {
                     "name": "gcs_test",
-                    "type": "gcs",
+                    "protocol": "gcs",
                     "bucket": "test-bucket",
                     "endpoint_url": "http://localhost:4443",
                     "token": "anon",
@@ -325,7 +325,7 @@ class TestGCSBackend:
         """Test GCS configuration with missing bucket raises error."""
         storage = StorageManager()
         with pytest.raises(StorageConfigError, match="missing required field: 'bucket'"):
-            storage.configure([{"name": "gcs_test", "type": "gcs"}])
+            storage.configure([{"name": "gcs_test", "protocol": "gcs"}])
 
     @pytest.mark.skipif(not HAS_GCS, reason="gcsfs not installed")
     @pytest.mark.integration
@@ -338,7 +338,7 @@ class TestGCSBackend:
             [
                 {
                     "name": "gcs_test",
-                    "type": "gcs",
+                    "protocol": "gcs",
                     "bucket": "test-bucket",
                     "prefix": "data/uploads",
                     "endpoint_url": "http://localhost:4443",
@@ -361,7 +361,7 @@ class TestGCSBackend:
             [
                 {
                     "name": "gcs_test",
-                    "type": "gcs",
+                    "protocol": "gcs",
                     "bucket": "test-bucket",
                     "endpoint_url": "http://localhost:4443",
                     "token": "anon",
@@ -397,7 +397,7 @@ class TestWebDAVBackend:
             [
                 {
                     "name": "webdav_test",
-                    "type": "webdav",
+                    "protocol": "webdav",
                     "url": "http://localhost:8080",
                     "username": "testuser",
                     "password": "testpass",
@@ -431,7 +431,7 @@ class TestWebDAVBackend:
             [
                 {
                     "name": "webdav_test",
-                    "type": "webdav",
+                    "protocol": "webdav",
                     "url": "http://localhost:8080",
                     "username": "testuser",
                     "password": "testpass",
@@ -448,7 +448,7 @@ class TestWebDAVBackend:
             [
                 {
                     "name": "webdav_test",
-                    "type": "webdav",
+                    "protocol": "webdav",
                     "url": "http://localhost:8080",
                     "token": "bearer_token",
                 }
@@ -461,7 +461,7 @@ class TestWebDAVBackend:
         """Test WebDAV configuration with missing URL raises error."""
         storage = StorageManager()
         with pytest.raises(StorageConfigError, match="missing required field: 'url'"):
-            storage.configure([{"name": "webdav_test", "type": "webdav"}])
+            storage.configure([{"name": "webdav_test", "protocol": "webdav"}])
 
     @pytest.mark.skipif(not HAS_WEBDAV, reason="webdav4 not installed")
     @pytest.mark.integration
@@ -472,7 +472,7 @@ class TestWebDAVBackend:
             [
                 {
                     "name": "webdav_test",
-                    "type": "webdav",
+                    "protocol": "webdav",
                     "url": "http://localhost:8080",
                     "username": "testuser",
                     "password": "testpass",
@@ -508,7 +508,7 @@ class TestAzureBackend:
             [
                 {
                     "name": "azure_test",
-                    "type": "azure",
+                    "protocol": "azure",
                     "account_name": "devstoreaccount1",
                     "account_key": "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==",
                     "container": "test-container",
@@ -537,7 +537,7 @@ class TestAzureBackend:
             [
                 {
                     "name": "azure_test",
-                    "type": "azure",
+                    "protocol": "azure",
                     "account_name": "devstoreaccount1",
                     "account_key": "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==",
                     "container": "test-container",
@@ -559,7 +559,7 @@ class TestAzureBackend:
         storage = StorageManager()
         with pytest.raises(StorageConfigError, match="missing required field: 'account_name'"):
             storage.configure(
-                [{"name": "azure_test", "type": "azure", "container": "test-container"}]
+                [{"name": "azure_test", "protocol": "azure", "container": "test-container"}]
             )
 
     @pytest.mark.skipif(not HAS_AZURE, reason="adlfs not installed")
@@ -568,7 +568,7 @@ class TestAzureBackend:
         storage = StorageManager()
         with pytest.raises(StorageConfigError, match="missing required field: 'container'"):
             storage.configure(
-                [{"name": "azure_test", "type": "azure", "account_name": "devstoreaccount1"}]
+                [{"name": "azure_test", "protocol": "azure", "account_name": "devstoreaccount1"}]
             )
 
     @pytest.mark.skipif(not HAS_AZURE, reason="adlfs not installed")
@@ -582,7 +582,7 @@ class TestAzureBackend:
             [
                 {
                     "name": "azure_test",
-                    "type": "azure",
+                    "protocol": "azure",
                     "account_name": "devstoreaccount1",
                     "account_key": "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==",
                     "container": "test-container",
@@ -612,7 +612,7 @@ class TestLibArchiveBackend:
         """Test basic LibArchive configuration."""
         storage = StorageManager()
         storage.configure(
-            [{"name": "archive_test", "type": "libarchive", "file": "/path/to/archive.tar.gz"}]
+            [{"name": "archive_test", "protocol": "libarchive", "file": "/path/to/archive.tar.gz"}]
         )
         assert "archive_test" in storage._mounts
         backend = storage._mounts["archive_test"]
@@ -628,7 +628,7 @@ class TestLibArchiveBackend:
             [
                 {
                     "name": "archive_test",
-                    "type": "libarchive",
+                    "protocol": "libarchive",
                     "file": "/path/to/archive.zip",
                     "mode": "r",
                 }
@@ -641,7 +641,7 @@ class TestLibArchiveBackend:
         """Test LibArchive configuration with missing file raises error."""
         storage = StorageManager()
         with pytest.raises(StorageConfigError, match="missing required field: 'file'"):
-            storage.configure([{"name": "archive_test", "type": "libarchive"}])
+            storage.configure([{"name": "archive_test", "protocol": "libarchive"}])
 
     @pytest.mark.skipif(not HAS_LIBARCHIVE, reason="libarchive-c not installed")
     def test_libarchive_capabilities(self):
@@ -660,7 +660,7 @@ class TestLibArchiveBackend:
                 pass  # Empty archive is fine for capabilities test
 
             storage = StorageManager()
-            storage.configure([{"name": "archive_test", "type": "libarchive", "file": tar_path}])
+            storage.configure([{"name": "archive_test", "protocol": "libarchive", "file": tar_path}])
             backend = storage._mounts["archive_test"]
             caps = backend.capabilities
 

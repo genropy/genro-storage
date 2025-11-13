@@ -32,7 +32,7 @@ def storage(temp_dir):
     """Create an AsyncStorageManager configured with memory backend."""
     storage = AsyncStorageManager()
     storage.configure(
-        [{"name": "memory", "type": "memory"}, {"name": "local", "type": "local", "path": temp_dir}]
+        [{"name": "memory", "protocol": "memory"}, {"name": "local", "protocol": "local", "path": temp_dir}]
     )
     return storage
 
@@ -51,8 +51,8 @@ class TestAsyncStorageManager:
         storage = AsyncStorageManager()
         storage.configure(
             [
-                {"name": "local", "type": "local", "path": temp_dir},
-                {"name": "memory", "type": "memory"},
+                {"name": "local", "protocol": "local", "path": temp_dir},
+                {"name": "memory", "protocol": "memory"},
             ]
         )
         assert storage.has_mount("local")
@@ -61,7 +61,7 @@ class TestAsyncStorageManager:
     def test_add_mount(self, temp_dir):
         """Test adding mount at runtime."""
         storage = AsyncStorageManager()
-        storage.add_mount({"name": "test", "type": "local", "path": temp_dir})
+        storage.add_mount({"name": "test", "protocol": "local", "path": temp_dir})
         assert storage.has_mount("test")
 
     def test_has_mount(self, storage):
@@ -295,7 +295,7 @@ class TestAsyncErrors:
     async def test_invalid_mount(self):
         """Test accessing invalid mount point."""
         storage = AsyncStorageManager()
-        storage.configure([{"name": "test", "type": "memory"}])
+        storage.configure([{"name": "test", "protocol": "memory"}])
 
         with pytest.raises(Exception):  # Will raise StorageNotFoundError
             storage.node("invalid:file.txt")
