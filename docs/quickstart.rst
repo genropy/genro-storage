@@ -226,12 +226,12 @@ Create ``storage.json``:
     [
       {
         "name": "home",
-        "type": "local",
+        "protocol": "local",
         "path": "/home/user"
       },
       {
         "name": "uploads",
-        "type": "s3",
+        "protocol": "s3",
         "bucket": "my-app-uploads",
         "region": "eu-west-1"
       }

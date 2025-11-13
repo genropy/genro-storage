@@ -298,7 +298,7 @@ curl -X POST http://localhost:8000/api/volumes \
   -H "Content-Type: application/json" \
   -d '{
     "name": "attachments",
-    "type": "s3",
+    "protocol": "s3",
     "bucket": "mail-attachments",
     "region": "eu-west-1",
     "endpoint_url": "http://localhost:9000"
@@ -352,9 +352,9 @@ attachment = {
 ### Multi-Cloud Support
 ```python
 # Client can choose backend via API
-POST /api/volumes {"name": "aws", "type": "s3", ...}
-POST /api/volumes {"name": "gcp", "type": "gcs", ...}
-POST /api/volumes {"name": "local", "type": "local", ...}
+POST /api/volumes {"name": "aws", "protocol": "s3", ...}
+POST /api/volumes {"name": "gcp", "protocol": "gcs", ...}
+POST /api/volumes {"name": "local", "protocol": "local", ...}
 
 # Same code works for all!
 data = await storage.read_attachment('aws:file.pdf')

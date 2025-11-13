@@ -76,7 +76,7 @@ Each mount configuration must have:
 ```python
 {
     "name": "home",
-    "type": "local",
+    "protocol": "local",
     "path": "/home/user"  # required: absolute path
 }
 ```
@@ -85,7 +85,7 @@ Each mount configuration must have:
 ```python
 {
     "name": "uploads",
-    "type": "s3",
+    "protocol": "s3",
     "bucket": "my-bucket",  # required
     "prefix": "uploads/",   # optional, default: ""
     "region": "eu-west-1",  # optional
@@ -97,7 +97,7 @@ Each mount configuration must have:
 ```python
 {
     "name": "backups",
-    "type": "gcs",
+    "protocol": "gcs",
     "bucket": "my-backups",  # required
     "prefix": "",            # optional
     "token": "path/to/service-account.json"  # optional
@@ -108,7 +108,7 @@ Each mount configuration must have:
 ```python
 {
     "name": "archive",
-    "type": "azure",
+    "protocol": "azure",
     "container": "archives",     # required
     "account_name": "myaccount", # required
     "account_key": "..."         # optional if using managed identity
@@ -119,7 +119,7 @@ Each mount configuration must have:
 ```python
 {
     "name": "cdn",
-    "type": "http",
+    "protocol": "http",
     "base_url": "https://cdn.example.com"  # required
 }
 ```
@@ -128,7 +128,7 @@ Each mount configuration must have:
 ```python
 {
     "name": "test",
-    "type": "memory"
+    "protocol": "memory"
 }
 ```
 
@@ -153,12 +153,12 @@ Each mount configuration must have:
 [
   {
     "name": "home",
-    "type": "local",
+    "protocol": "local",
     "path": "/home/user"
   },
   {
     "name": "uploads",
-    "type": "s3",
+    "protocol": "s3",
     "bucket": "my-app-uploads",
     "region": "eu-west-1"
   }

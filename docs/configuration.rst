@@ -91,12 +91,12 @@ Alternative to YAML:
     [
         {
             "name": "home",
-            "type": "local",
+            "protocol": "local",
             "path": "/home/user"
         },
         {
             "name": "uploads",
-            "type": "s3",
+            "protocol": "s3",
             "bucket": "prod-app-uploads",
             "region": "eu-west-1"
         }
