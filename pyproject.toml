@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=65.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "genro-storage"
@@ -8,7 +8,7 @@ version = "0.5.0"
 description = "Unified storage abstraction for Genropy framework"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
 authors = [
     {name = "Genropy Team", email = "info@genropy.org"}
 ]
@@ -86,7 +86,7 @@ dev = [
     "black>=23.0",
     "ruff>=0.1.0",
     "mypy>=1.0",
-    "boto3>=1.26.0",  # For MinIO/S3 testing
+    "boto3>=1.26.0",
 ]
 
 [project.urls]
@@ -95,11 +95,8 @@ Documentation = "https://genro-storage.readthedocs.io"
 Repository = "https://github.com/genropy/genro-storage"
 "Bug Tracker" = "https://github.com/genropy/genro-storage/issues"
 
-[tool.setuptools]
-packages = ["genro_storage", "genro_storage.backends"]
-
-[tool.setuptools.package-data]
-genro_storage = ["py.typed"]
+[tool.hatch.build.targets.wheel]
+packages = ["src/genro_storage"]
 
 [tool.black]
 line-length = 100
