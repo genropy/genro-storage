@@ -112,6 +112,7 @@ disallow_untyped_defs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+norecursedirs = ["async_POC", "doc_to_review", ".git", "__pycache__"]
 python_files = ["test_*.py"]
 addopts = "-v --cov=genro_storage --cov-report=term-missing"
 markers = [
