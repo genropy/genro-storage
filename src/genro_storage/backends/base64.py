@@ -44,7 +44,6 @@ from typing import BinaryIO, TextIO
 
 from .base import StorageBackend
 from ..capabilities import BackendCapabilities, capability
-from ..exceptions import StorageError
 
 
 class Base64Backend(StorageBackend):

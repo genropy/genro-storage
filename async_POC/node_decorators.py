@@ -19,7 +19,6 @@ These decorators are candidates for extraction to genro-commons.
 See temp/PATTERNS_FOR_COMMONS.md for details.
 """
 
-import asyncio
 import inspect
 from functools import wraps
 from typing import Callable, Any

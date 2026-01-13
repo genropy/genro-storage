@@ -36,7 +36,7 @@ A modern, elegant Python library that provides a unified interface for accessing
 
 ## Key Features
 
-- **Async/await support** - Use in FastAPI, asyncio apps with AsyncStorageManager
+- **Async/await support** - Transparent sync/async via `@smartasync` decorator
 - **Native permission control** - Configure readonly, readwrite, or delete permissions for any backend
 - **Powered by fsspec** - Leverage 20+ battle-tested storage backends
 - **Mount point system** - Organize storage with logical names like `home:`, `uploads:`, `s3:`
@@ -89,16 +89,16 @@ from genro_storage import StorageManager
 # Configure storage backends
 storage = StorageManager()
 storage.configure([
-    {'name': 'home', 'type': 'local', 'path': '/home/user'},
-    {'name': 'uploads', 'type': 's3', 'bucket': 'my-app-uploads'},
-    {'name': 'backups', 'type': 'gcs', 'bucket': 'my-backups', 'permissions': 'readwrite'},
-    {'name': 'public', 'type': 'http', 'base_url': 'https://cdn.example.com', 'permissions': 'readonly'},
-    {'name': 'data', 'type': 'base64'}  # Inline base64 data
+    {'name': 'home', 'protocol': 'local', 'base_path': '/home/user'},
+    {'name': 'uploads', 'protocol': 's3', 'bucket': 'my-app-uploads'},
+    {'name': 'backups', 'protocol': 'gcs', 'bucket': 'my-backups', 'permissions': 'readwrite'},
+    {'name': 'public', 'protocol': 'http', 'base_path': 'https://cdn.example.com', 'permissions': 'readonly'},
+    {'name': 'data', 'protocol': 'base64'}  # Inline base64 data
 ])
 
 # Work with files using a unified API
 node = storage.node('uploads:users/123/avatar.jpg')
-if node.exists:
+if node.exists():
     # Copy from S3 to local
     node.copy_to(storage.node('home:cache/avatar.jpg'))
 
@@ -180,7 +180,7 @@ def get_user_storage():
     return f'/data/users/{user_id}'
 
 storage.configure([
-    {'name': 'user', 'type': 'local', 'path': get_user_storage}
+    {'name': 'user', 'protocol': 'local', 'base_path': get_user_storage}
 ])
 # Path resolves differently per user!
 
@@ -203,27 +203,26 @@ remote = storage.node('uploads:downloaded.pdf')
 remote.fill_from_url('https://example.com/file.pdf')
 ```
 
-### Async Usage (NEW in v0.3.0!)
+### Async Usage
 
-Built on [asyncer](https://github.com/tiangolo/asyncer) by Sebastián Ramírez (FastAPI author) for automatic sync→async conversion with no event loop blocking.
+All I/O methods use the `@smartasync` decorator for transparent sync/async support.
+The same `StorageManager` and `StorageNode` classes work in both contexts.
 
 ```python
-from genro_storage import AsyncStorageManager
+from genro_storage import StorageManager
 
-# Initialize async storage manager
-storage = AsyncStorageManager()
-
-# Configure (sync - call at startup)
+# Same StorageManager works in both sync and async contexts
+storage = StorageManager()
 storage.configure([
-    {'name': 'uploads', 'type': 's3', 'bucket': 'my-app-uploads'},
-    {'name': 'cache', 'type': 'local', 'path': '/tmp/cache'}
+    {'name': 'uploads', 'protocol': 's3', 'bucket': 'my-app-uploads'},
+    {'name': 'cache', 'protocol': 'local', 'base_path': '/tmp/cache'}
 ])
 
 # Use in async context (FastAPI, asyncio, etc.)
 async def process_file(file_path: str):
     node = storage.node(f'uploads:{file_path}')
 
-    # All I/O operations are async
+    # All I/O methods are awaitable in async context
     if await node.exists():
         data = await node.read_bytes()
 
@@ -252,7 +251,7 @@ async def get_file(filepath: str):
     return {
         "data": await node.read_bytes(),
         "size": await node.size(),
-        "mime_type": node.mimetype  # Sync property
+        "mime_type": node.mimetype  # Non-I/O property (sync)
     }
 
 # Concurrent operations
@@ -411,7 +410,7 @@ See [TESTING.md](TESTING.md) for detailed testing instructions with MinIO.
 ## Built With
 
 - [fsspec](https://filesystem-spec.readthedocs.io/) - Pythonic filesystem abstraction
-- [asyncer](https://github.com/tiangolo/asyncer) - Async wrapper (v0.3.0+)
+- [genro-toolbox](https://github.com/genropy/genro-toolbox) - `@smartasync` for transparent sync/async
 - Modern Python (3.9+) with full type hints
 - Optional backends: s3fs, gcsfs, adlfs, aiohttp, smbprotocol, paramiko, webdav4, libarchive-c
 
@@ -442,15 +441,15 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 - S3 versioning support
 - Full Documentation on ReadTheDocs
 - MinIO Integration Testing
-- Async/await support (AsyncStorageManager, AsyncStorageNode)
+- Transparent async/await support via `@smartasync` decorator
 - Ready for early adopters and production testing
 - Extended GCS/Azure integration testing in progress
 
 **Recent Releases:**
+- v0.7.0 (January 2026) - Unified sync/async via `@smartasync`, removed AsyncStorageManager
 - v0.4.2 (October 2025) - Git, GitHub, WebDAV, LibArchive backends
 - v0.4.1 (October 2025) - SMB, SFTP, ZIP, TAR backends
 - v0.4.0 (October 2025) - Relative mounts with permissions, unified read/write API
-- v0.3.0 (October 2025) - Async support via asyncer wrapper
 - v0.2.0 (October 2025) - Virtual nodes, tutorials, enhanced testing
 
 ## Contributing

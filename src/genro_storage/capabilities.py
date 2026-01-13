@@ -20,8 +20,7 @@ allowing feature detection and validation before attempting operations.
 """
 
 from dataclasses import dataclass
-from functools import wraps
-from typing import Callable, Any
+from typing import Callable
 
 
 def capability(*names: str) -> Callable:

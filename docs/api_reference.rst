@@ -4,7 +4,8 @@ API Quick Reference
 This appendix provides a quick reference for all genro-storage APIs.
 
 .. note::
-   For async/await support (FastAPI, asyncio) available in v0.3.0+, see :ref:`async-api-reference` below.
+   All I/O methods support both sync and async contexts via ``@smartasync``.
+   In sync context, call directly. In async context, use ``await``.
 
 StorageManager API
 ------------------
@@ -54,13 +55,19 @@ File I/O
    * - Method
      - Description
      - Capabilities Required
-   * - ``read(mode='r', encoding='utf-8')``
-     - Read entire file as string (mode='r') or bytes (mode='rb')
+   * - ``read_bytes()``
+     - Read entire file as bytes
      - ``read``
-   * - ``write(data, mode='w', encoding='utf-8', skip_if_unchanged=False)``
-     - Write string (mode='w') or bytes (mode='wb') to file
+   * - ``read_text(encoding='utf-8')``
+     - Read entire file as string
+     - ``read``
+   * - ``write_bytes(data)``
+     - Write bytes to file
      - ``write``
-   * - ``open(mode='r', version=None, as_of=None)``
+   * - ``write_text(text, encoding='utf-8')``
+     - Write string to file
+     - ``write``
+   * - ``open(mode='r')``
      - Open file for reading/writing (context manager)
      - ``read`` or ``write``
 
@@ -84,8 +91,41 @@ Directory Operations
      - Get child node by path components
      - None (navigation)
 
-Properties
-~~~~~~~~~~
+I/O Methods (use @smartasync)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These methods perform I/O and work in both sync and async contexts:
+
+.. list-table::
+   :widths: 30 40 30
+   :header-rows: 1
+
+   * - Method
+     - Description
+     - Capabilities Required
+   * - ``exists()``
+     - True if file/directory exists
+     - ``read``
+   * - ``is_file()``
+     - True if node is a file
+     - ``read``
+   * - ``is_dir()``
+     - True if node is a directory
+     - ``read``
+   * - ``size()``
+     - File size in bytes
+     - ``read``
+   * - ``mtime()``
+     - Last modification time (Unix timestamp)
+     - ``read``
+   * - ``md5hash()``
+     - MD5 hash of file content
+     - ``read``
+
+Non-I/O Properties (always sync)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These properties do not perform I/O and are always synchronous:
 
 .. list-table::
    :widths: 30 40 30
@@ -93,49 +133,31 @@ Properties
 
    * - Property
      - Description
-     - Capabilities Required
-   * - ``exists``
-     - True if file/directory exists
-     - ``read``
-   * - ``isfile``
-     - True if node is a file
-     - ``read``
-   * - ``isdir``
-     - True if node is a directory
-     - ``read``
-   * - ``size``
-     - File size in bytes
-     - ``read``
-   * - ``mtime``
-     - Last modification time (Unix timestamp)
-     - ``read``
+     - Type
    * - ``basename``
      - Filename with extension
-     - None
+     - ``str``
    * - ``stem``
      - Filename without extension
-     - None
+     - ``str``
    * - ``suffix``
      - File extension (including dot)
-     - None
+     - ``str``
    * - ``fullpath``
      - Full path including mount
-     - None
+     - ``str``
    * - ``path``
      - File system path (without mount prefix)
-     - None
+     - ``str``
    * - ``parent``
      - Parent directory node
-     - None
+     - ``StorageNode``
    * - ``capabilities``
      - Backend capabilities
-     - None
-   * - ``md5hash``
-     - MD5 hash of file content
-     - ``read``
+     - ``BackendCapabilities``
    * - ``mimetype``
      - MIME type based on extension
-     - None
+     - ``str``
 
 Copy and Move
 ~~~~~~~~~~~~~
@@ -147,10 +169,10 @@ Copy and Move
    * - Method
      - Description
      - Capabilities Required
-   * - ``copy(dest, include=None, exclude=None, filter=None, skip='never', skip_fn=None, progress=None, on_file=None, on_skip=None)``
+   * - ``copy_to(dest, skip='never', ...)``
      - Copy file/directory to destination with filtering and callbacks
      - ``read`` (source), ``write`` (dest)
-   * - ``move(dest)``
+   * - ``move_to(dest)``
      - Move file/directory to destination
      - ``read``, ``write``, ``delete``
    * - ``delete()``
@@ -478,7 +500,7 @@ Filter by Size
 .. code-block:: python
 
     # Copy only files smaller than 10MB
-    source.copy_to(dest, filter=lambda node, path: node.size < 10_000_000)
+    source.copy_to(dest, filter=lambda node, path: node.size() < 10_000_000)
 
 Custom Skip Logic
 ~~~~~~~~~~~~~~~~~
@@ -487,9 +509,9 @@ Custom Skip Logic
 
     # Skip if destination is newer
     def skip_if_newer(src, dest):
-        if not dest.exists:
+        if not dest.exists():
             return False
-        return dest.mtime > src.mtime
+        return dest.mtime() > src.mtime()
 
     source.copy_to(dest, skip='custom', skip_fn=skip_if_newer)
 
@@ -534,7 +556,7 @@ Create ZIP Archive
     # Zip a single file
     file = storage.node('data:report.pdf')
     zip_bytes = file.zip()
-    storage.node('data:report.zip').write(zip_bytes, mode='wb')
+    storage.node('data:report.zip').write_bytes(zip_bytes)
 
     # Zip entire directory (recursive)
     folder = storage.node('data:documents/')
@@ -544,164 +566,66 @@ Create ZIP Archive
     archive = storage.iternode(file1, file2, file3)
     zip_bytes = archive.zip()
 
-.. _async-api-reference:
+Sync vs Async Usage
+-------------------
 
-Async API Reference (v0.3.0+)
-==============================
+All I/O methods work transparently in both contexts:
 
-For async/await contexts (FastAPI, asyncio applications).
-
-AsyncStorageManager API
-------------------------
-
-Configuration
-~~~~~~~~~~~~~
-
-.. list-table::
-   :widths: 30 70
-   :header-rows: 1
-
-   * - Method
-     - Description
-   * - ``configure(source)``
-     - Configure mount points (synchronous - call at startup)
-   * - ``add_mount(config)``
-     - Add single mount point at runtime (synchronous)
-   * - ``get_mount_names()``
-     - Get list of configured mount point names (synchronous)
-   * - ``has_mount(name)``
-     - Check if a mount point is configured (synchronous)
-
-Node Creation
-~~~~~~~~~~~~~
-
-.. list-table::
-   :widths: 30 70
-   :header-rows: 1
-
-   * - Method
-     - Description
-   * - ``node(mount_or_path, *parts)``
-     - Create an AsyncStorageNode (synchronous)
-
-AsyncStorageNode API
---------------------
-
-All I/O operations are async. Properties without I/O remain synchronous.
-
-Async I/O Operations
-~~~~~~~~~~~~~~~~~~~~~
-
-.. list-table::
-   :widths: 30 40 30
-   :header-rows: 1
-
-   * - Method
-     - Description
-     - Return Type
-   * - ``await read(mode='r', encoding='utf-8')``
-     - Read entire file as string (mode='r') or bytes (mode='rb')
-     - ``str`` or ``bytes``
-   * - ``await write(data, mode='w', encoding='utf-8')``
-     - Write string (mode='w') or bytes (mode='wb') to file
-     - ``None``
-   * - ``await exists()``
-     - Check if file exists
-     - ``bool``
-   * - ``await size()``
-     - Get file size in bytes
-     - ``int``
-   * - ``await mtime()``
-     - Get last modification time
-     - ``float``
-   * - ``await isfile()``
-     - Check if node is a file
-     - ``bool``
-   * - ``await isdir()``
-     - Check if node is a directory
-     - ``bool``
-   * - ``await delete()``
-     - Delete file or directory
-     - ``None``
-   * - ``await copy(target)``
-     - Copy file to target location
-     - ``None``
-   * - ``await move(target)``
-     - Move file to target location
-     - ``None``
-
-Synchronous Properties
-~~~~~~~~~~~~~~~~~~~~~~~
-
-These properties do not require I/O and remain synchronous:
-
-.. list-table::
-   :widths: 30 40 30
-   :header-rows: 1
-
-   * - Property
-     - Description
-     - Type
-   * - ``path``
-     - File system path (without mount prefix)
-     - ``str``
-   * - ``fullpath``
-     - Full path including mount
-     - ``str``
-   * - ``basename``
-     - Filename with extension
-     - ``str``
-   * - ``stem``
-     - Filename without extension
-     - ``str``
-   * - ``suffix``
-     - File extension (including dot)
-     - ``str``
-
-Usage Examples
-~~~~~~~~~~~~~~
-
-Basic Usage
-^^^^^^^^^^^
+Sync Context
+~~~~~~~~~~~~
 
 .. code-block:: python
 
-    from genro_storage import AsyncStorageManager
+    from genro_storage import StorageManager
 
-    storage = AsyncStorageManager()
+    storage = StorageManager()
     storage.configure([
-        {'name': 'uploads', 'type': 's3', 'bucket': 'my-bucket'}
+        {'name': 'data', 'protocol': 'local', 'base_path': '/data'}
     ])
 
-    # Async context
-    async def process():
-        node = storage.node('uploads:file.txt')
+    node = storage.node('data:file.txt')
 
-        # Async I/O
+    # Direct calls
+    if node.exists():
+        content = node.read_text()
+        print(f"Size: {node.size()} bytes")
+
+Async Context
+~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    from genro_storage import StorageManager
+    import asyncio
+
+    storage = StorageManager()
+    storage.configure([
+        {'name': 'data', 'protocol': 'local', 'base_path': '/data'}
+    ])
+
+    async def example():
+        node = storage.node('data:file.txt')
+
+        # Awaited calls
         if await node.exists():
-            data = await node.read(mode='rb')
-            await node.write(b'new data', mode='wb')
+            content = await node.read_text()
+            print(f"Size: {await node.size()} bytes")
 
-        # Sync properties
-        print(node.path)
-        print(node.basename)
+    asyncio.run(example())
 
 FastAPI Integration
-^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
     from fastapi import FastAPI, HTTPException
-    from genro_storage import AsyncStorageManager
+    from genro_storage import StorageManager
 
     app = FastAPI()
-    storage = AsyncStorageManager()
-
-    @app.on_event("startup")
-    async def startup():
-        storage.configure([
-            {'name': 'uploads', 'type': 's3', 'bucket': 'my-bucket'}
-        ])
+    storage = StorageManager()
+    storage.configure([
+        {'name': 'uploads', 'protocol': 's3', 'bucket': 'my-bucket'}
+    ])
 
     @app.get("/files/{filepath:path}")
     async def get_file(filepath: str):
@@ -711,13 +635,13 @@ FastAPI Integration
             raise HTTPException(status_code=404)
 
         return {
-            "data": await node.read(mode='rb'),
+            "data": await node.read_bytes(),
             "size": await node.size(),
-            "mime_type": node.mimetype  # Sync property
+            "mime_type": node.mimetype  # Non-I/O property (sync)
         }
 
 Concurrent Operations
-^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -727,7 +651,7 @@ Concurrent Operations
         async def process_one(filepath):
             node = storage.node(f'uploads:{filepath}')
             if await node.exists():
-                data = await node.read(mode='rb')
+                data = await node.read_bytes()
                 return len(data)
             return 0
 
@@ -736,10 +660,10 @@ Concurrent Operations
         return sum(sizes)
 
 Implementation Notes
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
-- Built on **asyncer** library for automatic sync→async conversion
-- Uses ThreadPoolExecutor for I/O-bound operations
-- No event loop blocking
-- Configuration methods are synchronous (call at startup)
-- Full compatibility with underlying sync API (81% coverage, 274 tests)
+- Built on ``@smartasync`` from ``genro-toolbox`` for automatic sync/async detection
+- In sync context: methods execute directly
+- In async context: methods use ``asyncio.to_thread()`` for non-blocking I/O
+- Same ``StorageManager`` and ``StorageNode`` classes for both contexts
+- No separate ``AsyncStorageManager`` needed (removed in v0.6.0)

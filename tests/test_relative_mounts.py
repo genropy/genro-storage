@@ -25,7 +25,7 @@ def test_relative_mount_basic(storage):
 
     # Access via child mount
     child_node = storage.node("uploads:images/test.txt")
-    assert child_node.exists
+    assert child_node.exists()
     assert child_node.read() == "Hello World"
 
 
@@ -38,9 +38,9 @@ def test_relative_mount_readonly_permissions(storage):
 
     # Read operations should work
     node = storage.node("public:file.txt")
-    assert node.exists
+    assert node.exists()
     assert node.read() == "test content"
-    assert node.size > 0
+    assert node.size() > 0
 
     # List operations should work
     dir_node = storage.node("public:")
@@ -66,7 +66,7 @@ def test_relative_mount_readwrite_permissions(storage):
     # Write operations should work
     node = storage.node("workspace:file.txt")
     node.write("test content")
-    assert node.exists
+    assert node.exists()
 
     # Read operations should work
     assert node.read() == "test content"
@@ -87,14 +87,14 @@ def test_relative_mount_delete_permissions(storage):
     # Write operations should work
     node = storage.node("temp:file.txt")
     node.write("test content")
-    assert node.exists
+    assert node.exists()
 
     # Read operations should work
     assert node.read() == "test content"
 
     # Delete operations should work
     node.delete()
-    assert not node.exists
+    assert not node.exists()
 
 
 def test_relative_mount_default_permissions(storage):
@@ -111,7 +111,7 @@ def test_relative_mount_default_permissions(storage):
     node.write("test")
     assert node.read() == "test"
     node.delete()
-    assert not node.exists
+    assert not node.exists()
 
 
 def test_relative_mount_invalid_parent(storage):
@@ -178,7 +178,7 @@ def test_relative_mount_readwrite_allows_mkdir(storage):
     node = storage.node("rw_dir:subdir/file.txt")
     node.write("content")
 
-    assert node.exists
+    assert node.exists()
     assert node.read() == "content"
 
 

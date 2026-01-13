@@ -50,27 +50,27 @@ class TestBase64Backend:
         b64_data = base64.b64encode(b"test").decode()
         node = storage.node(f"b64:{b64_data}")
 
-        assert node.exists is True
+        assert node.exists() is True
 
     def test_exists_invalid_base64(self, storage):
         """Test exists() returns False for invalid base64."""
         node = storage.node("b64:invalid!!!base64")
 
-        assert node.exists is False
+        assert node.exists() is False
 
     def test_is_file_valid_base64(self, storage):
         """Test isfile returns True for valid base64."""
         b64_data = base64.b64encode(b"test").decode()
         node = storage.node(f"b64:{b64_data}")
 
-        assert node.isfile is True
+        assert node.is_file() is True
 
     def test_is_dir_always_false(self, storage):
         """Test isdir always returns False."""
         b64_data = base64.b64encode(b"test").decode()
         node = storage.node(f"b64:{b64_data}")
 
-        assert node.isdir is False
+        assert node.is_dir() is False
 
     def test_size_returns_decoded_size(self, storage):
         """Test size returns the decoded data size."""
@@ -78,14 +78,14 @@ class TestBase64Backend:
         b64_data = base64.b64encode(data).decode()
         node = storage.node(f"b64:{b64_data}")
 
-        assert node.size == len(data)
+        assert node.size() == len(data)
 
     def test_mtime_returns_timestamp(self, storage):
         """Test mtime returns a valid timestamp."""
         b64_data = base64.b64encode(b"test").decode()
         node = storage.node(f"b64:{b64_data}")
 
-        mtime = node.mtime
+        mtime = node.mtime()
         assert isinstance(mtime, float)
         assert mtime > 0
 
@@ -100,7 +100,7 @@ class TestBase64Backend:
 
         expected_hash = hashlib.md5(data).hexdigest()
 
-        assert node.md5hash == expected_hash
+        assert node.md5hash() == expected_hash
 
     def test_read_text_with_encoding(self, storage):
         """Test reading text with specific encoding."""
@@ -209,7 +209,7 @@ class TestBase64Backend:
         src.copy_to(dest)
 
         # Verify copy
-        assert dest.exists
+        assert dest.exists()
         assert dest.read(mode="rb") == data
 
     def test_equality_between_base64_nodes(self, storage):
@@ -302,8 +302,8 @@ class TestBase64Backend:
         content = node.read()
 
         assert content == text
-        assert node.exists
-        assert node.isfile
+        assert node.exists()
+        assert node.is_file()
 
     def test_image_data_example(self, storage):
         """Test with binary data (simulating an image)."""
@@ -362,7 +362,7 @@ class TestBase64Backend:
         for i in range(5):
             node.write(f"Content {i}")
             assert node.read() == f"Content {i}"
-            assert node.exists
+            assert node.exists()
 
         # Final check
         assert node.read() == "Content 4"

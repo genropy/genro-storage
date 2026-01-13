@@ -23,11 +23,11 @@ This module defines:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, AsyncIterator, Type, Callable
+from typing import TYPE_CHECKING, Any, AsyncIterator, Callable
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
-    from ..capabilities import BackendCapabilities
+    pass
 
 
 class AsyncProvider(ABC):

@@ -25,10 +25,10 @@ from pathlib import PurePosixPath
 from enum import Enum
 from datetime import datetime
 
-# TODO: Replace with genro_core.decorators.api.apiready when available
-from .decorators import apiready
+from genro_toolbox import smartasync
 
 if TYPE_CHECKING:
+    import zipfile
     from .manager import StorageManager
 
 
@@ -50,45 +50,65 @@ class SkipStrategy(str, Enum):
     CUSTOM = "custom"
 
 
-@apiready(path="/storage/nodes")
 class StorageNode:
     """Represents a file or directory in a storage backend.
 
     StorageNode provides a unified interface for file operations across
     different storage backends (local, S3, GCS, Azure, HTTP, etc.).
 
+    All I/O methods are decorated with ``@smartasync`` and work transparently
+    in both sync and async contexts:
+
+    - In sync context: methods execute directly
+    - In async context: methods return awaitables and use ``asyncio.to_thread()``
+
     Note:
         Users should not instantiate StorageNode directly. Use
         ``StorageManager.node()`` instead.
 
-    The node can represent either a file or a directory. Use the properties
-    ``isfile`` and ``isdir`` to determine the type.
+    The node can represent either a file or a directory. Use the methods
+    ``is_file()`` and ``is_dir()`` to determine the type.
 
     Examples:
-        >>> # Get a node via StorageManager
-        >>> node = storage.node('home:documents/report.pdf')
-        >>>
-        >>> # Check if it exists
-        >>> if node.exists:
-        ...     print(f"File size: {node.size} bytes")
-        >>>
-        >>> # Read content
-        >>> content = node.read_text()
-        >>>
-        >>> # Write content
-        >>> node.write_text("Hello World")
+        Sync context::
+
+            >>> node = storage.node('home:documents/report.pdf')
+            >>> if node.exists():
+            ...     print(f"File size: {node.size()} bytes")
+            >>> content = node.read_text()
+            >>> node.write_text("Hello World")
+
+        Async context::
+
+            >>> async def example():
+            ...     node = storage.node('home:documents/report.pdf')
+            ...     if await node.exists():
+            ...         print(f"File size: {await node.size()} bytes")
+            ...     content = await node.read_text()
+            ...     await node.write_text("Hello World")
 
     Attributes:
-        fullpath: Full path including mount point (e.g., "home:documents/file.txt")
-        exists: True if file or directory exists
-        isfile: True if node points to a file
-        isdir: True if node points to a directory
-        size: File size in bytes
-        mtime: Last modification time as Unix timestamp
-        basename: Filename with extension
-        stem: Filename without extension
-        suffix: File extension including dot
-        parent: Parent directory as StorageNode
+        fullpath (str): Full path including mount point (e.g., "home:documents/file.txt")
+        path (str): Relative path within mount (e.g., "documents/file.txt")
+        basename (str): Filename with extension
+        stem (str): Filename without extension
+        suffix (str): File extension including dot
+        parent (StorageNode): Parent directory as StorageNode
+        mimetype (str): MIME type based on file extension
+
+    Methods (I/O - support sync/async via @smartasync):
+        exists(): Check if file/directory exists
+        is_file(): Check if node is a file
+        is_dir(): Check if node is a directory
+        size(): Get file size in bytes
+        mtime(): Get last modification time
+        md5hash(): Get MD5 hash of content
+        read(): Read file content
+        write(): Write data to file
+        delete(): Delete file or directory
+        copy_to(): Copy to another node
+        children(): List directory contents
+        mkdir(): Create directory
     """
 
     def __init__(
@@ -200,55 +220,67 @@ class StorageNode:
         """
         return self._backend.resolved_path(self._path)
 
-    @property
+    @smartasync
     def exists(self) -> bool:
-        """True if file or directory exists.
+        """Check if file or directory exists.
 
         Returns:
             bool: True if the file or directory exists on the storage backend.
                   Virtual nodes always return False.
 
         Examples:
-            >>> if node.exists:
+            >>> if node.exists():
             ...     print("File exists!")
             ... else:
             ...     print("File not found")
+            >>>
+            >>> # Async context
+            >>> if await node.exists():
+            ...     print("File exists!")
         """
         # Virtual nodes don't have physical storage
         if self._is_virtual:
             return False
         return self._backend.exists(self._path)
 
-    @property
-    def isfile(self) -> bool:
-        """True if node points to a file.
+    @smartasync
+    def is_file(self) -> bool:
+        """Check if node points to a file.
 
         Returns:
             bool: True if this node is a file, False if directory or doesn't exist
 
         Examples:
-            >>> if node.isfile:
-            ...     data = node._read_bytes()
+            >>> if node.is_file():
+            ...     data = node.read_bytes()
+            >>>
+            >>> # Async context
+            >>> if await node.is_file():
+            ...     data = await node.read_bytes()
         """
         return self._backend.is_file(self._path)
 
-    @property
-    def isdir(self) -> bool:
-        """True if node points to a directory.
+    @smartasync
+    def is_dir(self) -> bool:
+        """Check if node points to a directory.
 
         Returns:
             bool: True if this node is a directory, False if file or doesn't exist
 
         Examples:
-            >>> if node.isdir:
+            >>> if node.is_dir():
             ...     for child in node.children():
             ...         print(child.basename)
+            >>>
+            >>> # Async context
+            >>> if await node.is_dir():
+            ...     children = await node.children()
         """
         return self._backend.is_dir(self._path)
 
-    @property
+    @smartasync
     def size(self) -> int:
-        """File size in bytes.
+        """Get file size in bytes.
 
         Returns:
             int: Size of the file in bytes
@@ -258,22 +290,28 @@ class StorageNode:
             ValueError: If node is a directory (directories don't have size)
 
         Examples:
-            >>> print(f"File size: {node.size} bytes")
-            >>> print(f"File size: {node.size / 1024:.1f} KB")
+            >>> print(f"File size: {node.size()} bytes")
+            >>> print(f"File size: {node.size() / 1024:.1f} KB")
+            >>>
+            >>> # Async context
+            >>> size = await node.size()
         """
         return self._backend.size(self._path)
 
-    @property
+    @smartasync
     def mtime(self) -> float:
-        """Last modification time as Unix timestamp.
+        """Get last modification time as Unix timestamp.
 
         Returns:
             float: Unix timestamp of last modification time
 
         Examples:
             >>> from datetime import datetime
-            >>> mod_time = datetime.fromtimestamp(node.mtime)
+            >>> mod_time = datetime.fromtimestamp(node.mtime())
             >>> print(f"Modified: {mod_time}")
+            >>>
+            >>> # Async context
+            >>> mtime = await node.mtime()
         """
         return self._backend.mtime(self._path)
 
@@ -434,20 +472,20 @@ class StorageNode:
             ...     print(f'File: {size} bytes, modified at {mtime}')
             >>>
             >>> # More concise than
-            >>> mtime = node.mtime
-            >>> size = node.size
-            >>> isdir = node.isdir
+            >>> mtime = node.mtime()
+            >>> size = node.size()
+            >>> isdir = node.is_dir()
         """
-        if not self.exists:
+        if not self.exists():
             return None, None, False
 
-        is_directory = self.isdir
-        file_size = None if is_directory else self.size
-        return self.mtime, file_size, is_directory
+        is_directory = self.is_dir()
+        file_size = None if is_directory else self.size()
+        return self.mtime(), file_size, is_directory
 
-    @property
+    @smartasync
     def md5hash(self) -> str:
-        """MD5 hash of file content.
+        """Get MD5 hash of file content.
 
         For cloud storage (S3, GCS, Azure), retrieves hash from metadata (fast).
         For local storage, computes hash by reading file in blocks (slower).
@@ -460,17 +498,20 @@ class StorageNode:
             ValueError: If node is a directory
 
         Examples:
-            >>> hash1 = node1.md5hash
-            >>> hash2 = node2.md5hash
+            >>> hash1 = node1.md5hash()
+            >>> hash2 = node2.md5hash()
             >>> if hash1 == hash2:
             ...     print("Files have identical content")
+            >>>
+            >>> # Async context
+            >>> hash1 = await node1.md5hash()
         """
         # Check if exists first
-        if not self.exists:
+        if not self.exists():
             raise FileNotFoundError(f"File not found: {self.fullpath}")
 
         # Check if it's a file (not a directory)
-        if not self.isfile:
+        if not self.is_file():
             raise ValueError(f"Cannot compute hash of directory: {self.fullpath}")
 
         # Try to get hash from backend metadata first (S3 ETag, etc.)
@@ -743,7 +784,7 @@ class StorageNode:
         # Normal node
         return self._backend.read_text(self._path, encoding)
 
-    @apiready
+    @smartasync
     def read(
         self,
         mode: Annotated[str, "Read mode: 'r' for text, 'rb' for binary"] = "r",
@@ -769,6 +810,9 @@ class StorageNode:
             >>>
             >>> # Read as binary
             >>> data = node.read(mode='rb')
+            >>>
+            >>> # Async context
+            >>> content = await node.read()
         """
         if mode == "r":
             return self._read_text(encoding)
@@ -823,7 +867,7 @@ class StorageNode:
             import hashlib
 
             # Try to compare with existing content
-            if self.capabilities.versioning and self.exists:
+            if self.capabilities.versioning and self.exists():
                 # Calculate MD5 of new content
                 new_md5 = hashlib.md5(data).hexdigest()
 
@@ -837,7 +881,7 @@ class StorageNode:
                     # Compare (S3 ETag is MD5 for simple uploads)
                     if current_etag and new_md5 == current_etag:
                         return False  # Skip: content identical
-            elif self.exists:
+            elif self.exists():
                 # Non-versioned backend: compare with current content
                 try:
                     current_data = self._read_bytes()
@@ -882,9 +926,11 @@ class StorageNode:
             >>> if not written:
             ...     print("Content unchanged, skipped")
         """
+        if not isinstance(text, str):
+            raise TypeError(f"write_text() requires str, got {type(text).__name__}")
         return self._write_bytes(text.encode(encoding), skip_if_unchanged=skip_if_unchanged)
 
-    @apiready
+    @smartasync
     def write(
         self,
         data: Annotated[str | bytes, "Data to write (str for text, bytes for binary)"],
@@ -917,6 +963,9 @@ class StorageNode:
             >>>
             >>> # Skip if unchanged
             >>> written = node.write('content', skip_if_unchanged=True)
+            >>>
+            >>> # Async context
+            >>> await node.write('Hello World')
         """
         if mode == "w":
             if not isinstance(data, str):
@@ -931,7 +980,7 @@ class StorageNode:
 
     # ==================== Convenience Methods (Pythonic API) ====================
 
-    @apiready
+    @smartasync
     def read_text(self, encoding: str = "utf-8") -> str:
         """Read file content as text.
 
@@ -950,10 +999,13 @@ class StorageNode:
         Examples:
             >>> content = node.read_text()
             >>> content = node.read_text(encoding='latin-1')
+            >>>
+            >>> # Async context
+            >>> content = await node.read_text()
         """
-        return self.read(mode="r", encoding=encoding)
+        return self._read_text(encoding)
 
-    @apiready
+    @smartasync
     def read_bytes(self) -> bytes:
         """Read file content as bytes.
 
@@ -968,10 +1020,13 @@ class StorageNode:
 
         Examples:
             >>> data = node.read_bytes()
+            >>>
+            >>> # Async context
+            >>> data = await node.read_bytes()
         """
-        return self.read(mode="rb")
+        return self._read_bytes()
 
-    @apiready
+    @smartasync
     def write_text(
         self, text: str, encoding: str = "utf-8", skip_if_unchanged: bool = False
     ) -> bool:
@@ -996,10 +1051,13 @@ class StorageNode:
             >>> node.write_text("Hello World")
             >>> node.write_text("Content", encoding='latin-1')
             >>> written = node.write_text("New", skip_if_unchanged=True)
+            >>>
+            >>> # Async context
+            >>> await node.write_text("Hello World")
         """
-        return self.write(text, mode="w", encoding=encoding, skip_if_unchanged=skip_if_unchanged)
+        return self._write_text(text, encoding, skip_if_unchanged)
 
-    @apiready
+    @smartasync
     def write_bytes(self, data: bytes, skip_if_unchanged: bool = False) -> bool:
         """Write binary content to file.
 
@@ -1020,14 +1078,24 @@ class StorageNode:
         Examples:
             >>> node.write_bytes(b"Binary data")
             >>> written = node.write_bytes(data, skip_if_unchanged=True)
+            >>>
+            >>> # Async context
+            >>> await node.write_bytes(b"Binary data")
         """
-        return self.write(data, mode="wb", skip_if_unchanged=skip_if_unchanged)
+        return self._write_bytes(data, skip_if_unchanged)
 
     # ==================== File Operations ====================
 
-    @apiready
+    @smartasync
     def delete(self) -> None:
-        """Delete file or directory."""
+        """Delete file or directory.
+
+        Examples:
+            >>> node.delete()
+            >>>
+            >>> # Async context
+            >>> await node.delete()
+        """
         self._backend.delete(self._path, recursive=True)
 
     def _should_skip_file(
@@ -1047,7 +1115,7 @@ class StorageNode:
             Tuple of (should_skip: bool, reason: str)
         """
         # Never skip if destination doesn't exist
-        if not dest.exists:
+        if not dest.exists():
             return (False, "")
 
         # Check skip strategy
@@ -1059,8 +1127,8 @@ class StorageNode:
 
         elif skip == "size" or skip == SkipStrategy.SIZE:
             try:
-                if self.size == dest.size:
-                    return (True, f"same size ({self.size} bytes)")
+                if self.size() == dest.size():
+                    return (True, f"same size ({self.size()} bytes)")
                 else:
                     return (False, "")
             except Exception:
@@ -1070,8 +1138,8 @@ class StorageNode:
         elif skip == "hash" or skip == SkipStrategy.HASH:
             try:
                 # Use MD5 hash comparison (with cloud metadata optimization)
-                if self.md5hash == dest.md5hash:
-                    return (True, f"same content (MD5: {self.md5hash[:8]}...)")
+                if self.md5hash() == dest.md5hash():
+                    return (True, f"same content (MD5: {self.md5hash()[:8]}...)")
                 else:
                     return (False, "")
             except Exception:
@@ -1084,7 +1152,7 @@ class StorageNode:
                     return (True, "custom function returned True")
                 else:
                     return (False, "")
-            except Exception as e:
+            except Exception:
                 # If custom function fails, don't skip
                 return (False, "")
 
@@ -1183,7 +1251,7 @@ class StorageNode:
                         matched = True
                         break
                 if not matched:
-                    return False, f"not matching include patterns"
+                    return False, "not matching include patterns"
 
             # Check exclude patterns (blacklist)
             if exclude_patterns:
@@ -1204,7 +1272,7 @@ class StorageNode:
 
         def collect_files(src_node: StorageNode, dest_node: StorageNode, relpath: str = ""):
             """Recursively collect all files that match filters."""
-            if src_node.isfile:
+            if src_node.is_file():
                 # Apply filtering
                 should_include, reason = matches_filters(src_node, relpath)
                 if should_include:
@@ -1213,9 +1281,9 @@ class StorageNode:
                     # Notify about filtered files
                     on_skip(src_node, reason)
 
-            elif src_node.isdir:
+            elif src_node.is_dir():
                 # Ensure destination dir exists
-                if not dest_node.exists:
+                if not dest_node.exists():
                     dest_node.mkdir(parents=True, exist_ok=True)
 
                 # Recurse into children
@@ -1253,6 +1321,7 @@ class StorageNode:
 
         return dest
 
+    @smartasync
     def copy_to(
         self,
         dest: StorageNode | str,
@@ -1369,7 +1438,7 @@ class StorageNode:
             dest._write_bytes(content)
             return dest
 
-        if not self.exists:
+        if not self.exists():
             raise FileNotFoundError(f"Source not found: {self.fullpath}")
 
         # Validate skip strategy
@@ -1391,12 +1460,12 @@ class StorageNode:
 
         if needs_enhanced:
             # Single file copy
-            if self.isfile:
+            if self.is_file():
                 # For single files, filters don't apply (no relative path context)
                 return self._copy_file_with_skip(dest, skip, skip_fn, on_file, on_skip)
 
             # Directory copy (recursive with filtering)
-            elif self.isdir:
+            elif self.is_dir():
                 return self._copy_dir_with_skip(
                     dest,
                     skip,
@@ -1526,16 +1595,16 @@ class StorageNode:
                     filename = node.basename if node.basename else "file"
                     zf.writestr(filename, node._read_bytes())
 
-            elif self.isfile:
+            elif self.is_file():
                 # Single file: add to ZIP
                 zf.writestr(self.basename, self._read_bytes())
 
-            elif self.isdir:
+            elif self.is_dir():
                 # Directory: recursively add all files
                 self._zip_directory(zf, self, "")
 
             else:
-                raise ValueError(f"Cannot create ZIP: node doesn't exist or is invalid type")
+                raise ValueError("Cannot create ZIP: node doesn't exist or is invalid type")
 
         return buffer.getvalue()
 
@@ -1551,10 +1620,10 @@ class StorageNode:
             # Build archive path
             arc_path = f"{arc_prefix}/{child.basename}" if arc_prefix else child.basename
 
-            if child.isfile:
+            if child.is_file():
                 # Add file to ZIP
                 zf.writestr(arc_path, child._read_bytes())
-            elif child.isdir:
+            elif child.is_dir():
                 # Recurse into subdirectory
                 self._zip_directory(zf, child, arc_path)
 
@@ -1593,13 +1662,20 @@ class StorageNode:
         """
         return self.__class__(manager, mount_name, path)
 
-    @apiready
+    @smartasync
     def children(self) -> Annotated[list["StorageNode"], "List of child nodes in this directory"]:
-        """List child nodes (if directory)."""
+        """List child nodes (if directory).
+
+        Examples:
+            >>> for child in node.children():
+            ...     print(child.basename)
+            >>>
+            >>> # Async context
+            >>> children = await node.children()
+        """
         names = self._backend.list_dir(self._path)
         return [self.child(name) for name in names]
 
-    @apiready
     def child(
         self, *parts: Annotated[str, "Path components to append"]
     ) -> Annotated["StorageNode", "Child node at the specified path"]:
@@ -1630,13 +1706,20 @@ class StorageNode:
         full_child_path = str(self._posix_path / child_path)
         return self._create_node(self._manager, self._mount_name, full_child_path)
 
-    @apiready
+    @smartasync
     def mkdir(
         self,
         parents: Annotated[bool, "Create parent directories if needed"] = False,
         exist_ok: Annotated[bool, "Don't raise error if directory exists"] = False,
     ) -> None:
-        """Create directory."""
+        """Create directory.
+
+        Examples:
+            >>> node.mkdir(parents=True, exist_ok=True)
+            >>>
+            >>> # Async context
+            >>> await node.mkdir(parents=True)
+        """
         self._backend.mkdir(self._path, parents=parents, exist_ok=exist_ok)
 
     # ==================== Advanced Methods ====================
@@ -1855,7 +1938,7 @@ class StorageNode:
             - Uses local_path() for efficient cloud storage serving
             - Streams large files in chunks (doesn't load entire file in memory)
         """
-        if not self.exists:
+        if not self.exists():
             start_response("404 Not Found", [("Content-Type", "text/plain")])
             return [b"Not Found"]
 
@@ -1866,8 +1949,8 @@ class StorageNode:
             if_none_match = if_none_match.replace('"', "")
 
             # Compute our ETag (mtime-size)
-            mtime = self.mtime
-            size = self.size
+            mtime = self.mtime()
+            size = self.size()
             our_etag = f"{mtime}-{size}"
 
             if our_etag == if_none_match:
@@ -1880,8 +1963,8 @@ class StorageNode:
         headers = []
 
         # ETag for caching
-        mtime = self.mtime
-        size = self.size
+        mtime = self.mtime()
+        size = self.size()
         etag = f"{mtime}-{size}"
         headers.append(("ETag", f'"{etag}"'))
 
@@ -1917,7 +2000,6 @@ class StorageNode:
                     chunks.append(chunk)
             return chunks
 
-    @apiready
     def get_metadata(
         self,
     ) -> Annotated[dict[str, str], "Metadata key-value pairs attached to file"]:
@@ -1940,7 +2022,6 @@ class StorageNode:
         """
         return self._backend.get_metadata(self._path)
 
-    @apiready
     def set_metadata(
         self, metadata: Annotated[dict[str, str], "Metadata key-value pairs to set"]
     ) -> None:
@@ -2306,10 +2387,10 @@ class StorageNode:
         import mimetypes
 
         # Check exists and is file
-        if not self.exists:
+        if not self.exists():
             raise FileNotFoundError(f"File not found: {self.fullpath}")
 
-        if not self.isfile:
+        if not self.is_file():
             raise ValueError(f"Cannot encode directory as base64: {self.fullpath}")
 
         # Read file content
@@ -2371,12 +2452,12 @@ class StorageNode:
             return True
 
         # Both must be files to compare content
-        if not (self.isfile and other.isfile):
+        if not (self.is_file() and other.is_file()):
             return False
 
         # Compare via MD5 hash
         try:
-            return self.md5hash == other.md5hash
+            return self.md5hash() == other.md5hash()
         except (FileNotFoundError, ValueError):
             return False
 

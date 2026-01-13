@@ -103,7 +103,7 @@ class RelativeMountBackend(StorageBackend):
             StoragePermissionError: If mount is read-only
         """
         if self.permissions == "readonly":
-            raise StoragePermissionError(f"Mount is read-only. Write operations are not permitted.")
+            raise StoragePermissionError("Mount is read-only. Write operations are not permitted.")
 
     def _check_delete_permission(self) -> None:
         """Check if delete operations are allowed.

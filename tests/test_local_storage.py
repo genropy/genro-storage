@@ -118,11 +118,11 @@ class TestFileOperations:
         node = storage.node("test:file.txt")
 
         # Initially doesn't exist
-        assert not node.exists
+        assert not node.exists()
 
         # After writing, exists
         node.write("content")
-        assert node.exists
+        assert node.exists()
 
     def test_is_file_is_dir(self, storage):
         """Test isfile and isdir properties."""
@@ -131,13 +131,13 @@ class TestFileOperations:
 
         # Create file
         file_node.write("content")
-        assert file_node.isfile
-        assert not file_node.isdir
+        assert file_node.is_file()
+        assert not file_node.is_dir()
 
         # Create directory
         dir_node.mkdir()
-        assert dir_node.isdir
-        assert not dir_node.isfile
+        assert dir_node.is_dir()
+        assert not dir_node.is_file()
 
     def test_file_size(self, storage):
         """Test getting file size."""
@@ -146,7 +146,7 @@ class TestFileOperations:
 
         node.write(content)
 
-        assert node.size == len(content.encode("utf-8"))
+        assert node.size() == len(content.encode("utf-8"))
 
     def test_file_mtime(self, storage):
         """Test getting modification time."""
@@ -155,7 +155,7 @@ class TestFileOperations:
         before = datetime.now().timestamp()
         node.write("content")
 
-        mtime = node.mtime
+        mtime = node.mtime()
         # Allow small timing tolerance (filesystem may round timestamps)
         assert abs(mtime - before) < 2  # Within 2 seconds is reasonable
 
@@ -189,11 +189,11 @@ class TestFileOperations:
 
         # Create file
         node.write("content")
-        assert node.exists
+        assert node.exists()
 
         # Delete
         node.delete()
-        assert not node.exists
+        assert not node.exists()
 
         # Delete again (idempotent)
         node.delete()  # Should not raise error
@@ -328,7 +328,7 @@ class TestFileOperations:
 
         # File doesn't exist yet
         node = mgr.node("test:future_file.txt")
-        assert not node.exists
+        assert not node.exists()
 
         # But resolved_path still returns the path
         resolved = node.resolved_path
@@ -341,7 +341,7 @@ class TestFileOperations:
             f.write("created via resolved_path")
 
         # Now it exists via genro-storage too
-        assert node.exists
+        assert node.exists()
         assert node.read() == "created via resolved_path"
 
 
@@ -352,12 +352,12 @@ class TestDirectoryOperations:
         """Test creating a directory."""
         node = storage.node("test:mydir")
 
-        assert not node.exists
+        assert not node.exists()
 
         node.mkdir()
 
-        assert node.exists
-        assert node.isdir
+        assert node.exists()
+        assert node.is_dir()
 
     def test_mkdir_parents(self, storage):
         """Test creating nested directories."""
@@ -365,8 +365,8 @@ class TestDirectoryOperations:
 
         node.mkdir(parents=True)
 
-        assert node.exists
-        assert node.isdir
+        assert node.exists()
+        assert node.is_dir()
 
     def test_mkdir_exist_ok(self, storage):
         """Test mkdir with exist_ok flag."""
@@ -411,7 +411,7 @@ class TestDirectoryOperations:
         child.write("content")
 
         assert child.fullpath == "test:documents/report.pdf"
-        assert child.exists
+        assert child.exists()
 
         # Single path with slashes
         child2 = parent.child("2024/reports/q4.pdf")
@@ -541,7 +541,7 @@ class TestDirectoryOperations:
         # Delete recursively
         dir_node.delete()
 
-        assert not dir_node.exists
+        assert not dir_node.exists()
 
 
 class TestCopyMove:
@@ -558,8 +558,8 @@ class TestCopyMove:
         result = src.copy_to(dest)
 
         # Both should exist
-        assert src.exists
-        assert dest.exists
+        assert src.exists()
+        assert dest.exists()
         assert result.fullpath == dest.fullpath
 
         # Content should be the same
@@ -573,7 +573,7 @@ class TestCopyMove:
         # Copy using string
         dest = src.copy_to("test:destination.txt")
 
-        assert dest.exists
+        assert dest.exists()
         assert dest.fullpath == "test:destination.txt"
 
     def test_move_file(self, storage):
@@ -587,8 +587,8 @@ class TestCopyMove:
         result = src.move_to(dest)
 
         # Source should not exist, dest should
-        assert not storage.node("test:source.txt").exists
-        assert dest.exists
+        assert not storage.node("test:source.txt").exists()
+        assert dest.exists()
         assert result.fullpath == dest.fullpath
 
         # Content preserved
@@ -607,7 +607,7 @@ class TestCopyMove:
         # Same object, updated path
         assert id(node) == original_id
         assert node.fullpath == "test:new.txt"
-        assert node.exists
+        assert node.exists()
 
     def test_copy_directory(self, storage):
         """Test copying a directory recursively."""
@@ -623,10 +623,10 @@ class TestCopyMove:
         src.copy_to(dest)
 
         # Check structure copied
-        assert dest.exists
-        assert dest.child("file1.txt").exists
-        assert dest.child("subdir").exists
-        assert dest.child("subdir", "file2.txt").exists
+        assert dest.exists()
+        assert dest.child("file1.txt").exists()
+        assert dest.child("subdir").exists()
+        assert dest.child("subdir", "file2.txt").exists()
 
         # Check content
         assert dest.child("file1.txt").read() == "content1"
@@ -657,7 +657,7 @@ class TestPathNormalization:
         root = storage.node("test:")
 
         assert root.fullpath == "test:"
-        assert root.isdir
+        assert root.is_dir()
 
 
 class TestEncodings:
@@ -695,7 +695,7 @@ class TestEdgeCases:
         node = storage.node("test:missing.txt")
 
         with pytest.raises(FileNotFoundError):
-            _ = node.size
+            _ = node.size()
 
     def test_mtime_of_nonexistent_file(self, storage):
         """Test getting mtime of nonexistent file raises FileNotFoundError.
@@ -710,16 +710,16 @@ class TestEdgeCases:
         node = storage.node("test:missing.txt")
 
         # Boolean properties should not raise
-        assert node.exists is False
-        assert node.isfile is False
-        assert node.isdir is False
+        assert node.exists() is False
+        assert node.is_file() is False
+        assert node.is_dir() is False
 
         # Metadata properties should raise
         with pytest.raises(FileNotFoundError):
-            _ = node.mtime
+            _ = node.mtime()
 
         with pytest.raises(FileNotFoundError):
-            _ = node.size
+            _ = node.size()
 
     def test_size_of_directory(self, storage):
         """Test getting size of directory (should error)."""
@@ -727,15 +727,15 @@ class TestEdgeCases:
         node.mkdir()
 
         with pytest.raises(ValueError, match="directory"):
-            _ = node.size
+            _ = node.size()
 
     def test_empty_file(self, storage):
         """Test working with empty files."""
         node = storage.node("test:empty.txt")
 
         node.write("")
-        assert node.exists
-        assert node.size == 0
+        assert node.exists()
+        assert node.size() == 0
         assert node.read() == ""
 
     def test_nested_directory_creation(self, storage):
@@ -743,8 +743,8 @@ class TestEdgeCases:
         deep = storage.node("test:a/b/c/d/e/f/g/h")
         deep.mkdir(parents=True)
 
-        assert deep.exists
-        assert deep.isdir
+        assert deep.exists()
+        assert deep.is_dir()
 
 
 if __name__ == "__main__":

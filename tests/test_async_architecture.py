@@ -64,10 +64,10 @@ class TestAsyncBasicOperations:
         await node.write(b"test data")
 
         # All properties should be awaitable
-        exists = await node.exists
+        exists = await node.exists()
         is_file = await node.is_file
         is_dir = await node.is_dir
-        size = await node.size
+        size = await node.size()
 
         assert exists is True
         assert is_file is True
@@ -112,11 +112,11 @@ class TestAsyncBasicOperations:
         node = async_storage.node("local:delete_me.txt")
         await node.write(b"temporary")
 
-        assert await node.exists
+        assert await node.exists()
 
         await node.delete()
 
-        assert not await node.exists
+        assert not await node.exists()
 
 
 class TestAsyncParallelOperations:
@@ -132,7 +132,7 @@ class TestAsyncParallelOperations:
         await asyncio.gather(*[node.write(f"content_{i}".encode()) for i, node in enumerate(nodes)])
 
         # Verify all files exist
-        exists_results = await asyncio.gather(*[node.exists for node in nodes])
+        exists_results = await asyncio.gather(*[node.exists() for node in nodes])
 
         assert all(exists_results)
 
@@ -169,7 +169,7 @@ class TestAsyncParallelOperations:
         await asyncio.gather(*[src.copy(dst) for src, dst in zip(sources, dests)])
 
         # Verify all destinations
-        dest_exists = await asyncio.gather(*[dst.exists for dst in dests])
+        dest_exists = await asyncio.gather(*[dst.exists() for dst in dests])
 
         assert all(dest_exists)
 
@@ -193,8 +193,8 @@ class TestAsyncParallelOperations:
 
         # Verify
         assert results[1] == b"data1"  # Read result
-        assert await node2.exists
-        assert await node3.exists
+        assert await node2.exists()
+        assert await node3.exists()
 
 
 class TestAsyncPerformance:
@@ -234,10 +234,10 @@ class TestAsyncCaching:
         await node.write(b"test data")
 
         # First access - should query
-        size1 = await node.size
+        size1 = await node.size()
 
         # Second access - should use cache
-        size2 = await node.size
+        size2 = await node.size()
 
         assert size1 == size2 == 9
 
@@ -245,14 +245,14 @@ class TestAsyncCaching:
         await node.write(b"new longer data")
 
         # Should still return cached value
-        size3 = await node.size
+        size3 = await node.size()
         assert size3 == 9  # Still cached
 
         # Invalidate cache
         node.invalidate_cache()
 
         # Should get new value
-        size4 = await node.size
+        size4 = await node.size()
         assert size4 == 15  # New size
 
 
@@ -305,7 +305,7 @@ class TestAsyncMemoryBackend:
 
         # storage2 should have its own empty storage (but doesn't due to fsspec limitation)
         node2 = storage2.node("mem2:test.txt")
-        assert not await node2.exists
+        assert not await node2.exists()
 
         await storage1.close_all()
         await storage2.close_all()
@@ -371,4 +371,4 @@ class TestAsyncErrorHandling:
 
         # Should work with recursive
         await dir_node.delete(recursive=True)
-        assert not await dir_node.exists
+        assert not await dir_node.exists()

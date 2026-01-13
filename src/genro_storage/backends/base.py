@@ -24,7 +24,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import BinaryIO, TextIO
-from dataclasses import asdict
 
 from ..capabilities import BackendCapabilities
 

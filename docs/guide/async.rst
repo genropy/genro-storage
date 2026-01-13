@@ -1,7 +1,7 @@
 Async Operations Guide
 ======================
 
-Complete async/await support for all storage operations.
+Transparent sync/async support via ``@smartasync`` decorator.
 
 .. contents:: Table of Contents
    :local:
@@ -10,141 +10,178 @@ Complete async/await support for all storage operations.
 Overview
 --------
 
-genro-storage provides full async/await support through ``AsyncStorageManager``:
+genro-storage provides transparent async/await support through the ``@smartasync`` decorator
+from ``genro-toolbox``. The same ``StorageManager`` and ``StorageNode`` classes work
+seamlessly in both sync and async contexts:
 
-- All I/O operations are async
+- **Sync context**: Methods execute directly, returning values
+- **Async context**: Methods return awaitables that must be awaited
+- No separate ``AsyncStorageManager`` needed
 - Parallel operations with ``asyncio.gather()``
 - Compatible with FastAPI, asyncio applications
-- Same API as synchronous version
+
+How It Works
+------------
+
+The ``@smartasync`` decorator automatically detects the execution context:
+
+.. code-block:: python
+
+    # In SYNC context (no event loop)
+    node = storage.node('home:file.txt')
+    if node.exists():           # Direct call, returns bool
+        content = node.read()   # Direct call, returns bytes
+
+    # In ASYNC context (inside async function)
+    async def process():
+        node = storage.node('home:file.txt')
+        if await node.exists():           # Must await, returns bool
+            content = await node.read()   # Must await, returns bytes
 
 Basic Setup
 -----------
 
-.. test: test_async_architecture.py::TestAsyncBasicOperations::test_async_write_and_read
-
-Basic async setup and operations. Example from `test_async_architecture.py::test_async_write_and_read <https://github.com/genropy/genro-storage/blob/main/tests/test_async_architecture.py#L50-L59>`_:
+The same configuration works for both sync and async usage:
 
 .. code-block:: python
 
-    from genro_storage import AsyncStorageManager
+    from genro_storage import StorageManager
 
-    # Create async storage manager
-    storage = AsyncStorageManager()
+    # Create storage manager (same class for sync and async)
+    storage = StorageManager()
 
-    # Configure (sync - call at startup)
-    await storage.configure([
+    # Configure storage backends
+    storage.configure([
         {
             'name': 'local',
             'protocol': 'local',
-            'root_path': '/path/to/storage'
+            'base_path': '/path/to/storage'
+        },
+        {
+            'name': 'uploads',
+            'protocol': 's3',
+            'bucket': 'my-bucket'
         }
+    ])
+
+Sync Usage
+----------
+
+In synchronous code, all methods work as regular function calls:
+
+.. code-block:: python
+
+    from genro_storage import StorageManager
+
+    storage = StorageManager()
+    storage.configure([
+        {'name': 'local', 'protocol': 'local', 'base_path': '/tmp/storage'}
     ])
 
     # Get node reference
     node = storage.node('local:test.txt')
 
-    # All operations are async
-    await node.write(b'Hello Async World')
+    # Write and read - direct calls
+    node.write_bytes(b'Hello World')
+    content = node.read_bytes()
 
-    # Read
-    content = await node.read()
-    assert content == b'Hello Async World'
+    # Check properties - now methods with @smartasync
+    if node.exists():
+        print(f"File size: {node.size()} bytes")
+        print(f"Is file: {node.is_file()}")
 
-Text Operations
----------------
+Async Usage
+-----------
 
-.. test: test_async_architecture.py::TestAsyncBasicOperations::test_async_text_operations
-
-Async text read/write. Example from `test_async_architecture.py::test_async_text_operations <https://github.com/genropy/genro-storage/blob/main/tests/test_async_architecture.py#L62-L69>`_:
-
-.. code-block:: python
-
-    node = storage.node('local:test.txt')
-
-    await node.write_text('Hello Async Text')
-    text = await node.read_text()
-
-    assert text == 'Hello Async Text'
-
-Async Properties
-----------------
-
-.. test: test_async_architecture.py::TestAsyncBasicOperations::test_async_properties
-
-All properties are awaitable. Example from `test_async_architecture.py::test_async_properties <https://github.com/genropy/genro-storage/blob/main/tests/test_async_architecture.py#L72-L86>`_:
+In async context, all I/O methods must be awaited:
 
 .. code-block:: python
 
-    node = storage.node('local:test.txt')
-    await node.write(b'test data')
+    import asyncio
+    from genro_storage import StorageManager
 
-    # All properties are awaitable
-    exists = await node.exists
-    is_file = await node.is_file
-    is_dir = await node.is_dir
-    size = await node.size
+    storage = StorageManager()
+    storage.configure([
+        {'name': 'local', 'protocol': 'local', 'base_path': '/tmp/storage'}
+    ])
 
-    assert exists is True
-    assert is_file is True
-    assert is_dir is False
-    assert size == 9
+    async def example():
+        node = storage.node('local:test.txt')
+
+        # All I/O operations are awaitable
+        await node.write_bytes(b'Hello Async World')
+        content = await node.read_bytes()
+
+        # Properties are now methods - must await
+        if await node.exists():
+            size = await node.size()
+            is_file = await node.is_file()
+            print(f"File size: {size}, Is file: {is_file}")
+
+    asyncio.run(example())
+
+Methods vs Properties
+---------------------
+
+With ``@smartasync``, I/O operations that were previously properties are now methods:
+
+.. list-table:: API Changes
+   :header-rows: 1
+   :widths: 30 30 40
+
+   * - Old (property)
+     - New (method)
+     - Description
+   * - ``node.exists``
+     - ``node.exists()``
+     - Check if file/directory exists
+   * - ``node.is_file``
+     - ``node.is_file()``
+     - Check if node is a file
+   * - ``node.is_dir``
+     - ``node.is_dir()``
+     - Check if node is a directory
+   * - ``node.size``
+     - ``node.size()``
+     - Get file size in bytes
+   * - ``node.mtime``
+     - ``node.mtime()``
+     - Get modification timestamp
+   * - ``node.md5hash``
+     - ``node.md5hash()``
+     - Get MD5 hash of content
+
+**Non-I/O properties remain unchanged** (no await needed):
+
+- ``node.basename`` - Filename with extension
+- ``node.stem`` - Filename without extension
+- ``node.suffix`` - File extension
+- ``node.parent`` - Parent directory as StorageNode
+- ``node.mimetype`` - MIME type from extension
 
 Directory Operations
 --------------------
 
-.. test: test_async_architecture.py::TestAsyncBasicOperations::test_async_mkdir_and_list
-
-Async directory operations. Example from `test_async_architecture.py::test_async_mkdir_and_list <https://github.com/genropy/genro-storage/blob/main/tests/test_async_architecture.py#L88-L105>`_:
+Async directory operations:
 
 .. code-block:: python
 
-    dir_node = storage.node('local:testdir')
-    await dir_node.mkdir()
+    async def directory_example():
+        dir_node = storage.node('local:testdir')
+        await dir_node.mkdir()
 
-    # Create files in directory
-    file1 = storage.node('local:testdir/file1.txt')
-    file2 = storage.node('local:testdir/file2.txt')
+        # Create files in directory
+        file1 = storage.node('local:testdir/file1.txt')
+        file2 = storage.node('local:testdir/file2.txt')
 
-    await file1.write(b'content1')
-    await file2.write(b'content2')
+        await file1.write_bytes(b'content1')
+        await file2.write_bytes(b'content2')
 
-    # List directory
-    children = await dir_node.list()
-    names = sorted([c.basename for c in children])
+        # List directory
+        children = await dir_node.children()
+        names = sorted([c.basename for c in children])
 
-    assert names == ['file1.txt', 'file2.txt']
-
-Copy and Delete
----------------
-
-.. test: test_async_architecture.py::TestAsyncBasicOperations::test_async_copy
-
-.. test: test_async_architecture.py::TestAsyncBasicOperations::test_async_delete
-
-Copy and delete operations. Examples from `test_async_architecture.py <https://github.com/genropy/genro-storage/blob/main/tests/test_async_architecture.py#L107-L130>`_:
-
-.. code-block:: python
-
-    # Copy
-    src = storage.node('local:source.txt')
-    await src.write(b'copy me')
-
-    dest = storage.node('local:dest.txt')
-    await src.copy(dest)
-
-    # Verify copy
-    dest_content = await dest.read()
-    assert dest_content == b'copy me'
-
-    # Delete
-    node = storage.node('local:delete_me.txt')
-    await node.write(b'temporary')
-
-    assert await node.exists
-
-    await node.delete()
-
-    assert not await node.exists
+        assert names == ['file1.txt', 'file2.txt']
 
 Parallel Operations
 -------------------
@@ -152,86 +189,54 @@ Parallel Operations
 Parallel Writes
 ~~~~~~~~~~~~~~~
 
-.. test: test_async_architecture.py::TestAsyncParallelOperations::test_parallel_writes
-
-Write multiple files in parallel. Example from `test_async_architecture.py::test_parallel_writes <https://github.com/genropy/genro-storage/blob/main/tests/test_async_architecture.py#L137-L155>`_:
+Write multiple files in parallel:
 
 .. code-block:: python
 
     import asyncio
 
-    # Create 10 nodes
-    nodes = [
-        storage.node(f'mem:file_{i}.txt')
-        for i in range(10)
-    ]
+    async def parallel_writes():
+        # Create 10 nodes
+        nodes = [
+            storage.node(f'mem:file_{i}.txt')
+            for i in range(10)
+        ]
 
-    # Write in parallel
-    await asyncio.gather(
-        *[node.write(f'content_{i}'.encode()) for i, node in enumerate(nodes)]
-    )
+        # Write in parallel
+        await asyncio.gather(
+            *[node.write_bytes(f'content_{i}'.encode()) for i, node in enumerate(nodes)]
+        )
 
-    # Verify all files exist
-    exists_results = await asyncio.gather(
-        *[node.exists for node in nodes]
-    )
+        # Verify all files exist
+        exists_results = await asyncio.gather(
+            *[node.exists() for node in nodes]
+        )
 
-    assert all(exists_results)
+        assert all(exists_results)
 
 Parallel Reads
 ~~~~~~~~~~~~~~
 
-.. test: test_async_architecture.py::TestAsyncParallelOperations::test_parallel_reads
-
-Read multiple files in parallel. Example from `test_async_architecture.py::test_parallel_reads <https://github.com/genropy/genro-storage/blob/main/tests/test_async_architecture.py#L158-L174>`_:
+Read multiple files in parallel:
 
 .. code-block:: python
 
-    # Create files
-    nodes = []
-    for i in range(10):
-        node = storage.node(f'mem:file_{i}.txt')
-        await node.write(f'content_{i}'.encode())
-        nodes.append(node)
+    async def parallel_reads():
+        # Create files first
+        nodes = []
+        for i in range(10):
+            node = storage.node(f'mem:file_{i}.txt')
+            await node.write_bytes(f'content_{i}'.encode())
+            nodes.append(node)
 
-    # Read in parallel
-    contents = await asyncio.gather(
-        *[node.read() for node in nodes]
-    )
+        # Read in parallel
+        contents = await asyncio.gather(
+            *[node.read_bytes() for node in nodes]
+        )
 
-    # Verify content
-    for i, content in enumerate(contents):
-        assert content == f'content_{i}'.encode()
-
-Parallel Copy
-~~~~~~~~~~~~~
-
-.. test: test_async_architecture.py::TestAsyncParallelOperations::test_parallel_copy
-
-Copy files in parallel. Example from `test_async_architecture.py::test_parallel_copy <https://github.com/genropy/genro-storage/blob/main/tests/test_async_architecture.py#L176-L198>`_:
-
-.. code-block:: python
-
-    # Create source files
-    sources = []
-    for i in range(5):
-        node = storage.node(f'mem:src_{i}.txt')
-        await node.write(f'data_{i}'.encode())
-        sources.append(node)
-
-    # Parallel copy
-    dests = [storage.node(f'mem:dst_{i}.txt') for i in range(5)]
-
-    await asyncio.gather(
-        *[src.copy(dst) for src, dst in zip(sources, dests)]
-    )
-
-    # Verify all destinations
-    dest_exists = await asyncio.gather(
-        *[dst.exists for dst in dests]
-    )
-
-    assert all(dest_exists)
+        # Verify content
+        for i, content in enumerate(contents):
+            assert content == f'content_{i}'.encode()
 
 FastAPI Integration
 -------------------
@@ -242,30 +247,27 @@ Basic File Serving
 .. code-block:: python
 
     from fastapi import FastAPI, HTTPException
-    from genro_storage import AsyncStorageManager
+    from genro_storage import StorageManager
 
     app = FastAPI()
 
-    # Configure storage at startup
-    storage = AsyncStorageManager()
-
-    @app.on_event("startup")
-    async def startup():
-        await storage.configure([
-            {'name': 'uploads', 'protocol': 's3', 'bucket': 'my-bucket'}
-        ])
+    # Configure storage at module level
+    storage = StorageManager()
+    storage.configure([
+        {'name': 'uploads', 'protocol': 's3', 'bucket': 'my-bucket'}
+    ])
 
     @app.get("/files/{filepath:path}")
     async def get_file(filepath: str):
         node = storage.node(f'uploads:{filepath}')
 
-        if not await node.exists:
+        if not await node.exists():
             raise HTTPException(status_code=404, detail="File not found")
 
         return {
-            "data": await node.read(mode='rb'),
-            "size": await node.size,
-            "mtime": await node.mtime
+            "data": await node.read_bytes(),
+            "size": await node.size(),
+            "mtime": await node.mtime()
         }
 
 File Upload Endpoint
@@ -283,11 +285,11 @@ File Upload Endpoint
         content = await file.read()
 
         # Write to storage
-        await node.write(content, mode='wb')
+        await node.write_bytes(content)
 
         return {
             "filepath": filepath,
-            "size": await node.size
+            "size": await node.size()
         }
 
 Batch Operations
@@ -301,11 +303,11 @@ Batch Operations
             source = storage.node(f'uploads:{filepath}')
             target = storage.node(f'backups:{filepath}')
 
-            if not await source.exists:
+            if not await source.exists():
                 return {"filepath": filepath, "status": "not found"}
 
-            data = await source.read(mode='rb')
-            await target.write(data, mode='wb')
+            data = await source.read_bytes()
+            await target.write_bytes(data)
 
             return {"filepath": filepath, "status": "ok"}
 
@@ -326,18 +328,18 @@ Clean Resource Management
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        # Startup
-        storage = AsyncStorageManager()
-        await storage.configure([
-            {'name': 'data', 'protocol': 'local', 'root_path': '/data'}
+        # Startup - configure storage
+        storage = StorageManager()
+        storage.configure([
+            {'name': 'data', 'protocol': 'local', 'base_path': '/data'}
         ])
 
         app.state.storage = storage
 
         yield
 
-        # Cleanup
-        await storage.close_all()
+        # Cleanup (if needed)
+        pass
 
     app = FastAPI(lifespan=lifespan)
 
@@ -387,36 +389,38 @@ Async vs Sync Performance
 Best Practices
 --------------
 
-1. **Configure at startup**: Call ``configure()`` once during app initialization
+1. **Configure once**: Call ``configure()`` once during app initialization
 2. **Use gather()**: Batch parallel operations with ``asyncio.gather()``
-3. **Close resources**: Always call ``await storage.close_all()`` on shutdown
-4. **Error handling**: Use try/except around async operations
-5. **Timeouts**: Consider ``asyncio.wait_for()`` for long-running operations
+3. **Error handling**: Use try/except around async operations
+4. **Timeouts**: Consider ``asyncio.wait_for()`` for long-running operations
+5. **Same manager**: Use the same ``StorageManager`` instance throughout
 
-Migration from Sync
--------------------
+Migration Notes
+---------------
 
-Conversion is straightforward:
+If upgrading from a version with ``AsyncStorageManager``:
 
 .. code-block:: python
 
-    # Synchronous
-    from genro_storage import StorageManager
-
-    storage = StorageManager()
-    storage.configure([...])  # Sync
-
-    node = storage.node('data:file.txt')
-    content = node.read()
-
-    # Asynchronous
+    # OLD (before v0.6.0) - DEPRECATED
     from genro_storage import AsyncStorageManager
-
     storage = AsyncStorageManager()
-    await storage.configure([...])  # Await configure
+    await storage.configure([...])
+    if await node.exists:  # property
+        ...
 
-    node = storage.node('data:file.txt')
-    content = await node.read()  # Await operations
+    # NEW (v0.6.0+) - Use StorageManager for both
+    from genro_storage import StorageManager
+    storage = StorageManager()
+    storage.configure([...])  # Sync configure
+    if await node.exists():   # Method with ()
+        ...
+
+Key changes:
+
+- Use ``StorageManager`` (not ``AsyncStorageManager``)
+- ``configure()`` is sync (no await)
+- I/O properties are now methods: ``exists()`` not ``exists``
 
 Next Steps
 ----------

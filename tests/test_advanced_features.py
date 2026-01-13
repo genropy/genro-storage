@@ -81,7 +81,7 @@ class TestLocalPath:
                 f.write("New content")
 
         # Should be uploaded
-        assert node.exists
+        assert node.exists()
         assert node.read() == "New content"
 
     def test_local_path_base64_read_only(self):
@@ -404,7 +404,7 @@ class TestFillFromURL:
         node = storage.node("local:downloaded.txt")
         node.fill_from_url("https://example.com/file.txt")
 
-        assert node.exists
+        assert node.exists()
         assert node.read(mode="rb") == b"Downloaded content"
         mock_urlopen.assert_called_once()
 

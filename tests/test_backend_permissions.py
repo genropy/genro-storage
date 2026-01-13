@@ -54,7 +54,7 @@ class TestLocalBackendPermissions:
             node.write("content")
             assert node.read() == "content"
             node.delete()
-            assert not node.exists
+            assert not node.exists()
 
     def test_local_default_no_permission(self):
         """Local backend without permission field has full access."""
@@ -72,7 +72,7 @@ class TestLocalBackendPermissions:
             node.write("content")
             assert node.read() == "content"
             node.delete()
-            assert not node.exists
+            assert not node.exists()
 
 
 class TestMemoryBackendPermissions:
@@ -116,7 +116,7 @@ class TestMemoryBackendPermissions:
         node.write("content")
         assert node.read() == "content"
         node.delete()
-        assert not node.exists
+        assert not node.exists()
 
 
 @pytest.mark.integration
@@ -206,7 +206,7 @@ class TestS3BackendPermissions:
         node.write("content")
         assert node.read() == "content"
         node.delete()
-        assert not node.exists
+        assert not node.exists()
 
 
 class TestReadOnlyBackendValidation:

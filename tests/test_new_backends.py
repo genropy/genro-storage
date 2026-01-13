@@ -71,7 +71,7 @@ class TestSMBConfiguration:
         # Test basic file operation
         node = storage.node("smb_test:test.txt")
         node.write("Hello SMB!", mode="w")
-        assert node.exists
+        assert node.exists()
         content = node.read(mode="r")
         assert content == "Hello SMB!"
 
@@ -157,7 +157,7 @@ class TestSFTPConfiguration:
         # Test basic file operation
         node = storage.node("sftp_test:upload/test.txt")
         node.write("Hello SFTP!", mode="w")
-        assert node.exists
+        assert node.exists()
         content = node.read(mode="r")
         assert content == "Hello SFTP!"
 

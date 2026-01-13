@@ -27,7 +27,7 @@ import shutil
 import sys
 
 from .base import StorageBackend
-from ..capabilities import BackendCapabilities, capability
+from ..capabilities import capability
 
 
 class LocalStorage(StorageBackend):
@@ -431,10 +431,10 @@ class LocalStorage(StorageBackend):
             return None
 
         # Normalize base_url (ensure no trailing slash)
-        base = self._base_url.rstrip('/')
+        base = self._base_url.rstrip("/")
 
         # Normalize path (ensure leading slash removed)
-        normalized_path = path.lstrip('/')
+        normalized_path = path.lstrip("/")
 
         # Combine with /
         return f"{base}/{normalized_path}"

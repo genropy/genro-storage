@@ -128,17 +128,17 @@ jobs:
     
     - name: Check code formatting with black
       run: |
-        black --check --diff genro_storage tests
+        black --check --diff src/genro_storage tests --exclude="async_POC"
       continue-on-error: true  # Don't fail CI on formatting for now
-    
+
     - name: Lint with ruff
       run: |
-        ruff check genro_storage tests
+        ruff check src/genro_storage tests --exclude="async_POC"
       continue-on-error: true  # Don't fail CI on linting for now
-    
+
     - name: Type check with mypy
       run: |
-        mypy genro_storage --ignore-missing-imports
+        mypy src/genro_storage --ignore-missing-imports --exclude="async_POC"
       continue-on-error: true  # Don't fail on mypy errors yet
 
   docs:

@@ -133,7 +133,7 @@ class TestIterNode:
         dest = storage.node("mem:result.txt")
         iternode.copy_to(dest)
 
-        assert dest.exists
+        assert dest.exists()
         assert dest.read() == "Part 1 Part 2"
 
     def test_iternode_empty(self, storage):
@@ -144,13 +144,13 @@ class TestIterNode:
         assert result == ""
 
     def test_iternode_exists_is_false(self, storage):
-        """iternode.exists returns False (virtual)."""
+        """iternode.exists() returns False (virtual)."""
         n1 = storage.node("mem:f1.txt")
         n1.write("content")
 
         iternode = storage.iternode(n1)
 
-        assert iternode.exists is False
+        assert iternode.exists() is False
 
     def test_iternode_write_raises_error(self, storage):
         """Cannot write to iternode (virtual, no path)."""
@@ -248,12 +248,12 @@ class TestDiffNode:
         dest = storage.node("mem:changes.diff")
         diffnode.copy_to(dest)
 
-        assert dest.exists
+        assert dest.exists()
         content = dest.read()
         assert "line 2" in content
 
     def test_diffnode_exists_is_false(self, storage):
-        """diffnode.exists returns False (virtual)."""
+        """diffnode.exists() returns False (virtual)."""
         n1 = storage.node("mem:f1.txt")
         n1.write("content 1")
 
@@ -262,7 +262,7 @@ class TestDiffNode:
 
         diffnode = storage.diffnode(n1, n2)
 
-        assert diffnode.exists is False
+        assert diffnode.exists() is False
 
     def test_diffnode_write_raises_error(self, storage):
         """Cannot write to diffnode (virtual)."""
@@ -372,7 +372,7 @@ class TestZipMethod:
         zip_node = storage.node("mem:archive.zip")
         zip_node.write(iternode.zip(), mode="wb")
 
-        assert zip_node.exists
+        assert zip_node.exists()
         assert zip_node.read(mode="rb")[:2] == b"PK"
 
     def test_zip_empty_iternode(self, storage):
@@ -430,7 +430,7 @@ class TestIntegration:
         diff_file = storage.node("mem:changes.diff")
         changes.copy_to(diff_file)
 
-        assert diff_file.exists
+        assert diff_file.exists()
         assert "setting2" in diff_file.read()
 
     def test_zip_iternode_and_save(self, storage):
@@ -448,8 +448,8 @@ class TestIntegration:
         zip_file = storage.node("mem:backup.zip")
         zip_file.write(archive_builder.zip(), mode="wb")
 
-        assert zip_file.exists
-        assert zip_file.size > 0
+        assert zip_file.exists()
+        assert zip_file.size() > 0
 
     def test_incremental_build_with_iternode(self, storage):
         """Build content incrementally."""

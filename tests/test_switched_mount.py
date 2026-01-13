@@ -147,8 +147,8 @@ class TestSwitchedMountViaStorageManager:
 
         # Test various node operations
         sys_root = storage.node("pkg:sys")
-        assert sys_root.exists
-        assert sys_root.isdir
+        assert sys_root.exists()
+        assert sys_root.is_dir()
 
         # List children
         children = sys_root.children()
@@ -157,7 +157,7 @@ class TestSwitchedMountViaStorageManager:
 
         # Navigate to child
         sys_file = sys_root.child("sys_file.txt")
-        assert sys_file.exists
+        assert sys_file.exists()
         assert sys_file.read() == "sys content"
 
 

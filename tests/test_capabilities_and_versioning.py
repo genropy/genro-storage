@@ -112,7 +112,7 @@ class TestWriteIfChanged:
         # First write should succeed
         changed = node.write(b"Hello", skip_if_unchanged=True, mode="wb")
         assert changed is True
-        assert node.exists
+        assert node.exists()
         assert node.read(mode="rb") == b"Hello"
 
     def test_write_bytes_skip_if_unchanged_skips_duplicate(self):

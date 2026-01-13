@@ -20,10 +20,8 @@ different storage backends (local, S3, GCS, Azure, HTTP, etc.) using a
 mount-point abstraction inspired by Unix filesystems.
 
 Main Components:
-    - StorageManager: Configure and manage storage backends (sync)
-    - StorageNode: Interact with files and directories (sync)
-    - AsyncStorageManager: Async wrapper around StorageManager
-    - AsyncStorageNode: Async wrapper around StorageNode
+    - StorageManager: Configure and manage storage backends
+    - StorageNode: Interact with files and directories (sync/async via @smartasync)
     - Exceptions: Storage-specific exception hierarchy
 
 Quick Start (Sync):
@@ -32,8 +30,8 @@ Quick Start (Sync):
     >>> # Setup
     >>> storage = StorageManager()
     >>> storage.configure([
-    ...     {'name': 'home', 'type': 'local', 'path': '/home/user'},
-    ...     {'name': 'uploads', 'type': 's3', 'bucket': 'my-bucket'}
+    ...     {'name': 'home', 'protocol': 'local', 'base_path': '/home/user'},
+    ...     {'name': 'uploads', 'protocol': 's3', 'bucket': 'my-bucket'}
     ... ])
     >>>
     >>> # Access files
@@ -41,25 +39,29 @@ Quick Start (Sync):
     >>> content = node.read_text()
     >>>
     >>> # Copy across backends
-    >>> node.copy(storage.node('uploads:backup/report.pdf'))
+    >>> node.copy_to(storage.node('uploads:backup/report.pdf'))
 
 Quick Start (Async):
-    >>> from genro_storage.asyncer_wrapper import AsyncStorageManager
+    >>> import asyncio
+    >>> from genro_storage import StorageManager
     >>>
-    >>> storage = AsyncStorageManager()
-    >>> storage.configure([
-    ...     {'name': 's3', 'type': 's3', 'bucket': 'my-bucket'}
-    ... ])
+    >>> async def main():
+    ...     storage = StorageManager()
+    ...     storage.configure([
+    ...         {'name': 's3', 'protocol': 's3', 'bucket': 'my-bucket'}
+    ...     ])
+    ...     node = storage.node('s3:file.txt')
+    ...     # Methods work in async context via @smartasync
+    ...     data = await node.read_bytes()
+    ...     await node.write_bytes(b'new data')
     >>>
-    >>> node = storage.node('s3:file.txt')
-    >>> data = await node.read_bytes()
-    >>> await node.write_bytes(b'new data')
+    >>> asyncio.run(main())
 
 For more information, see the documentation at:
 https://genro-storage.readthedocs.io
 """
 
-__version__ = "0.5.0"
+__version__ = "0.7.0"
 
 from .manager import StorageManager
 from .node import StorageNode, SkipStrategy
@@ -69,34 +71,17 @@ from .exceptions import (
     StoragePermissionError,
     StorageConfigError,
 )
-from .api_introspection import get_api_structure, get_api_structure_multi
-
-# Async support is optional (requires asyncer)
-try:
-    from .asyncer_wrapper import AsyncStorageManager, AsyncStorageNode
-
-    _ASYNC_AVAILABLE = True
-except ImportError:
-    _ASYNC_AVAILABLE = False
-    AsyncStorageManager = None  # type: ignore
-    AsyncStorageNode = None  # type: ignore
 
 __all__ = [
     # Version
     "__version__",
-    # Main classes (sync)
+    # Main classes
     "StorageManager",
     "StorageNode",
     "SkipStrategy",
-    # Async classes (optional)
-    "AsyncStorageManager",
-    "AsyncStorageNode",
     # Exceptions
     "StorageError",
     "StorageNotFoundError",
     "StoragePermissionError",
     "StorageConfigError",
-    # API Introspection
-    "get_api_structure",
-    "get_api_structure_multi",
 ]

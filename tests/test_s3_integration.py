@@ -48,11 +48,11 @@ class TestS3Storage:
         node = storage_with_s3.node("test-s3:test.txt")
 
         # Initially doesn't exist
-        assert not node.exists
+        assert not node.exists()
 
         # After writing, exists
         node.write("content")
-        assert node.exists
+        assert node.exists()
 
     def test_file_properties(self, storage_with_s3):
         """Test file properties on S3."""
@@ -61,9 +61,9 @@ class TestS3Storage:
 
         node.write(content)
 
-        assert node.exists
-        assert node.isfile
-        assert node.size == len(content.encode("utf-8"))
+        assert node.exists()
+        assert node.is_file()
+        assert node.size() == len(content.encode("utf-8"))
         assert node.basename == "report.pdf"
         assert node.stem == "report"
         assert node.suffix == ".pdf"
@@ -74,11 +74,11 @@ class TestS3Storage:
 
         # Create file
         node.write("content")
-        assert node.exists
+        assert node.exists()
 
         # Delete
         node.delete()
-        assert not node.exists
+        assert not node.exists()
 
     def test_list_directory(self, storage_with_s3):
         """Test listing directory contents on S3."""
@@ -108,8 +108,8 @@ class TestS3Storage:
         src.copy_to(dest)
 
         # Both should exist
-        assert src.exists
-        assert dest.exists
+        assert src.exists()
+        assert dest.exists()
         assert dest.read() == "Hello World"
 
     def test_move_file(self, storage_with_s3):
@@ -123,8 +123,8 @@ class TestS3Storage:
         src.move_to(dest)
 
         # Only dest should exist
-        assert not storage_with_s3.node("test-s3:source.txt").exists
-        assert dest.exists
+        assert not storage_with_s3.node("test-s3:source.txt").exists()
+        assert dest.exists()
         assert dest.read() == "Hello World"
 
     def test_nested_paths(self, storage_with_s3):
@@ -134,7 +134,7 @@ class TestS3Storage:
         # S3 doesn't require mkdir, just write
         node.write("nested content")
 
-        assert node.exists
+        assert node.exists()
         assert node.read() == "nested content"
 
     def test_path_with_prefix(self, minio_bucket, minio_config):
@@ -159,7 +159,7 @@ class TestS3Storage:
         node.write("prefixed content")
 
         # Should exist under prefix
-        assert node.exists
+        assert node.exists()
         assert node.read() == "prefixed content"
 
 
@@ -181,7 +181,7 @@ class TestS3ToLocalCopy:
         s3_node.copy_to(local_node)
 
         # Verify on local
-        assert local_node.exists
+        assert local_node.exists()
         assert local_node.read() == "S3 content"
 
     def test_copy_local_to_s3(self, storage_with_s3, temp_dir):
@@ -199,7 +199,7 @@ class TestS3ToLocalCopy:
         local_node.copy_to(s3_node)
 
         # Verify on S3
-        assert s3_node.exists
+        assert s3_node.exists()
         assert s3_node.read() == "Local content"
 
 
@@ -240,10 +240,10 @@ class TestMemoryStorage:
         node = memory_storage.node("memory:test.txt")
 
         node.write("content")
-        assert node.exists
+        assert node.exists()
 
         node.delete()
-        assert not node.exists
+        assert not node.exists()
 
     def test_memory_directory_operations(self, memory_storage):
         """Test directory operations in memory."""

@@ -55,7 +55,7 @@ class TestCallMethod:
         else:
             input_file.call("cp", input_file, output_file)
 
-        assert output_file.exists
+        assert output_file.exists()
         assert output_file.read() == "Test content"
 
     def test_call_modifies_file(self, storage):

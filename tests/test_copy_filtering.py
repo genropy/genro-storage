@@ -31,10 +31,10 @@ class TestCopyIncludePatterns:
         storage.node("src:").copy_to(storage.node("dest:"), include="*.py")
 
         # Check results
-        assert storage.node("dest:file1.py").exists
-        assert storage.node("dest:file3.py").exists
-        assert not storage.node("dest:file2.txt").exists
-        assert not storage.node("dest:readme.md").exists
+        assert storage.node("dest:file1.py").exists()
+        assert storage.node("dest:file3.py").exists()
+        assert not storage.node("dest:file2.txt").exists()
+        assert not storage.node("dest:readme.md").exists()
 
     def test_include_multiple_patterns(self):
         """Include files matching any of multiple patterns."""
@@ -58,10 +58,10 @@ class TestCopyIncludePatterns:
         storage.node("src:").copy_to(storage.node("dest:"), include=["*.py", "*.json"])
 
         # Check results
-        assert storage.node("dest:script.py").exists
-        assert storage.node("dest:data.json").exists
-        assert not storage.node("dest:config.yaml").exists
-        assert not storage.node("dest:readme.txt").exists
+        assert storage.node("dest:script.py").exists()
+        assert storage.node("dest:data.json").exists()
+        assert not storage.node("dest:config.yaml").exists()
+        assert not storage.node("dest:readme.txt").exists()
 
     def test_include_with_subdirectories(self):
         """Include patterns match paths in subdirectories."""
@@ -84,9 +84,9 @@ class TestCopyIncludePatterns:
         storage.node("src:").copy_to(storage.node("dest:"), include="*.py")
 
         # Check results - should match basename
-        assert storage.node("dest:dir1/file1.py").exists
-        assert not storage.node("dest:dir1/file2.txt").exists
-        assert storage.node("dest:dir2/file3.py").exists
+        assert storage.node("dest:dir1/file1.py").exists()
+        assert not storage.node("dest:dir1/file2.txt").exists()
+        assert storage.node("dest:dir2/file3.py").exists()
 
 
 class TestCopyExcludePatterns:
@@ -113,9 +113,9 @@ class TestCopyExcludePatterns:
         storage.node("src:").copy_to(storage.node("dest:"), exclude="*.log")
 
         # Check results
-        assert storage.node("dest:app.py").exists
-        assert storage.node("dest:data.txt").exists
-        assert not storage.node("dest:app.log").exists
+        assert storage.node("dest:app.py").exists()
+        assert storage.node("dest:data.txt").exists()
+        assert not storage.node("dest:app.log").exists()
 
     def test_exclude_multiple_patterns(self):
         """Exclude files matching any of multiple patterns."""
@@ -139,10 +139,10 @@ class TestCopyExcludePatterns:
         storage.node("src:").copy_to(storage.node("dest:"), exclude=["*.log", "*.tmp"])
 
         # Check results
-        assert storage.node("dest:app.py").exists
-        assert storage.node("dest:data.txt").exists
-        assert not storage.node("dest:debug.log").exists
-        assert not storage.node("dest:cache.tmp").exists
+        assert storage.node("dest:app.py").exists()
+        assert storage.node("dest:data.txt").exists()
+        assert not storage.node("dest:debug.log").exists()
+        assert not storage.node("dest:cache.tmp").exists()
 
     def test_exclude_directory_pattern(self):
         """Exclude files in specific directories."""
@@ -165,9 +165,9 @@ class TestCopyExcludePatterns:
         storage.node("src:").copy_to(storage.node("dest:"), exclude="__pycache__/*")
 
         # Check results
-        assert storage.node("dest:src/main.py").exists
-        assert storage.node("dest:tests/test.py").exists
-        assert not storage.node("dest:__pycache__/main.pyc").exists
+        assert storage.node("dest:src/main.py").exists()
+        assert storage.node("dest:tests/test.py").exists()
+        assert not storage.node("dest:__pycache__/main.pyc").exists()
 
 
 class TestCopyIncludeAndExclude:
@@ -195,10 +195,10 @@ class TestCopyIncludeAndExclude:
         storage.node("src:").copy_to(storage.node("dest:"), include="*.py", exclude="test_*.py")
 
         # Check results
-        assert storage.node("dest:main.py").exists
-        assert storage.node("dest:utils.py").exists
-        assert not storage.node("dest:test_main.py").exists
-        assert not storage.node("dest:readme.txt").exists  # Not included
+        assert storage.node("dest:main.py").exists()
+        assert storage.node("dest:utils.py").exists()
+        assert not storage.node("dest:test_main.py").exists()
+        assert not storage.node("dest:readme.txt").exists()  # Not included
 
 
 class TestCopyCustomFilter:
@@ -223,13 +223,13 @@ class TestCopyCustomFilter:
 
         # Copy only files smaller than 1KB
         storage.node("src:").copy_to(
-            storage.node("dest:"), filter=lambda node, path: node.size < 1000
+            storage.node("dest:"), filter=lambda node, path: node.size() < 1000
         )
 
         # Check results
-        assert storage.node("dest:small.txt").exists
-        assert storage.node("dest:medium.txt").exists
-        assert not storage.node("dest:large.txt").exists
+        assert storage.node("dest:small.txt").exists()
+        assert storage.node("dest:medium.txt").exists()
+        assert not storage.node("dest:large.txt").exists()
 
     def test_filter_by_modification_time(self):
         """Filter files by modification time."""
@@ -253,12 +253,12 @@ class TestCopyCustomFilter:
 
         # Copy only files modified recently (all should be recent in this test)
         storage.node("src:").copy_to(
-            storage.node("dest:"), filter=lambda node, path: node.mtime > cutoff_ts
+            storage.node("dest:"), filter=lambda node, path: node.mtime() > cutoff_ts
         )
 
         # Both should exist (were just created)
-        assert storage.node("dest:old.txt").exists
-        assert storage.node("dest:new.txt").exists
+        assert storage.node("dest:old.txt").exists()
+        assert storage.node("dest:new.txt").exists()
 
     def test_filter_by_path(self):
         """Filter files based on relative path."""
@@ -283,9 +283,9 @@ class TestCopyCustomFilter:
         )
 
         # Check results
-        assert storage.node("dest:src/main.py").exists
-        assert storage.node("dest:docs/readme.md").exists
-        assert not storage.node("dest:tests/test.py").exists
+        assert storage.node("dest:src/main.py").exists()
+        assert storage.node("dest:docs/readme.md").exists()
+        assert not storage.node("dest:tests/test.py").exists()
 
 
 class TestCopyCombinedFiltering:
@@ -318,15 +318,15 @@ class TestCopyCombinedFiltering:
             storage.node("dest:"),
             include=["*.py", "*.json"],
             exclude="test_*.py",
-            filter=lambda node, path: node.size < 1000,
+            filter=lambda node, path: node.size() < 1000,
         )
 
         # Check results
-        assert storage.node("dest:main.py").exists  # Passes all filters
-        assert storage.node("dest:data.json").exists  # Passes all filters
-        assert not storage.node("dest:large.py").exists  # Too large
-        assert not storage.node("dest:test_main.py").exists  # Excluded
-        assert not storage.node("dest:debug.log").exists  # Not included
+        assert storage.node("dest:main.py").exists()  # Passes all filters
+        assert storage.node("dest:data.json").exists()  # Passes all filters
+        assert not storage.node("dest:large.py").exists()  # Too large
+        assert not storage.node("dest:test_main.py").exists()  # Excluded
+        assert not storage.node("dest:debug.log").exists()  # Not included
 
     def test_filter_with_callbacks(self):
         """Filtering works with skip callbacks."""
@@ -384,8 +384,8 @@ class TestCopyFilteringEdgeCases:
         storage.node("src:").copy_to(storage.node("dest:"), include="*.py")
 
         # Destination should exist
-        assert storage.node("dest:empty").exists
-        assert storage.node("dest:empty").isdir
+        assert storage.node("dest:empty").exists()
+        assert storage.node("dest:empty").is_dir()
 
     def test_filter_exception_skips_file(self):
         """If filter function raises exception, file is skipped."""
@@ -420,8 +420,8 @@ class TestCopyFilteringEdgeCases:
         )
 
         # file1 should be skipped due to exception
-        assert not storage.node("dest:file1.txt").exists
-        assert storage.node("dest:file2.txt").exists
+        assert not storage.node("dest:file1.txt").exists()
+        assert storage.node("dest:file2.txt").exists()
 
         # Check skipped was called for file1
         basenames = [name for name, reason in skipped]
@@ -447,7 +447,7 @@ class TestCopyFilteringEdgeCases:
         storage.node("src:").copy_to(storage.node("dest:"), include="*.py")  # No Python files exist
 
         # Destination directory should exist but be empty
-        assert storage.node("dest:").exists
+        assert storage.node("dest:").exists()
         children = storage.node("dest:").children()
         assert len(children) == 0
 

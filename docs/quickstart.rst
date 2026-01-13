@@ -18,13 +18,13 @@ For cloud storage support, install optional dependencies:
 
     # Amazon S3
     pip install genro-storage[s3]
-    
+
     # Google Cloud Storage
     pip install genro-storage[gcs]
-    
+
     # Azure Blob Storage
     pip install genro-storage[azure]
-    
+
     # All backends
     pip install genro-storage[full]
 
@@ -69,8 +69,8 @@ First Steps
 .. code-block:: python
 
     storage.configure([
-        {'name': 'home', 'type': 'local', 'path': '/home/user'},
-        {'name': 'temp', 'type': 'local', 'path': '/tmp'}
+        {'name': 'home', 'protocol': 'local', 'base_path': '/home/user'},
+        {'name': 'temp', 'protocol': 'local', 'base_path': '/tmp'}
     ])
 
 3. Create Storage Nodes
@@ -80,7 +80,7 @@ First Steps
 
     # Point to a file
     node = storage.node('home:documents/report.pdf')
-    
+
     # Or build path dynamically
     node = storage.node('home', 'documents', 'report.pdf')
 
@@ -90,18 +90,18 @@ First Steps
 .. code-block:: python
 
     # Write
-    node.write("Hello World")
+    node.write_text("Hello World")
 
     # Read
-    content = node.read()
-    
-    # Check existence
-    if node.exists:
-        print(f"File size: {node.size} bytes")
-    
+    content = node.read_text()
+
+    # Check existence (note: methods, not properties)
+    if node.exists():
+        print(f"File size: {node.size()} bytes")
+
     # Copy
-    node.copy_to('temp:backup.pdf')
-    
+    node.copy_to(storage.node('temp:backup.pdf'))
+
     # Delete
     node.delete()
 
@@ -117,23 +117,23 @@ Here's a complete working example:
     # Setup
     storage = StorageManager()
     storage.configure([
-        {'name': 'data', 'type': 'local', 'path': './data'},
-        {'name': 'archive', 'type': 'local', 'path': './archive'}
+        {'name': 'data', 'protocol': 'local', 'base_path': './data'},
+        {'name': 'archive', 'protocol': 'local', 'base_path': './archive'}
     ])
 
     # Create and write a file
     report = storage.node('data:reports/2024-q4.txt')
-    report.write(\"\"\"
+    report.write_text("""
 Q4 2024 Sales Report
 ---------------------
 Total Sales: $1,234,567
 Growth: +15%
-\"\"\")
+""")
 
     # Read and process
-    content = report.read()
-    print(f"Report size: {report.size} bytes")
-    print(f"Modified: {report.mtime}")
+    content = report.read_text()
+    print(f"Report size: {report.size()} bytes")
+    print(f"Modified: {report.mtime()}")
 
     # Archive the report
     archive_node = storage.node('archive:reports/2024-q4.txt')
@@ -141,9 +141,9 @@ Growth: +15%
 
     # List all files in data/reports
     reports_dir = storage.node('data:reports')
-    if reports_dir.isdir:
+    if reports_dir.is_dir():
         for child in reports_dir.children():
-            print(f"- {child.basename} ({child.size} bytes)")
+            print(f"- {child.basename} ({child.size()} bytes)")
 
 Working with Directories
 -------------------------
@@ -155,7 +155,7 @@ Create directories:
     # Create single directory
     dir_node = storage.node('data:new_folder')
     dir_node.mkdir()
-    
+
     # Create nested directories
     nested = storage.node('data:level1/level2/level3')
     nested.mkdir(parents=True)
@@ -165,11 +165,11 @@ List directory contents:
 .. code-block:: python
 
     dir_node = storage.node('data:reports')
-    
+
     for child in dir_node.children():
-        if child.isfile:
+        if child.is_file():
             print(f"File: {child.basename}")
-        elif child.isdir:
+        elif child.is_dir():
             print(f"Directory: {child.basename}")
 
 Navigate directory tree:
@@ -177,13 +177,13 @@ Navigate directory tree:
 .. code-block:: python
 
     file_node = storage.node('data:reports/2024/q4.pdf')
-    
+
     # Get parent directory
     reports_2024 = file_node.parent
-    
+
     # Get sibling file
     q3_report = reports_2024.child('q3.pdf')
-    
+
     # Navigate up
     reports_dir = reports_2024.parent
 
@@ -198,16 +198,16 @@ Create ``storage.yaml``:
 .. code-block:: yaml
 
     - name: home
-      type: local
-      path: /home/user
-    
+      protocol: local
+      base_path: /home/user
+
     - name: uploads
-      type: s3
+      protocol: s3
       bucket: my-app-uploads
       region: eu-west-1
-    
+
     - name: cache
-      type: memory
+      protocol: memory
 
 Load it:
 
@@ -227,7 +227,7 @@ Create ``storage.json``:
       {
         "name": "home",
         "protocol": "local",
-        "path": "/home/user"
+        "base_path": "/home/user"
       },
       {
         "name": "uploads",
@@ -252,13 +252,13 @@ Copy files between different storage backends:
 .. code-block:: python
 
     storage.configure([
-        {'name': 'local', 'type': 'local', 'path': '/tmp'},
-        {'name': 's3', 'type': 's3', 'bucket': 'my-bucket'}
+        {'name': 'local', 'protocol': 'local', 'base_path': '/tmp'},
+        {'name': 's3', 'protocol': 's3', 'bucket': 'my-bucket'}
     ])
 
     # Process locally
     local_file = storage.node('local:processing/image.jpg')
-    local_file.write(processed_data, mode='wb')
+    local_file.write_bytes(processed_data)
 
     # Upload to S3
     s3_file = storage.node('s3:uploads/2024/image.jpg')
@@ -267,25 +267,26 @@ Copy files between different storage backends:
     # Cleanup
     local_file.delete()
 
-Async Usage (NEW in v0.3.0!)
------------------------------
+Async Usage
+-----------
 
-For async/await contexts like FastAPI or asyncio applications:
+The same ``StorageManager`` works in both sync and async contexts.
+All I/O methods use the ``@smartasync`` decorator for transparent async support.
 
 Basic Setup
 ~~~~~~~~~~~
 
 .. code-block:: python
 
-    from genro_storage import AsyncStorageManager
+    from genro_storage import StorageManager
 
-    # Initialize async storage manager
-    storage = AsyncStorageManager()
+    # Same class for both sync and async
+    storage = StorageManager()
 
     # Configure (sync - call at startup)
     storage.configure([
-        {'name': 'uploads', 'type': 's3', 'bucket': 'my-bucket'},
-        {'name': 'cache', 'type': 'local', 'path': '/tmp/cache'}
+        {'name': 'uploads', 'protocol': 's3', 'bucket': 'my-bucket'},
+        {'name': 'cache', 'protocol': 'local', 'base_path': '/tmp/cache'}
     ])
 
 Async File Operations
@@ -296,9 +297,9 @@ Async File Operations
     async def process_file(filepath: str):
         node = storage.node(f'uploads:{filepath}')
 
-        # All I/O operations are async
+        # All I/O methods are awaitable in async context
         if await node.exists():
-            data = await node.read(mode='rb')
+            data = await node.read_bytes()
             size = await node.size()
             return data
 
@@ -321,7 +322,7 @@ FastAPI Integration
             raise HTTPException(status_code=404)
 
         return {
-            "data": await node.read(mode='rb'),
+            "data": await node.read_bytes(),
             "size": await node.size()
         }
 
@@ -336,8 +337,8 @@ Concurrent Operations
         async def backup_one(filepath):
             source = storage.node(f'uploads:{filepath}')
             target = storage.node(f'backups:{filepath}')
-            data = await source.read(mode='rb')
-            await target.write(data, mode='wb')
+            data = await source.read_bytes()
+            await target.write_bytes(data)
 
         # Process all files in parallel
         await asyncio.gather(*[backup_one(f) for f in file_list])

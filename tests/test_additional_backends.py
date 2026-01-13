@@ -316,7 +316,7 @@ class TestGCSBackend:
         # Test basic file operation
         node = storage.node("gcs_test:test.txt")
         node.write("Hello GCS!", mode="w")
-        assert node.exists
+        assert node.exists()
         content = node.read(mode="r")
         assert content == "Hello GCS!"
 
@@ -413,7 +413,7 @@ class TestWebDAVBackend:
         try:
             node = storage.node("webdav_test:test.txt")
             node.write("Hello WebDAV!", mode="w")
-            assert node.exists
+            assert node.exists()
             content = node.read(mode="r")
             assert content == "Hello WebDAV!"
         except Exception as e:
@@ -549,7 +549,7 @@ class TestAzureBackend:
         # Test basic file operation
         node = storage.node("azure_test:test.txt")
         node.write("Hello Azure!", mode="w")
-        assert node.exists
+        assert node.exists()
         content = node.read(mode="r")
         assert content == "Hello Azure!"
 

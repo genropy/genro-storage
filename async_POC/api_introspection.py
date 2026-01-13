@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import inspect
 import json
-from typing import Any, get_type_hints, get_origin, get_args
+from typing import Any, get_origin, get_args
 
 
 def get_api_structure(

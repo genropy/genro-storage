@@ -69,14 +69,14 @@ class TestCopySkipStrategies:
 
         # Test with string
         src.copy_to(dest, skip="exists")
-        assert dest.exists
+        assert dest.exists()
 
         # Test with enum
         src2 = storage.node("src:file2.txt")
         src2.write("content")
         dest2 = storage.node("dest:file2.txt")
         src2.copy_to(dest2, skip=SkipStrategy.EXISTS)
-        assert dest2.exists
+        assert dest2.exists()
 
     def test_copy_skip_size(self, storage):
         """skip='size' skips if same size."""
@@ -139,7 +139,7 @@ class TestCopySkipStrategies:
 
         # Custom function: skip if dest is newer
         def skip_if_dest_newer(src_node, dest_node):
-            return dest_node.exists and dest_node.mtime > src_node.mtime
+            return dest_node.exists() and dest_node.mtime() > src_node.mtime()
 
         # Dest is newer, should skip
         import time
@@ -386,7 +386,7 @@ class TestCopySkipEdgeCases:
 
         # Should copy (not skip) because dest doesn't exist
         src.copy_to(dest, skip="size")
-        assert dest.exists
+        assert dest.exists()
         assert dest.read() == "content"
 
     def test_skip_hash_handles_missing_dest(self, storage):
@@ -397,7 +397,7 @@ class TestCopySkipEdgeCases:
 
         # Should copy because dest doesn't exist
         src.copy_to(dest, skip="hash")
-        assert dest.exists
+        assert dest.exists()
 
     def test_empty_directory_copy(self, storage):
         """Copying empty directory works."""
@@ -407,8 +407,8 @@ class TestCopySkipEdgeCases:
         dest_dir = storage.node("dest:empty_dir")
         src_dir.copy_to(dest_dir)
 
-        assert dest_dir.exists
-        assert dest_dir.isdir
+        assert dest_dir.exists()
+        assert dest_dir.is_dir()
         assert len(dest_dir.children()) == 0
 
     def test_nested_directory_copy_with_skip(self, storage):

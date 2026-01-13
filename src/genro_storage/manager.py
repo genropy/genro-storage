@@ -24,9 +24,6 @@ from typing import Any, Annotated
 import json
 from pathlib import Path
 
-# TODO: Replace with genro_core.decorators.api.apiready when available
-from .decorators import apiready
-
 try:
     import yaml
 
@@ -43,7 +40,6 @@ from .backends.base64 import Base64Backend
 from .backends.relative import RelativeMountBackend
 
 
-@apiready(path="/storage")
 class StorageManager:
     """Main entry point for configuring and accessing storage.
 
@@ -226,7 +222,6 @@ class StorageManager:
         for config in config_list:
             self._configure_mount(config)
 
-    @apiready
     def add_mount(
         self, config: Annotated[dict[str, Any], "Mount configuration dictionary"]
     ) -> None:
@@ -249,7 +244,6 @@ class StorageManager:
         """
         self._configure_mount(config)
 
-    @apiready
     def delete_mount(self, name: Annotated[str, "Mount point name to delete"]) -> None:
         """Delete a mount point.
 
@@ -355,10 +349,7 @@ class StorageManager:
                 )
             # LocalStorage supports both string paths and callables
             # Optional base_url for URL generation
-            backend = LocalStorage(
-                path=base_path,
-                base_url=config.get("base_url")
-            )
+            backend = LocalStorage(path=base_path, base_url=config.get("base_url"))
 
         elif backend_type == "memory":
             backend = FsspecBackend("memory", base_path=config.get("base_path", ""))
@@ -741,7 +732,6 @@ class StorageManager:
         # Wrap backend with permission layer (empty relative path = no prefix)
         return RelativeMountBackend(backend, relative_path="", permissions=permissions)
 
-    @apiready
     def node(
         self,
         mount_or_path: Annotated[
@@ -958,7 +948,6 @@ class StorageManager:
         parts = [p for p in path.split("/") if p]
         return "/".join(parts)
 
-    @apiready
     def get_mount_names(self) -> Annotated[list[str], "List of configured mount point names"]:
         """Get list of configured mount names.
 
@@ -975,7 +964,6 @@ class StorageManager:
         """
         return list(self._mounts.keys())
 
-    @apiready
     def has_mount(
         self, name: Annotated[str, "Mount point name to check"]
     ) -> Annotated[bool, "True if mount exists"]:

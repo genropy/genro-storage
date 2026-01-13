@@ -20,7 +20,7 @@ class TestMD5Hash:
         node.write(test_content, mode="wb")
 
         # Get hash
-        hash_value = node.md5hash
+        hash_value = node.md5hash()
 
         assert hash_value == expected_md5
         assert len(hash_value) == 32  # MD5 is 32 hex chars
@@ -50,7 +50,7 @@ class TestMD5Hash:
         node.write(test_content, mode="wb")
 
         # Get hash - should use ETag from S3, not compute
-        hash_value = node.md5hash
+        hash_value = node.md5hash()
 
         assert hash_value is not None
         assert len(hash_value) == 32
@@ -69,7 +69,7 @@ class TestMD5Hash:
         node = storage_manager.node("local:nonexistent.txt")
 
         with pytest.raises(FileNotFoundError):
-            _ = node.md5hash
+            _ = node.md5hash()
 
     def test_md5hash_directory_raises_error(self, storage_manager, tmp_path):
         """Test MD5 hash on directory raises error."""
@@ -80,7 +80,7 @@ class TestMD5Hash:
         node.mkdir()
 
         with pytest.raises(ValueError, match="Cannot compute hash of directory"):
-            _ = node.md5hash
+            _ = node.md5hash()
 
     def test_md5hash_large_file(self, storage_manager, tmp_path):
         """Test MD5 hash on large file (tests block reading)."""
@@ -93,7 +93,7 @@ class TestMD5Hash:
         node.write(large_content, mode="wb")
 
         # Compute hash
-        hash_value = node.md5hash
+        hash_value = node.md5hash()
 
         # Verify
         import hashlib
@@ -111,7 +111,7 @@ class TestMD5Hash:
         # MD5 of empty string
         expected = "d41d8cd98f00b204e9800998ecf8427e"
 
-        assert node.md5hash == expected
+        assert node.md5hash() == expected
 
 
 class TestNodeEquality:
@@ -288,7 +288,7 @@ class TestMD5Performance:
         import time
 
         start = time.time()
-        hash_value = node.md5hash
+        hash_value = node.md5hash()
         duration = time.time() - start
 
         # Should be very fast (< 1 second) since it uses metadata
@@ -303,8 +303,8 @@ class TestMD5Performance:
         node = storage_manager.node("local:file.txt")
         node.write(b"Test content", mode="wb")
 
-        hash1 = node.md5hash
-        hash2 = node.md5hash
-        hash3 = node.md5hash
+        hash1 = node.md5hash()
+        hash2 = node.md5hash()
+        hash3 = node.md5hash()
 
         assert hash1 == hash2 == hash3
