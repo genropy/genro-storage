@@ -20,10 +20,11 @@ for configuring storage backends and creating StorageNode instances.
 """
 
 from __future__ import annotations
-from typing import Any, Annotated
+
 import json
 import warnings
 from pathlib import Path
+from typing import Annotated, Any
 
 try:
     import yaml
@@ -32,13 +33,16 @@ try:
 except ImportError:
     HAS_YAML = False
 
-from .node import StorageNode
-from .exceptions import StorageConfigError, StorageNotFoundError
+from genro_builders.builder import BuilderHandler
+
 from .backends import StorageBackend
-from .backends.local import LocalStorage
-from .backends.fsspec import FsspecBackend
 from .backends.base64 import Base64Backend
+from .backends.fsspec import FsspecBackend
+from .backends.local import LocalStorage
 from .backends.relative import RelativeMountBackend
+from .config import StorageConfig
+from .exceptions import StorageConfigError, StorageNotFoundError
+from .node import StorageNode
 
 
 class StorageManager:
@@ -86,8 +90,9 @@ class StorageManager:
     def configure(
         self,
         source: Annotated[
-            str | list[dict[str, Any]],
-            "Configuration source: path to YAML/JSON file or list of mount configurations",
+            str | list[dict[str, Any]] | StorageConfig | type[StorageConfig],
+            "Configuration source: a StorageConfig subclass or instance, a path to a "
+            "YAML/JSON file, or a list of mount configuration dicts",
         ],
     ) -> None:
         """Configure mount points from various sources.
@@ -97,13 +102,17 @@ class StorageManager:
 
         Args:
             source: Configuration source, can be:
+                - StorageConfig subclass or instance: the pythonic grammar (see
+                  ``genro_storage.config``). A subclass is instantiated and built
+                  on a fresh handler; an instance is used as already built.
+                  ``^pointer`` values are resolved once, here, at configuration time.
                 - str: Path to YAML or JSON configuration file
                 - list[dict]: List of mount configurations
 
         Raises:
             FileNotFoundError: If configuration file doesn't exist
             StorageConfigError: If configuration format is invalid
-            TypeError: If source is neither str nor list
+            TypeError: If source is not a StorageConfig subclass/instance, str, or list
 
         Configuration Dictionary Format:
             Each mount configuration dict must have:
@@ -210,13 +219,20 @@ class StorageManager:
             >>> # Now both 'home' and 'uploads' are configured
         """
         # Parse source
-        if isinstance(source, str):
+        if isinstance(source, type) and issubclass(source, StorageConfig):
+            page = source()
+            BuilderHandler().add_builder(page)
+            config_list = self._mounts_from_builder(page)
+        elif isinstance(source, StorageConfig):
+            config_list = self._mounts_from_builder(source)
+        elif isinstance(source, str):
             config_list = self._load_config_file(source)
         elif isinstance(source, list):
             config_list = source
         else:
             raise TypeError(
-                f"source must be str (file path) or list[dict], got {type(source).__name__}"
+                "source must be a StorageConfig subclass or instance, a str "
+                f"(file path), or list[dict], got {type(source).__name__}"
             )
 
         # Validate and configure each mount
@@ -260,6 +276,51 @@ class StorageManager:
         if name not in self._mounts:
             raise KeyError(f"Mount point '{name}' not found")
         del self._mounts[name]
+
+    def _mounts_from_builder(self, page: StorageConfig) -> list[dict[str, Any]]:
+        """Flatten a built ``StorageConfig`` into the ``list[dict]`` the dict path consumes.
+
+        Walks the ``mounts`` collection in bag order — which is declaration order —
+        resolving each node's ``^pointer`` / ``${template}`` values through
+        ``runtime_values`` and tagging the protocol from ``node_tag``. A ``relative``
+        node carries its parent in ``path`` and is routed by ``_configure_mount`` on
+        the ``:`` separator, so it gets no ``protocol`` key. The resulting dicts feed
+        the unchanged ``_configure_mount``; pointers are resolved once, here.
+
+        Args:
+            page: A built ``StorageConfig`` (already mounted on a ``BuilderHandler``)
+
+        Returns:
+            list[dict]: One mount configuration dict per declared mount, in order
+
+        Raises:
+            StorageConfigError: If ``page`` was never built (its ``handler`` is
+                ``None``) — an instance is expected already built.
+        """
+        # An unbuilt instance has no handler: it was never mounted on a
+        # BuilderHandler, so its grammar never ran. This is misuse, not an
+        # empty configuration — signal it instead of silently mounting nothing.
+        if page.handler is None:
+            raise StorageConfigError(
+                "StorageConfig instance has not been built: pass a StorageConfig "
+                "subclass (built automatically) or an instance already mounted on "
+                "a BuilderHandler via BuilderHandler().add_builder(instance)."
+            )
+
+        mounts_node = page.source.get_node("mounts")
+        if mounts_node is None:
+            return []
+
+        config_list: list[dict[str, Any]] = []
+        # A ``mounts`` collection with no children has ``value is None`` (not an
+        # empty Bag); zero mounts is a legitimate state, so treat it as no mounts.
+        for node in mounts_node.value or ():
+            _value, attrs = page.runtime_values(node)
+            config = dict(attrs)
+            if node.node_tag != "relative":
+                config["protocol"] = node.node_tag
+            config_list.append(config)
+        return config_list
 
     def _load_config_file(self, filepath: str) -> list[dict[str, Any]]:
         """Load configuration from YAML or JSON file.
@@ -662,7 +723,7 @@ class StorageManager:
 
         # Validate parent mount exists
         if parent_mount_name not in self._mounts:
-            available = ", ".join(f"'{m}'" for m in self._mounts.keys()) if self._mounts else "none"
+            available = ", ".join(f"'{m}'" for m in self._mounts) if self._mounts else "none"
             raise StorageConfigError(
                 f"Parent mount '{parent_mount_name}' not found for relative mount '{mount_name}'. "
                 f"Available mounts: {available}"

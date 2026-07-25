@@ -29,6 +29,7 @@ dependencies = [
     "fsspec>=2023.1.0",
     "PyYAML>=6.0",
     "genro-toolbox>=0.1.0",
+    "genro-builders>=0.18.0",
 ]
 
 [project.optional-dependencies]
