@@ -123,3 +123,8 @@ markers = [
     "integration: Integration tests that require external services (MinIO, SFTP, SMB, WebDAV, etc.)",
     "unit: Fast unit tests with no external dependencies",
 ]
+
+[tool.coverage.run]
+# Record paths relative to the repository: py-cov-action re-runs `coverage json`
+# inside its own container, where absolute runner paths do not exist.
+relative_files = true
