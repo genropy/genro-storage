@@ -30,8 +30,8 @@ jobs:
     
     - name: Run Bandit security scan
       run: |
-        bandit -r genro_storage -f json -o bandit-report.json || true
-        bandit -r genro_storage
+        bandit -r src/genro_storage -f json -o bandit-report.json || true
+        bandit -r src/genro_storage
       continue-on-error: true
     
     - name: Check dependencies with Safety
@@ -69,11 +69,11 @@ jobs:
     - name: Calculate complexity
       run: |
         echo "## Cyclomatic Complexity" > complexity-report.md
-        radon cc genro_storage -a -s >> complexity-report.md
-        
+        radon cc src/genro_storage -a -s >> complexity-report.md
+
         echo "" >> complexity-report.md
         echo "## Maintainability Index" >> complexity-report.md
-        radon mi genro_storage >> complexity-report.md
+        radon mi src/genro_storage >> complexity-report.md
         
         cat complexity-report.md
     
