@@ -1,7 +1,7 @@
 services:
   # MinIO - S3-compatible storage
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: genro-storage-minio
     ports:
       - "9000:9000"      # API
@@ -19,6 +19,8 @@ services:
       retries: 5
 
   # SFTP Server
+  # No version tags are published for this image; :latest has not moved in over
+  # two years, so it is effectively pinned already.
   sftp:
     image: atmoz/sftp:latest
     container_name: genro-storage-sftp
@@ -34,6 +36,9 @@ services:
       retries: 5
 
   # Samba/SMB Server
+  # Only architecture tags (amd64/aarch64/armhf) are published besides :latest,
+  # and pinning one of those would break the other architecture. :latest has not
+  # moved in five years.
   samba:
     image: dperson/samba:latest
     container_name: genro-storage-samba
@@ -54,7 +59,7 @@ services:
 
   # WebDAV Server
   webdav:
-    image: bytemark/webdav:latest
+    image: bytemark/webdav:2.4
     container_name: genro-storage-webdav
     ports:
       - "8080:80"
@@ -72,13 +77,16 @@ services:
 
   # Azurite - Azure Storage Emulator
   azurite:
-    image: mcr.microsoft.com/azure-storage/azurite:latest
+    image: mcr.microsoft.com/azure-storage/azurite:3.36.0
     container_name: genro-storage-azurite
     ports:
       - "10000:10000"  # Blob service
       - "10001:10001"  # Queue service
       - "10002:10002"  # Table service
-    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --loose
+    # --skipApiVersionCheck: adlfs tracks the live Azure API version, so a new
+    # adlfs release otherwise fails every request against a pinned emulator with
+    # "The API version <date> is not supported by Azurite".
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --loose --skipApiVersionCheck
     volumes:
       - azurite-data:/data
     healthcheck:
@@ -89,7 +97,7 @@ services:
 
   # fake-gcs-server - Google Cloud Storage Emulator
   fake-gcs:
-    image: fsouza/fake-gcs-server:latest
+    image: fsouza/fake-gcs-server:1.55.1
     container_name: genro-storage-fake-gcs
     ports:
       - "4443:4443"
