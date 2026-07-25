@@ -1,7 +1,10 @@
 """Tests for Git, GitHub, WebDAV, and LibArchive backends."""
 
 import pytest
+import json
+import os
 import socket
+import urllib.request
 from genro_storage import StorageManager, StorageConfigError
 
 
@@ -69,27 +72,21 @@ def create_gcs_bucket_if_not_exists():
     if not HAS_GCS:
         return
 
+    # Set STORAGE_EMULATOR_HOST for fake-gcs-server
+    os.environ["STORAGE_EMULATOR_HOST"] = "http://localhost:4443"
+
+    # Create the bucket through the HTTP API directly (simpler than
+    # google-cloud-storage). Errors are ignored: if the bucket really is
+    # missing, the tests that need it fail with a clearer message than this
+    # helper could give.
+    request = urllib.request.Request(
+        "http://localhost:4443/storage/v1/b?project=test-project",
+        data=json.dumps({"name": "test-bucket"}).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
     try:
-        import os
-        import requests
-
-        # Set STORAGE_EMULATOR_HOST for fake-gcs-server
-        os.environ["STORAGE_EMULATOR_HOST"] = "http://localhost:4443"
-
-        bucket_name = "test-bucket"
-
-        # Try to create bucket using HTTP API directly (simpler than google-cloud-storage)
-        try:
-            response = requests.post(
-                "http://localhost:4443/storage/v1/b",
-                params={"project": "test-project"},
-                json={"name": bucket_name},
-            )
-            # 200 = created, 409 = already exists
-            if response.status_code not in [200, 409]:
-                pass  # Ignore errors, tests will fail if bucket missing
-        except Exception:
-            pass  # Ignore errors, tests will fail if bucket missing
+        urllib.request.urlopen(request, timeout=5)
     except Exception:
         pass
 
