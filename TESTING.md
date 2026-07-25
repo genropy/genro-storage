@@ -31,7 +31,7 @@ make help
 
 ### For Integration Tests
 - Docker Desktop (macOS) or Docker Engine (Linux)
-- docker-compose
+- docker compose (v2 plugin)
 
 ## Test Organization
 
@@ -78,16 +78,16 @@ bash scripts/stop_test_services.sh
 
 ```bash
 # Start all services
-docker-compose up -d
+docker compose -f tests/docker-compose.yml up -d
 
 # Check services status
-docker-compose ps
+docker compose -f tests/docker-compose.yml ps
 
 # Run tests
 pytest tests/ -v
 
 # Stop services
-docker-compose down
+docker compose -f tests/docker-compose.yml down
 ```
 
 ## Test Services
@@ -156,9 +156,9 @@ pytest tests/ -v -m integration --cov=genro_storage --cov-append
 docker ps
 
 # View service logs
-docker-compose logs minio
-docker-compose logs fake-gcs
-docker-compose logs webdav
+docker compose -f tests/docker-compose.yml logs minio
+docker compose -f tests/docker-compose.yml logs fake-gcs
+docker compose -f tests/docker-compose.yml logs webdav
 
 # Restart all services
 make services-stop
@@ -173,7 +173,7 @@ If you get port conflicts (e.g., port 8080 already in use):
 # Find what's using the port
 lsof -i :8080
 
-# Kill the process or change ports in docker-compose.yml
+# Kill the process or change ports in tests/docker-compose.yml
 ```
 
 ### Tests Skipping
@@ -196,7 +196,7 @@ nc -zv localhost 2222                         # SFTP
 make clean
 
 # Or manually
-docker-compose down -v
+docker compose -f tests/docker-compose.yml down -v
 rm -rf .pytest_cache htmlcov .coverage
 ```
 
@@ -218,7 +218,7 @@ open htmlcov/index.html
 2. **Use Make commands** - They handle service management automatically
 3. **Check service health** - If tests fail, verify services are healthy
 4. **Clean up regularly** - Use `make clean` to reset everything
-5. **Watch logs** - Use `docker-compose logs -f [service]` to debug
+5. **Watch logs** - Use `docker compose -f tests/docker-compose.yml logs -f [service]` to debug
 
 ## Environment Variables
 
@@ -275,7 +275,7 @@ Access services directly for debugging:
 ## Questions?
 
 For issues or questions:
-- Check the logs: `docker-compose logs [service]`
+- Check the logs: `docker compose -f tests/docker-compose.yml logs [service]`
 - Verify services: `make services-status`
 - Clean and restart: `make clean && make services-start`
 - Open an issue on GitHub

@@ -11,6 +11,6 @@ echo "Stopping test services for genro-storage..."
 cd "$PROJECT_DIR"
 
 # Stop all services
-docker-compose down
+docker compose -f tests/docker-compose.yml down
 
 echo "All test services stopped."

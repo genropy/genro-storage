@@ -89,7 +89,7 @@ pytest tests/test_local_storage.py -v
 
 **Integration Tests**: Require Docker + MinIO (S3-compatible)
 ```bash
-docker-compose up -d
+docker compose -f tests/docker-compose.yml up -d
 pytest tests/test_s3_integration.py -v
 ```
 

@@ -395,7 +395,7 @@ pip install genro-storage[all]         # All backends + async
 pytest tests/test_local_storage.py -v
 
 # Integration tests (requires Docker + MinIO)
-docker-compose up -d
+docker compose -f tests/docker-compose.yml up -d
 pytest tests/test_s3_integration.py -v
 
 # All tests
