@@ -97,7 +97,7 @@ jobs:
 
     - name: Start Docker services
       run: |
-        docker compose up -d
+        docker compose -f tests/docker-compose.yml up -d
 
         # Wait for critical services to be ready
         echo "Waiting for services to be ready..."
@@ -140,7 +140,7 @@ jobs:
     - name: Stop Docker services
       if: always()
       run: |
-        docker compose down -v
+        docker compose -f tests/docker-compose.yml down -v
     
     - name: Generate coverage badge
       run: |

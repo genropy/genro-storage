@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to start all required test services using docker-compose
+# Script to start all required test services using docker compose
 # This script is used both locally and in CI/CD
 
 set -e  # Exit on error
@@ -26,7 +26,7 @@ fi
 
 # Start all test services
 echo "Starting services: fake-gcs, webdav, azurite, samba, sftp, minio..."
-docker-compose up -d fake-gcs webdav azurite samba sftp minio
+docker compose -f tests/docker-compose.yml up -d fake-gcs webdav azurite samba sftp minio
 
 # Wait for services to be healthy
 echo "Waiting for services to be ready..."
@@ -34,13 +34,13 @@ sleep 5
 
 # Check services status
 echo "Services status:"
-docker-compose ps
+docker compose -f tests/docker-compose.yml ps
 
 # Wait for health checks
 MAX_WAIT=30
 WAITED=0
 while [ $WAITED -lt $MAX_WAIT ]; do
-    UNHEALTHY=$(docker-compose ps --format json | grep -c '"Health":"starting"' || true)
+    UNHEALTHY=$(docker compose -f tests/docker-compose.yml ps --format json | grep -c '"Health":"starting"' || true)
     if [ "$UNHEALTHY" -eq "0" ]; then
         echo "All services are ready!"
         exit 0

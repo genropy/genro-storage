@@ -30,7 +30,7 @@ services-stop:
 
 # Show services status
 services-status:
-	@docker-compose ps
+	@docker compose -f tests/docker-compose.yml ps
 
 # Run all tests (auto-starts services if needed)
 test: services-start

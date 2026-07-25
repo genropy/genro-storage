@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "genro-storage"
-version = "0.7.0"
+dynamic = ["version"]
 description = "Unified storage abstraction for Genropy framework"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -93,6 +93,10 @@ Documentation = "https://genro-storage.readthedocs.io"
 Repository = "https://github.com/genropy/genro-storage"
 "Bug Tracker" = "https://github.com/genropy/genro-storage/issues"
 
+[tool.hatch.version]
+# Single source of truth: __version__ in the package itself.
+path = "src/genro_storage/__init__.py"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/genro_storage"]
 
@@ -119,3 +123,8 @@ markers = [
     "integration: Integration tests that require external services (MinIO, SFTP, SMB, WebDAV, etc.)",
     "unit: Fast unit tests with no external dependencies",
 ]
+
+[tool.coverage.run]
+# Record paths relative to the repository: py-cov-action re-runs `coverage json`
+# inside its own container, where absolute runner paths do not exist.
+relative_files = true
