@@ -37,7 +37,7 @@ Create an iternode from multiple source nodes. Example from `test_virtual_nodes.
     from genro_storage import StorageManager
 
     storage = StorageManager()
-    storage.configure([{'name': 'mem', 'type': 'memory'}])
+    storage.configure([{'name': 'mem', 'protocol': 'memory'}])
 
     n1 = storage.node('mem:file1.txt')
     n1.write('Hello ')

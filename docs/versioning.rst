@@ -293,7 +293,7 @@ Complete Example
     storage = StorageManager()
     storage.configure([{
         'name': 's3',
-        'type': 's3',
+        'protocol': 's3',
         'bucket': 'my-bucket'
     }])
 

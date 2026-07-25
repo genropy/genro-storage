@@ -33,8 +33,8 @@ By default, files are always copied. Example from `test_copy_skip_strategies.py:
 
     storage = StorageManager()
     storage.configure([
-        {'name': 'src', 'type': 'local', 'path': '/path/to/source'},
-        {'name': 'dest', 'type': 'local', 'path': '/path/to/dest'},
+        {'name': 'src', 'protocol': 'local', 'path': '/path/to/source'},
+        {'name': 'dest', 'protocol': 'local', 'path': '/path/to/dest'},
     ])
 
     # Create source file

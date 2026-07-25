@@ -56,6 +56,16 @@ class TestStorageManager:
         storage.configure([{"name": "test", "protocol": "local", "base_path": temp_dir}])
         assert "test" in storage._mounts
 
+    def test_configure_with_deprecated_type_field(self, temp_dir):
+        """Test that 'type', the field name up to 0.4.4, still configures a mount."""
+        storage = StorageManager()
+
+        with pytest.warns(DeprecationWarning, match="'type' field is deprecated"):
+            storage.configure([{"name": "test", "type": "local", "path": temp_dir}])
+
+        assert storage.has_mount("test")
+        assert storage.node("test:file.txt").fullpath == "test:file.txt"
+
     def test_configure_missing_local_path(self):
         """Test error when local storage path is missing."""
         storage = StorageManager()
@@ -354,6 +364,17 @@ class TestDirectoryOperations:
 
         assert not node.exists()
 
+        node.mkdir()
+
+        assert node.exists()
+        assert node.is_dir()
+
+    def test_mkdir_at_mount_root_on_memory(self):
+        """Test mkdir of a top-level directory on a backend with no root entry."""
+        storage = StorageManager()
+        storage.configure([{"name": "mem", "protocol": "memory"}])
+
+        node = storage.node("mem:project")
         node.mkdir()
 
         assert node.exists()

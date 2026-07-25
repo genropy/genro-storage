@@ -374,8 +374,8 @@ StorageManager
 
     storage = StorageManager()
     storage.configure([
-        {'name': 'home', 'type': 'local', 'path': '/home/user'},
-        {'name': 's3', 'type': 's3', 'bucket': 'my-bucket'}
+        {'name': 'home', 'protocol': 'local', 'path': '/home/user'},
+        {'name': 's3', 'protocol': 's3', 'bucket': 'my-bucket'}
     ])
     node = storage.node('s3:file.txt')
 
