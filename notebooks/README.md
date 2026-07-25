@@ -13,13 +13,24 @@ Welcome! These Jupyter notebooks provide hands-on, interactive tutorials for lea
 ### Option 2: Run Locally
 
 ```bash
-# Install Jupyter
-pip install jupyter notebook
+# Install genro-storage and Jupyter
+pip install genro-storage jupyter notebook
 
 # Launch from this directory
 jupyter notebook
 
 # Open 01_quickstart.ipynb and start learning!
+```
+
+### Option 3: Run From a Clone, Without Installing
+
+The package lives in `src/`, so pointing `PYTHONPATH` at it is enough. Its three
+runtime dependencies still have to be there — only genro-storage itself is not
+installed:
+
+```bash
+pip install jupyter notebook fsspec PyYAML genro-toolbox
+PYTHONPATH=../src jupyter notebook
 ```
 
 **Important:** Execute notebook cells **sequentially from top to bottom** using `Shift+Enter`. Variables persist between cells!
