@@ -582,9 +582,10 @@ class FsspecBackend(StorageBackend):
         if parents:
             self.fs.makedirs(full_path, exist_ok=True)
         else:
-            # Check parent exists
+            # Check parent exists. The mount root is not a directory entry on
+            # every backend (memory has none), so it is never validated here.
             parent = str(PurePosixPath(full_path).parent)
-            if parent and not self.fs.exists(parent):
+            if parent not in ("", ".", "/") and not self.fs.exists(parent):
                 raise FileNotFoundError(f"Parent directory does not exist: {parent}")
 
             self.fs.mkdir(full_path)

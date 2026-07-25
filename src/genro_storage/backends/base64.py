@@ -19,7 +19,7 @@ This backend allows embedding content directly in the URI as base64-encoded data
 It's useful for small amounts of data that need to be stored inline, similar to data URIs.
 
 Example:
-    storage.configure([{'name': 'b64', 'type': 'base64'}])
+    storage.configure([{'name': 'b64', 'protocol': 'base64'}])
 
     # Read inline base64 data
     node = storage.node('b64:SGVsbG8gV29ybGQ=')  # "Hello World" in base64

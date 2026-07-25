@@ -38,9 +38,9 @@ Synchronous Usage
     # Configure storage backends
     storage = StorageManager()
     storage.configure([
-        {'name': 'home', 'type': 'local', 'path': '/home/user'},
-        {'name': 'uploads', 'type': 's3', 'bucket': 'my-app-uploads'},
-        {'name': 'backups', 'type': 'gcs', 'bucket': 'my-backups'}
+        {'name': 'home', 'protocol': 'local', 'path': '/home/user'},
+        {'name': 'uploads', 'protocol': 's3', 'bucket': 'my-app-uploads'},
+        {'name': 'backups', 'protocol': 'gcs', 'bucket': 'my-backups'}
     ])
 
     # Work with files using a unified API
@@ -65,7 +65,7 @@ Async Usage
     # Configure
     storage = AsyncStorageManager()
     storage.configure([
-        {'name': 'uploads', 'type': 's3', 'bucket': 'my-bucket'}
+        {'name': 'uploads', 'protocol': 's3', 'bucket': 'my-bucket'}
     ])
 
     # Use in async context

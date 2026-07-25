@@ -332,9 +332,9 @@ Complete Example
 
     storage = StorageManager()
     storage.configure([
-        {'name': 's3', 'type': 's3', 'bucket': 'my-bucket'},
-        {'name': 'local', 'type': 'local', 'path': '/data'},
-        {'name': 'web', 'type': 'http', 'base_url': 'https://example.com'}
+        {'name': 's3', 'protocol': 's3', 'bucket': 'my-bucket'},
+        {'name': 'local', 'protocol': 'local', 'path': '/data'},
+        {'name': 'web', 'protocol': 'http', 'base_url': 'https://example.com'}
     ])
 
     def analyze_storage(mount_name):

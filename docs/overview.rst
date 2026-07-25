@@ -124,8 +124,8 @@ vs. fsspec directly
     from genro_storage import StorageManager
     storage = StorageManager()
     storage.configure([
-        {'name': 's3', 'type': 's3', 'bucket': 'bucket'},
-        {'name': 'local', 'type': 'local', 'path': '/tmp'}
+        {'name': 's3', 'protocol': 's3', 'bucket': 'bucket'},
+        {'name': 'local', 'protocol': 'local', 'path': '/tmp'}
     ])
     storage.node('s3:file.txt').copy_to('local:file.txt')
 
@@ -326,7 +326,7 @@ Small changes. Mostly API style differences:
         content = f.read()
 
     # After (genro-storage)
-    storage.configure([{'name': 's3', 'type': 's3', 'bucket': 'bucket'}])
+    storage.configure([{'name': 's3', 'protocol': 's3', 'bucket': 'bucket'}])
     with storage.node('s3:file.txt').open() as f:
         content = f.read()
 

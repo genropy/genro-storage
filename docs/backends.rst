@@ -20,7 +20,7 @@ Store files on the local filesystem.
 
     {
         'name': 'home',
-        'type': 'local',
+        'protocol': 'local',
         'path': '/home/user'  # required: absolute path
     }
 
@@ -40,7 +40,7 @@ In-memory storage for testing.
 
     {
         'name': 'test',
-        'type': 'memory'
+        'protocol': 'memory'
     }
 
 **Use cases:**
@@ -65,7 +65,7 @@ Store files in Amazon S3 buckets.
 
     {
         'name': 'uploads',
-        'type': 's3',
+        'protocol': 's3',
         'bucket': 'my-bucket',      # required
         'prefix': 'uploads/',       # optional
         'region': 'eu-west-1',      # optional
@@ -93,7 +93,7 @@ Store files in Google Cloud Storage buckets.
 
     {
         'name': 'backups',
-        'type': 'gcs',
+        'protocol': 'gcs',
         'bucket': 'my-backups',           # required
         'prefix': '',                     # optional
         'token': 'path/to/key.json'       # optional
@@ -116,7 +116,7 @@ Store files in Azure Blob Storage.
 
     {
         'name': 'archive',
-        'type': 'azure',
+        'protocol': 'azure',
         'container': 'archives',          # required
         'account_name': 'myaccount',      # required
         'account_key': '...'              # optional
@@ -133,7 +133,7 @@ Read-only access to files via HTTP.
 
     {
         'name': 'cdn',
-        'type': 'http',
+        'protocol': 'http',
         'base_url': 'https://cdn.example.com'  # required
     }
 
@@ -150,7 +150,7 @@ Store data inline as base64-encoded strings, similar to data URIs.
 
     {
         'name': 'data',
-        'type': 'base64'
+        'protocol': 'base64'
     }
 
 **Usage:**
@@ -211,7 +211,7 @@ Access Windows and Samba network shares.
 
     {
         'name': 'fileserver',
-        'type': 'smb',
+        'protocol': 'smb',
         'host': '192.168.1.100',      # required: SMB server
         'share': 'documents',         # required: share name
         'username': 'user',           # optional
@@ -257,7 +257,7 @@ Secure file transfer over SSH.
     # Password authentication
     {
         'name': 'server1',
-        'type': 'sftp',
+        'protocol': 'sftp',
         'host': 'server.example.com',    # required
         'username': 'deploy',             # required
         'password': 'secret',             # optional
@@ -267,7 +267,7 @@ Secure file transfer over SSH.
     # Key-based authentication
     {
         'name': 'server2',
-        'type': 'sftp',
+        'protocol': 'sftp',
         'host': '192.168.1.50',
         'username': 'user',
         'key_filename': '/home/user/.ssh/id_rsa',  # optional
@@ -306,7 +306,7 @@ Access ZIP archives as virtual filesystems.
     # Read from existing ZIP
     {
         'name': 'backup',
-        'type': 'zip',
+        'protocol': 'zip',
         'file': '/backups/data.zip',     # required: path to ZIP file
         'mode': 'r'                       # optional: 'r', 'w', 'a' (default: 'r')
     }
@@ -314,7 +314,7 @@ Access ZIP archives as virtual filesystems.
     # Create new ZIP
     {
         'name': 'archive',
-        'type': 'zip',
+        'protocol': 'zip',
         'file': '/output/archive.zip',
         'mode': 'w'
     }
@@ -363,14 +363,14 @@ Read TAR archives (including compressed .tar.gz, .tar.bz2, .tar.xz).
     # Read TAR archive
     {
         'name': 'logs',
-        'type': 'tar',
+        'protocol': 'tar',
         'file': '/var/log/archive.tar.gz'   # required: path to TAR file
     }
 
     # Compression auto-detected from extension
     {
         'name': 'backup',
-        'type': 'tar',
+        'protocol': 'tar',
         'file': '/backups/data.tar.bz2'
     }
 
@@ -439,14 +439,14 @@ Read files from local Git repositories at specific commits, branches, or tags.
     # Access repository at HEAD
     {
         'name': 'myrepo',
-        'type': 'git',
+        'protocol': 'git',
         'path': '/path/to/repo.git'   # required: path to Git repository
     }
 
     # Access specific branch/tag/commit
     {
         'name': 'production',
-        'type': 'git',
+        'protocol': 'git',
         'path': '/path/to/repo.git',
         'ref': 'v1.0.0'               # optional: branch, tag, or commit SHA
     }
@@ -506,7 +506,7 @@ Read files from GitHub repositories via API, with support for branches, tags, an
     # Public repository (no authentication)
     {
         'name': 'opensource',
-        'type': 'github',
+        'protocol': 'github',
         'org': 'genropy',              # required: GitHub organization/user
         'repo': 'genro-storage'        # required: repository name
     }
@@ -514,7 +514,7 @@ Read files from GitHub repositories via API, with support for branches, tags, an
     # Specific branch/tag/commit
     {
         'name': 'release',
-        'type': 'github',
+        'protocol': 'github',
         'org': 'genropy',
         'repo': 'genro-storage',
         'sha': 'v1.0.0'                # optional: branch, tag, or commit SHA
@@ -523,7 +523,7 @@ Read files from GitHub repositories via API, with support for branches, tags, an
     # Private repository (with authentication)
     {
         'name': 'private',
-        'type': 'github',
+        'protocol': 'github',
         'org': 'mycompany',
         'repo': 'secret-project',
         'username': 'myusername',      # required for private repos
@@ -599,14 +599,14 @@ Access remote files via WebDAV protocol (Nextcloud, ownCloud, SharePoint, etc.).
     # Basic configuration
     {
         'name': 'nextcloud',
-        'type': 'webdav',
+        'protocol': 'webdav',
         'url': 'https://cloud.example.com/remote.php/dav/files/username'
     }
 
     # With username/password authentication
     {
         'name': 'sharepoint',
-        'type': 'webdav',
+        'protocol': 'webdav',
         'url': 'https://sharepoint.company.com/documents',
         'username': 'user@company.com',
         'password': 'secret'
@@ -615,7 +615,7 @@ Access remote files via WebDAV protocol (Nextcloud, ownCloud, SharePoint, etc.).
     # With bearer token authentication
     {
         'name': 'owncloud',
-        'type': 'webdav',
+        'protocol': 'webdav',
         'url': 'https://owncloud.example.com/remote.php/webdav',
         'token': 'bearer_token_here'
     }
@@ -702,19 +702,19 @@ Note: Also requires system libarchive library:
     # Read any archive format
     {
         'name': 'backup',
-        'type': 'libarchive',
+        'protocol': 'libarchive',
         'file': '/backups/data.tar.gz'
     }
 
     {
         'name': 'install',
-        'type': 'libarchive',
+        'protocol': 'libarchive',
         'file': '/downloads/software.zip'
     }
 
     {
         'name': 'iso',
-        'type': 'libarchive',
+        'protocol': 'libarchive',
         'file': '/images/linux.iso'
     }
 

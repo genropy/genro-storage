@@ -24,7 +24,7 @@ Write and read text files. Example from `test_local_storage.py::test_write_and_r
     # Configure storage
     storage = StorageManager()
     storage.configure([
-        {'name': 'test', 'type': 'local', 'path': '/path/to/storage'}
+        {'name': 'test', 'protocol': 'local', 'path': '/path/to/storage'}
     ])
 
     # Get a node reference

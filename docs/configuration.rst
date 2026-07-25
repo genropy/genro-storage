@@ -31,12 +31,12 @@ The most flexible method for programmatic configuration:
     storage.configure([
         {
             'name': 'home',
-            'type': 'local',
+            'protocol': 'local',
             'path': '/home/user'
         },
         {
             'name': 'uploads',
-            'type': 's3',
+            'protocol': 's3',
             'bucket': 'my-app-uploads',
             'region': 'eu-west-1'
         }
@@ -53,22 +53,22 @@ Best for environment-specific configuration files:
 
     # Local development storage
     - name: home
-      type: local
+      protocol: local
       path: /home/user
     
     - name: temp
-      type: local
+      protocol: local
       path: /tmp/app
     
     # Production S3 storage
     - name: uploads
-      type: s3
+      protocol: s3
       bucket: prod-app-uploads
       region: eu-west-1
       prefix: uploads/
     
     - name: backups
-      type: s3
+      protocol: s3
       bucket: prod-app-backups
       region: eu-west-1
 
@@ -128,18 +128,18 @@ Access files on the local filesystem.
 .. code-block:: yaml
 
     - name: home
-      type: local
+      protocol: local
       path: /home/user
     
     - name: temp
-      type: local
+      protocol: local
       path: /tmp/app
 
 .. code-block:: python
 
     storage.configure([
-        {'name': 'home', 'type': 'local', 'path': '/home/user'},
-        {'name': 'temp', 'type': 'local', 'path': '/tmp/app'}
+        {'name': 'home', 'protocol': 'local', 'path': '/home/user'},
+        {'name': 'temp', 'protocol': 'local', 'path': '/tmp/app'}
     ])
 
 **Usage:**
@@ -175,14 +175,14 @@ Access files in Amazon S3 buckets.
 
     # Standard S3
     - name: uploads
-      type: s3
+      protocol: s3
       bucket: my-app-uploads
       region: eu-west-1
       prefix: uploads/
     
     # With credentials
     - name: backups
-      type: s3
+      protocol: s3
       bucket: my-app-backups
       region: us-east-1
       key: AKIAIOSFODNN7EXAMPLE
@@ -190,7 +190,7 @@ Access files in Amazon S3 buckets.
     
     # Anonymous public bucket
     - name: public-data
-      type: s3
+      protocol: s3
       bucket: public-datasets
       anon: true
 
@@ -229,7 +229,7 @@ Access files in Google Cloud Storage buckets.
 .. code-block:: yaml
 
     - name: backups
-      type: gcs
+      protocol: gcs
       bucket: my-app-backups
       project: my-gcp-project
       token: /etc/secrets/gcp-service-account.json
@@ -238,7 +238,7 @@ Access files in Google Cloud Storage buckets.
 
     storage.configure([{
         'name': 'backups',
-        'type': 'gcs',
+        'protocol': 'gcs',
         'bucket': 'my-app-backups',
         'token': '/etc/secrets/gcp-service-account.json'
     }])
@@ -266,7 +266,7 @@ Access files in Azure Blob Storage containers.
 .. code-block:: yaml
 
     - name: archive
-      type: azure
+      protocol: azure
       container: archives
       account_name: mystorageaccount
       account_key: xxxxxxxxxxxxxxxxxxxxx
@@ -287,14 +287,14 @@ Access files via HTTP/HTTPS (read-only).
 .. code-block:: yaml
 
     - name: cdn
-      type: http
+      protocol: http
       base_url: https://cdn.example.com
 
 .. code-block:: python
 
     storage.configure([{
         'name': 'cdn',
-        'type': 'http',
+        'protocol': 'http',
         'base_url': 'https://cdn.example.com'
     }])
     
@@ -317,7 +317,7 @@ In-memory storage for testing and development.
 .. code-block:: python
 
     # Perfect for unit tests
-    storage.configure([{'name': 'test', 'type': 'memory'}])
+    storage.configure([{'name': 'test', 'protocol': 'memory'}])
 
     node = storage.node('test:temp.txt')
     node.write("test data")
@@ -343,15 +343,15 @@ Three permission levels are available:
 
     storage.configure([
         # Read-only access to public data
-        {'name': 'public', 'type': 'http', 'base_url': 'https://cdn.example.com',
+        {'name': 'public', 'protocol': 'http', 'base_url': 'https://cdn.example.com',
          'permissions': 'readonly'},
 
         # Read-write but no delete for backups
-        {'name': 'backups', 'type': 'gcs', 'bucket': 'my-backups',
+        {'name': 'backups', 'protocol': 'gcs', 'bucket': 'my-backups',
          'permissions': 'readwrite'},
 
         # Full access (default)
-        {'name': 'uploads', 'type': 's3', 'bucket': 'my-uploads'}
+        {'name': 'uploads', 'protocol': 's3', 'bucket': 'my-uploads'}
     ])
 
 Using Permissions
@@ -363,7 +363,7 @@ Permissions are validated at configuration time and enforced at runtime:
 
     # Read-only mount
     storage.configure([
-        {'name': 'public', 'type': 's3', 'bucket': 'public-data',
+        {'name': 'public', 'protocol': 's3', 'bucket': 'public-data',
          'permissions': 'readonly'}
     ])
 
@@ -386,19 +386,19 @@ YAML Configuration
 
     # Read-only CDN
     - name: cdn
-      type: http
+      protocol: http
       base_url: https://cdn.example.com
       permissions: readonly
 
     # Read-write backups (no delete)
     - name: backups
-      type: gcs
+      protocol: gcs
       bucket: my-backups
       permissions: readwrite
 
     # Full access uploads
     - name: uploads
-      type: s3
+      protocol: s3
       bucket: my-uploads
       permissions: delete
 
@@ -411,7 +411,7 @@ Permissions are validated against backend capabilities:
 
     # Invalid: HTTP is read-only, cannot request readwrite
     storage.configure([
-        {'name': 'cdn', 'type': 'http', 'base_url': 'https://cdn.example.com',
+        {'name': 'cdn', 'protocol': 'http', 'base_url': 'https://cdn.example.com',
          'permissions': 'readwrite'}  # Error!
     ])
     # Raises: StorageConfigError: Backend is read-only
@@ -437,17 +437,17 @@ are replaced:
 
     # Initial setup
     storage.configure([
-        {'name': 'home', 'type': 'local', 'path': '/home/user'}
+        {'name': 'home', 'protocol': 'local', 'path': '/home/user'}
     ])
     
     # Add more mounts later
     storage.configure([
-        {'name': 'uploads', 'type': 's3', 'bucket': 'my-bucket'}
+        {'name': 'uploads', 'protocol': 's3', 'bucket': 'my-bucket'}
     ])
     
     # Replace existing mount
     storage.configure([
-        {'name': 'home', 'type': 'local', 'path': '/mnt/newlocation'}
+        {'name': 'home', 'protocol': 'local', 'path': '/mnt/newlocation'}
     ])
 
 Environment-Specific Configuration
@@ -471,7 +471,7 @@ Use different configuration files per environment:
 .. code-block:: yaml
 
     - name: uploads
-      type: local
+      protocol: local
       path: /tmp/dev-uploads
 
 **storage-production.yaml:**
@@ -479,7 +479,7 @@ Use different configuration files per environment:
 .. code-block:: yaml
 
     - name: uploads
-      type: s3
+      protocol: s3
       bucket: prod-uploads
       region: eu-west-1
 
@@ -496,7 +496,7 @@ Build configuration dynamically from environment:
     storage.configure([
         {
             'name': 'uploads',
-            'type': 's3',
+            'protocol': 's3',
             'bucket': os.getenv('S3_BUCKET'),
             'region': os.getenv('AWS_REGION', 'eu-west-1'),
             'key': os.getenv('AWS_ACCESS_KEY_ID'),
@@ -528,25 +528,25 @@ Complete Example
 
     # Local temporary storage
     - name: temp
-      type: local
+      protocol: local
       path: /tmp/app
     
     # User uploads to S3
     - name: uploads
-      type: s3
+      protocol: s3
       bucket: prod-app-uploads
       region: eu-west-1
       prefix: uploads/
     
     # Backups to GCS
     - name: backups
-      type: gcs
+      protocol: gcs
       bucket: prod-app-backups
       token: /etc/secrets/gcp-key.json
     
     # Static assets from CDN
     - name: cdn
-      type: http
+      protocol: http
       base_url: https://cdn.example.com
 
 **Python application:**
@@ -604,20 +604,20 @@ Troubleshooting
     
     # Verify mount is configured
     if not storage.has_mount('uploads'):
-        storage.configure([{'name': 'uploads', 'type': 's3', 'bucket': 'my-bucket'}])
+        storage.configure([{'name': 'uploads', 'protocol': 's3', 'bucket': 'my-bucket'}])
 
 **Invalid configuration:**
 
 .. code-block:: python
 
     # Missing required field
-    storage.configure([{'name': 'uploads', 'type': 's3'}])  # Missing 'bucket'!
+    storage.configure([{'name': 'uploads', 'protocol': 's3'}])  # Missing 'bucket'!
     # Raises: StorageConfigError: Missing required field 'bucket' for S3 storage
 
 **Path escaping base directory:**
 
 .. code-block:: python
 
-    storage.configure([{'name': 'home', 'type': 'local', 'path': '/home/user'}])
+    storage.configure([{'name': 'home', 'protocol': 'local', 'path': '/home/user'}])
     node = storage.node('home:../../../etc/passwd')
     # Raises: ValueError: Path escapes base directory

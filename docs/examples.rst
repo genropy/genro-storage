@@ -12,7 +12,7 @@ Basic File Operations
 
     storage = StorageManager()
     storage.configure([
-        {'name': 'data', 'type': 'local', 'path': './data'}
+        {'name': 'data', 'protocol': 'local', 'path': './data'}
     ])
 
     # Write a file
@@ -34,9 +34,9 @@ Multi-Cloud Setup
 
     storage = StorageManager()
     storage.configure([
-        {'name': 'local', 'type': 'local', 'path': '/tmp'},
-        {'name': 's3', 'type': 's3', 'bucket': 'my-bucket'},
-        {'name': 'gcs', 'type': 'gcs', 'bucket': 'my-backups'}
+        {'name': 'local', 'protocol': 'local', 'path': '/tmp'},
+        {'name': 's3', 'protocol': 's3', 'bucket': 'my-bucket'},
+        {'name': 'gcs', 'protocol': 'gcs', 'bucket': 'my-backups'}
     ])
 
     # Process locally
@@ -73,11 +73,11 @@ Create config.yaml:
 .. code-block:: yaml
 
     - name: home
-      type: local
+      protocol: local
       path: /home/user
 
     - name: uploads
-      type: s3
+      protocol: s3
       bucket: prod-uploads
       region: eu-west-1
 
@@ -128,7 +128,7 @@ Use callable paths that resolve at runtime:
         return f'/data/users/{g.user_id}'
 
     storage.configure([
-        {'name': 'user', 'type': 'local', 'path': get_user_directory}
+        {'name': 'user', 'protocol': 'local', 'path': get_user_directory}
     ])
 
     # Different user, different directory!

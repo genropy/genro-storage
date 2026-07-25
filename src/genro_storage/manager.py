@@ -22,6 +22,7 @@ for configuring storage backends and creating StorageNode instances.
 from __future__ import annotations
 from typing import Any, Annotated
 import json
+import warnings
 from pathlib import Path
 
 try:
@@ -60,8 +61,8 @@ class StorageManager:
         >>>
         >>> # Configure programmatically
         >>> storage.configure([
-        ...     {'name': 'home', 'type': 'local', 'path': '/home/user'},
-        ...     {'name': 'uploads', 'type': 's3', 'bucket': 'my-bucket'}
+        ...     {'name': 'home', 'protocol': 'local', 'path': '/home/user'},
+        ...     {'name': 'uploads', 'protocol': 's3', 'bucket': 'my-bucket'}
         ... ])
         >>>
         >>> # Access files
@@ -108,15 +109,15 @@ class StorageManager:
             Each mount configuration dict must have:
 
             - name (str, required): Mount point name (e.g., "home", "uploads")
-            - type (str, required): Backend type ("local", "s3", "gcs", "azure", "http", "memory")
-            - Additional fields depend on type (see examples below)
+            - protocol (str, required): Backend protocol ("local", "s3", "gcs", "azure", "http", "memory")
+            - Additional fields depend on protocol (see examples below)
 
         Examples:
             **Local Storage:**
 
             >>> storage.configure([{
             ...     'name': 'home',
-            ...     'type': 'local',
+            ...     'protocol': 'local',
             ...     'path': '/home/user'  # required: absolute path
             ... }])
 
@@ -124,7 +125,7 @@ class StorageManager:
 
             >>> storage.configure([{
             ...     'name': 'uploads',
-            ...     'type': 's3',
+            ...     'protocol': 's3',
             ...     'bucket': 'my-bucket',    # required
             ...     'prefix': 'uploads/',     # optional, default: ""
             ...     'region': 'eu-west-1',    # optional
@@ -135,7 +136,7 @@ class StorageManager:
 
             >>> storage.configure([{
             ...     'name': 'backups',
-            ...     'type': 'gcs',
+            ...     'protocol': 'gcs',
             ...     'bucket': 'my-backups',   # required
             ...     'prefix': '',             # optional
             ...     'token': 'path/to/service-account.json'  # optional
@@ -145,7 +146,7 @@ class StorageManager:
 
             >>> storage.configure([{
             ...     'name': 'archive',
-            ...     'type': 'azure',
+            ...     'protocol': 'azure',
             ...     'container': 'archives',      # required
             ...     'account_name': 'myaccount',  # required
             ...     'account_key': '...'          # optional if using managed identity
@@ -155,7 +156,7 @@ class StorageManager:
 
             >>> storage.configure([{
             ...     'name': 'cdn',
-            ...     'type': 'http',
+            ...     'protocol': 'http',
             ...     'base_url': 'https://cdn.example.com'  # required
             ... }])
 
@@ -163,7 +164,7 @@ class StorageManager:
 
             >>> storage.configure([{
             ...     'name': 'test',
-            ...     'type': 'memory'
+            ...     'protocol': 'memory'
             ... }])
 
             **From YAML File:**
@@ -172,11 +173,11 @@ class StorageManager:
 
                 # storage.yaml
                 - name: home
-                  type: local
+                  protocol: local
                   path: /home/user
 
                 - name: uploads
-                  type: s3
+                  protocol: s3
                   bucket: my-app-uploads
                   region: eu-west-1
 
@@ -189,12 +190,12 @@ class StorageManager:
                 [
                   {
                     "name": "home",
-                    "type": "local",
+                    "protocol": "local",
                     "path": "/home/user"
                   },
                   {
                     "name": "uploads",
-                    "type": "s3",
+                    "protocol": "s3",
                     "bucket": "my-app-uploads",
                     "region": "eu-west-1"
                   }
@@ -204,8 +205,8 @@ class StorageManager:
 
             **Multiple Calls (mounts are replaced if same name):**
 
-            >>> storage.configure([{'name': 'home', 'type': 'local', 'path': '/home/user'}])
-            >>> storage.configure([{'name': 'uploads', 'type': 's3', 'bucket': 'my-bucket'}])
+            >>> storage.configure([{'name': 'home', 'protocol': 'local', 'path': '/home/user'}])
+            >>> storage.configure([{'name': 'uploads', 'protocol': 's3', 'bucket': 'my-bucket'}])
             >>> # Now both 'home' and 'uploads' are configured
         """
         # Parse source
@@ -230,7 +231,7 @@ class StorageManager:
         If a mount with the same name already exists, it will be replaced.
 
         Args:
-            config: Mount configuration dictionary with 'name' and 'type' fields
+            config: Mount configuration dictionary with 'name' and 'protocol' fields
 
         Raises:
             StorageConfigError: If configuration is invalid
@@ -238,7 +239,7 @@ class StorageManager:
         Examples:
             >>> storage.add_mount({
             ...     'name': 'uploads',
-            ...     'type': 's3',
+            ...     'protocol': 's3',
             ...     'bucket': 'my-bucket'
             ... })
         """
@@ -333,11 +334,18 @@ class StorageManager:
             return
 
         if "protocol" not in config:
-            raise StorageConfigError(
-                f"Mount configuration for '{config['name']}' missing required field: 'protocol'"
+            if "type" not in config:
+                raise StorageConfigError(
+                    f"Mount configuration for '{config['name']}' missing required field: 'protocol'"
+                )
+            # 'type' was the field name up to 0.4.4; accepted until 1.0.
+            warnings.warn(
+                f"Mount '{mount_name}': the 'type' field is deprecated, use 'protocol' instead",
+                DeprecationWarning,
+                stacklevel=3,
             )
 
-        backend_type = config["protocol"]
+        backend_type = config.get("protocol") or config["type"]
 
         # Create appropriate backend
         if backend_type == "local":
@@ -637,7 +645,7 @@ class StorageManager:
 
         Examples:
             >>> # After configuring parent:
-            >>> # {'name': 'data', 'type': 's3', 'bucket': 'my-bucket'}
+            >>> # {'name': 'data', 'protocol': 's3', 'bucket': 'my-bucket'}
             >>> # Configure child with permissions:
             >>> # {'name': 'public', 'path': 'data:public', 'permissions': 'readonly'}
             >>> # Now 'public:file.txt' can only read from 'data:public/file.txt'
@@ -956,8 +964,8 @@ class StorageManager:
 
         Examples:
             >>> storage.configure([
-            ...     {'name': 'home', 'type': 'local', 'path': '/home/user'},
-            ...     {'name': 'uploads', 'type': 's3', 'bucket': 'my-bucket'}
+            ...     {'name': 'home', 'protocol': 'local', 'path': '/home/user'},
+            ...     {'name': 'uploads', 'protocol': 's3', 'bucket': 'my-bucket'}
             ... ])
             >>> print(storage.get_mount_names())
             ['home', 'uploads']
