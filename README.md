@@ -36,7 +36,7 @@ A modern, elegant Python library that provides a unified interface for accessing
 
 ## Key Features
 
-- **Async/await support** - Transparent sync/async via `@smartasync` decorator
+- **A synchronous API** - Blocking calls that return values; async callers offload with `asyncio.to_thread`
 - **Native permission control** - Configure readonly, readwrite, or delete permissions for any backend
 - **Powered by fsspec** - Leverage 20+ battle-tested storage backends
 - **Mount point system** - Organize storage with logical names like `home:`, `uploads:`, `s3:`
@@ -203,69 +203,62 @@ remote = storage.node('uploads:downloaded.pdf')
 remote.fill_from_url('https://example.com/file.pdf')
 ```
 
-### Async Usage
+### Calling From Async Code
 
-All I/O methods use the `@smartasync` decorator for transparent sync/async support.
-The same `StorageManager` and `StorageNode` classes work in both contexts.
+Every I/O method is synchronous and blocking, so a coroutine offloads it to a
+thread. The caller keeps control of where blocking work runs — see the
+[async guide](https://genro-storage.readthedocs.io/en/latest/guide/async.html).
 
 ```python
+import asyncio
 from genro_storage import StorageManager
 
-# Same StorageManager works in both sync and async contexts
 storage = StorageManager()
 storage.configure([
     {'name': 'uploads', 'protocol': 's3', 'bucket': 'my-app-uploads'},
     {'name': 'cache', 'protocol': 'local', 'base_path': '/tmp/cache'}
 ])
 
-# Use in async context (FastAPI, asyncio, etc.)
 async def process_file(file_path: str):
     node = storage.node(f'uploads:{file_path}')
 
-    # All I/O methods are awaitable in async context
-    if await node.exists():
-        data = await node.read_bytes()
+    if not await asyncio.to_thread(node.exists):
+        raise FileNotFoundError(file_path)
 
-        # Process and cache
-        processed = process_data(data)
-        cache_node = storage.node('cache:processed.dat')
-        await cache_node.write_bytes(processed)
+    data = await asyncio.to_thread(node.read_bytes)
+    processed = process_data(data)
 
-        return processed
+    cache_node = storage.node('cache:processed.dat')
+    await asyncio.to_thread(cache_node.write_bytes, processed)
+    return processed
 
-    raise FileNotFoundError(file_path)
-
-# FastAPI example
+# FastAPI: a `def` handler already runs in a threadpool, so no wrapping needed
 from fastapi import FastAPI, HTTPException
 
 app = FastAPI()
 
 @app.get("/files/{filepath:path}")
-async def get_file(filepath: str):
+def get_file(filepath: str):
     """Serve file from S3 storage."""
     node = storage.node(f'uploads:{filepath}')
 
-    if not await node.exists():
+    if not node.exists():
         raise HTTPException(status_code=404, detail="File not found")
 
     return {
-        "data": await node.read_bytes(),
-        "size": await node.size(),
-        "mime_type": node.mimetype  # Non-I/O property (sync)
+        "data": node.read_bytes(),
+        "size": node.size(),
+        "mime_type": node.mimetype,
     }
 
-# Concurrent operations
-import asyncio
-
+# Concurrent operations compose with plain asyncio.gather
 async def backup_files(file_list):
     """Backup multiple files concurrently."""
     async def backup_one(filepath):
         source = storage.node(f'uploads:{filepath}')
         target = storage.node(f'backups:{filepath}')
-        data = await source.read_bytes()
-        await target.write_bytes(data)
+        await asyncio.to_thread(source.copy_to, target)
 
-    # Process all files in parallel
     await asyncio.gather(*[backup_one(f) for f in file_list])
 ```
 
@@ -410,8 +403,7 @@ See [TESTING.md](TESTING.md) for detailed testing instructions with MinIO.
 ## Built With
 
 - [fsspec](https://filesystem-spec.readthedocs.io/) - Pythonic filesystem abstraction
-- [genro-toolbox](https://github.com/genropy/genro-toolbox) - `@smartasync` for transparent sync/async
-- Modern Python (3.9+) with full type hints
+- Modern Python (3.10+) with full type hints
 - Optional backends: s3fs, gcsfs, adlfs, aiohttp, smbprotocol, paramiko, webdav4, libarchive-c
 
 ## Origins
@@ -441,12 +433,12 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 - S3 versioning support
 - Full Documentation on ReadTheDocs
 - MinIO Integration Testing
-- Transparent async/await support via `@smartasync` decorator
+- A synchronous API, usable from async code via `asyncio.to_thread`
 - Ready for early adopters and production testing
 - Extended GCS/Azure integration testing in progress
 
 **Recent Releases:**
-- v0.7.0 (January 2026) - Unified sync/async via `@smartasync`, removed AsyncStorageManager
+- v0.7.0 (unreleased) - Synchronous public API; `AsyncStorageManager` and `@smartasync` both removed
 - v0.4.2 (October 2025) - Git, GitHub, WebDAV, LibArchive backends
 - v0.4.1 (October 2025) - SMB, SFTP, ZIP, TAR backends
 - v0.4.0 (October 2025) - Relative mounts with permissions, unified read/write API

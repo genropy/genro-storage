@@ -4,8 +4,8 @@ API Quick Reference
 This appendix provides a quick reference for all genro-storage APIs.
 
 .. note::
-   All I/O methods support both sync and async contexts via ``@smartasync``.
-   In sync context, call directly. In async context, use ``await``.
+   All I/O methods are synchronous and blocking. From async code, offload them
+   with ``asyncio.to_thread`` — see :doc:`guide/async`.
 
 StorageManager API
 ------------------
@@ -91,10 +91,10 @@ Directory Operations
      - Get child node by path components
      - None (navigation)
 
-I/O Methods (use @smartasync)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+I/O Methods
+~~~~~~~~~~~
 
-These methods perform I/O and work in both sync and async contexts:
+These methods perform I/O. They block until the operation completes:
 
 .. list-table::
    :widths: 30 40 30
@@ -606,10 +606,10 @@ Async Context
     async def example():
         node = storage.node('data:file.txt')
 
-        # Awaited calls
-        if await node.exists():
-            content = await node.read_text()
-            print(f"Size: {await node.size()} bytes")
+        # Offloaded to a thread, so the loop is not blocked
+        if await asyncio.to_thread(node.exists):
+            content = await asyncio.to_thread(node.read_text)
+            print(f"Size: {await asyncio.to_thread(node.size)} bytes")
 
     asyncio.run(example())
 
@@ -628,16 +628,16 @@ FastAPI Integration
     ])
 
     @app.get("/files/{filepath:path}")
-    async def get_file(filepath: str):
+    def get_file(filepath: str):          # note: def — FastAPI uses a threadpool
         node = storage.node(f'uploads:{filepath}')
 
-        if not await node.exists():
+        if not node.exists():
             raise HTTPException(status_code=404)
 
         return {
-            "data": await node.read_bytes(),
-            "size": await node.size(),
-            "mime_type": node.mimetype  # Non-I/O property (sync)
+            "data": node.read_bytes(),
+            "size": node.size(),
+            "mime_type": node.mimetype,
         }
 
 Concurrent Operations
@@ -650,8 +650,8 @@ Concurrent Operations
     async def process_multiple(file_list):
         async def process_one(filepath):
             node = storage.node(f'uploads:{filepath}')
-            if await node.exists():
-                data = await node.read_bytes()
+            if await asyncio.to_thread(node.exists):
+                data = await asyncio.to_thread(node.read_bytes)
                 return len(data)
             return 0
 
@@ -662,8 +662,9 @@ Concurrent Operations
 Implementation Notes
 --------------------
 
-- Built on ``@smartasync`` from ``genro-toolbox`` for automatic sync/async detection
-- In sync context: methods execute directly
-- In async context: methods use ``asyncio.to_thread()`` for non-blocking I/O
-- Same ``StorageManager`` and ``StorageNode`` classes for both contexts
-- No separate ``AsyncStorageManager`` needed (removed in v0.6.0)
+- Every I/O method blocks until the operation completes and returns its value
+- No method changes behaviour according to its calling context
+- Async callers offload with ``asyncio.to_thread`` or an explicit executor, and
+  therefore keep control of where blocking work runs
+- One manager class: ``AsyncStorageManager`` was removed in v0.6.0, and the
+  ``@smartasync`` decorator that replaced it was removed in turn (issue #67)

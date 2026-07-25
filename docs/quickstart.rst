@@ -267,46 +267,30 @@ Copy files between different storage backends:
     # Cleanup
     local_file.delete()
 
-Async Usage
------------
+Calling From Async Code
+-----------------------
 
-The same ``StorageManager`` works in both sync and async contexts.
-All I/O methods use the ``@smartasync`` decorator for transparent async support.
-
-Basic Setup
-~~~~~~~~~~~
+Every I/O method is synchronous and blocking, so a coroutine must offload it to
+a thread rather than block the event loop. :doc:`guide/async` covers this in
+full; the short version:
 
 .. code-block:: python
 
-    from genro_storage import StorageManager
-
-    # Same class for both sync and async
-    storage = StorageManager()
-
-    # Configure (sync - call at startup)
-    storage.configure([
-        {'name': 'uploads', 'protocol': 's3', 'bucket': 'my-bucket'},
-        {'name': 'cache', 'protocol': 'local', 'base_path': '/tmp/cache'}
-    ])
-
-Async File Operations
-~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: python
+    import asyncio
 
     async def process_file(filepath: str):
         node = storage.node(f'uploads:{filepath}')
 
-        # All I/O methods are awaitable in async context
-        if await node.exists():
-            data = await node.read_bytes()
-            size = await node.size()
-            return data
+        if not await asyncio.to_thread(node.exists):
+            raise FileNotFoundError(filepath)
 
-        raise FileNotFoundError(filepath)
+        return await asyncio.to_thread(node.read_bytes)
 
 FastAPI Integration
 ~~~~~~~~~~~~~~~~~~~
+
+A handler declared with ``def`` is already run in a threadpool by the framework,
+so storage calls inside it need no wrapping:
 
 .. code-block:: python
 
@@ -315,16 +299,13 @@ FastAPI Integration
     app = FastAPI()
 
     @app.get("/files/{filepath:path}")
-    async def get_file(filepath: str):
+    def get_file(filepath: str):          # note: def, not async def
         node = storage.node(f'uploads:{filepath}')
 
-        if not await node.exists():
+        if not node.exists():
             raise HTTPException(status_code=404)
 
-        return {
-            "data": await node.read_bytes(),
-            "size": await node.size()
-        }
+        return {"data": node.read_bytes(), "size": node.size()}
 
 Concurrent Operations
 ~~~~~~~~~~~~~~~~~~~~~
@@ -337,8 +318,7 @@ Concurrent Operations
         async def backup_one(filepath):
             source = storage.node(f'uploads:{filepath}')
             target = storage.node(f'backups:{filepath}')
-            data = await source.read_bytes()
-            await target.write_bytes(data)
+            await asyncio.to_thread(source.copy_to, target)
 
         # Process all files in parallel
         await asyncio.gather(*[backup_one(f) for f in file_list])

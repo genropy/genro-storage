@@ -28,7 +28,6 @@ classifiers = [
 dependencies = [
     "fsspec>=2023.1.0",
     "PyYAML>=6.0",
-    "genro-toolbox>=0.1.0",
     "genro-builders>=0.18.0",
 ]
 
@@ -81,7 +80,6 @@ docs = [
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
-    "pytest-asyncio>=0.21.0",
     "black>=23.0",
     "ruff>=0.1.0",
     "mypy>=1.0",
@@ -117,7 +115,7 @@ disallow_untyped_defs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-norecursedirs = ["async_POC", "doc_to_review", ".git", "__pycache__"]
+norecursedirs = ["doc_to_review", ".git", "__pycache__"]
 python_files = ["test_*.py"]
 addopts = "-v --cov=genro_storage --cov-report=term-missing"
 markers = [

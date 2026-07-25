@@ -12,25 +12,9 @@ import json
 import pathlib
 
 import pytest
-from fsspec.implementations.memory import MemoryFileSystem
 
 NOTEBOOK_DIR = pathlib.Path(__file__).parent.parent / "notebooks"
 NOTEBOOKS = sorted(NOTEBOOK_DIR.glob("*.ipynb"))
-
-
-@pytest.fixture
-def empty_memory_filesystem():
-    """Give a notebook the empty memory backend a fresh kernel would have.
-
-    fsspec keeps the memory store on the class, so it is shared by everything in
-    the process: without this, a notebook creating 'mem:data' fails when an
-    earlier test in the same run already created it.
-    """
-    MemoryFileSystem.store.clear()
-    MemoryFileSystem.pseudo_dirs[:] = [""]
-    yield
-    MemoryFileSystem.store.clear()
-    MemoryFileSystem.pseudo_dirs[:] = [""]
 
 
 def code_cells(notebook_path):

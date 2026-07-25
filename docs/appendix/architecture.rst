@@ -35,8 +35,6 @@ Architecture Overview
        subgraph UserAPI[User API Layer]
            SM[StorageManager]
            SN[StorageNode]
-           ASM[AsyncStorageManager]
-           ASN[AsyncStorageNode]
        end
 
        subgraph BackendLayer[Backend Layer]
@@ -320,12 +318,10 @@ File Organization
 
 ::
 
-    genro_storage/
+    src/genro_storage/
     ├── __init__.py                  # Public API exports
-    ├── manager.py                   # StorageManager (sync)
-    ├── node.py                      # StorageNode (sync)
-    ├── async_storage_manager.py    # AsyncStorageManager
-    ├── async_storage_node.py       # AsyncStorageNode
+    ├── manager.py                   # StorageManager
+    ├── node.py                      # StorageNode
     ├── backends/
     │   ├── __init__.py
     │   ├── base.py                  # StorageBackend abstract class
@@ -446,20 +442,30 @@ BackendCapabilities
 Key Design Decisions
 --------------------
 
-Decision 1: Sync/Async Separation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Decision 1: A Synchronous Public API
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Problem**: Supporting both sync and async without complexity
+**Problem**: Serving both synchronous callers and event loops
 
-**Solution**: Separate classes for sync (StorageManager/StorageNode) and async (AsyncStorageManager/AsyncStorageNode)
+**History**: two answers were tried and withdrawn. First a parallel class pair
+(``AsyncStorageManager``/``AsyncStorageNode``), which duplicated the whole
+surface; then a ``@smartasync`` decorator that detected the calling context, so
+one method returned either a value or an awaitable.
+
+**Solution**: the public API is synchronous. Methods block and return values.
+Async callers offload with ``asyncio.to_thread`` or an explicit executor.
 
 **Benefits**:
 
-- Clear, predictable behavior (no mixed mode confusion)
-- Optimal implementation for each pattern
-- Type safety (no Union[sync, async] return types)
+- One implementation, one test matrix, no drift between two surfaces
+- No return type that depends on the caller
+- The application keeps the decision of *where* blocking work runs, which in a
+  server is the server's to make
 
-**Trade-off**: Some code duplication, but cleaner API
+**Trade-off**: async callers write one wrapper call. That is the explicit cost
+that buys back the control described above.
+
+**Recorded in**: issue #67, and genro-asgi's ``SPECIFICATION.md`` D22.
 
 Decision 2: Mount Point System
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -21,10 +21,10 @@ mount-point abstraction inspired by Unix filesystems.
 
 Main Components:
     - StorageManager: Configure and manage storage backends
-    - StorageNode: Interact with files and directories (sync/async via @smartasync)
+    - StorageNode: Interact with files and directories
     - Exceptions: Storage-specific exception hierarchy
 
-Quick Start (Sync):
+Quick Start:
     >>> from genro_storage import StorageManager
     >>>
     >>> # Setup
@@ -41,7 +41,10 @@ Quick Start (Sync):
     >>> # Copy across backends
     >>> node.copy_to(storage.node('uploads:backup/report.pdf'))
 
-Quick Start (Async):
+From async code:
+    The API is synchronous, so an event loop must offload it to a thread. The
+    caller decides where blocking work runs.
+
     >>> import asyncio
     >>> from genro_storage import StorageManager
     >>>
@@ -51,9 +54,8 @@ Quick Start (Async):
     ...         {'name': 's3', 'protocol': 's3', 'bucket': 'my-bucket'}
     ...     ])
     ...     node = storage.node('s3:file.txt')
-    ...     # Methods work in async context via @smartasync
-    ...     data = await node.read_bytes()
-    ...     await node.write_bytes(b'new data')
+    ...     data = await asyncio.to_thread(node.read_bytes)
+    ...     await asyncio.to_thread(node.write_bytes, b'new data')
     >>>
     >>> asyncio.run(main())
 

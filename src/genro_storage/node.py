@@ -25,8 +25,6 @@ from pathlib import PurePosixPath
 from enum import Enum
 from datetime import datetime
 
-from genro_toolbox import smartasync
-
 if TYPE_CHECKING:
     import zipfile
     from .manager import StorageManager
@@ -56,11 +54,11 @@ class StorageNode:
     StorageNode provides a unified interface for file operations across
     different storage backends (local, S3, GCS, Azure, HTTP, etc.).
 
-    All I/O methods are decorated with ``@smartasync`` and work transparently
-    in both sync and async contexts:
-
-    - In sync context: methods execute directly
-    - In async context: methods return awaitables and use ``asyncio.to_thread()``
+    Every I/O method is synchronous and blocking: it performs the operation and
+    returns the value. Calling one from an event loop blocks that loop, so async
+    callers should offload it themselves — ``asyncio.to_thread(node.read_bytes)``
+    or ``loop.run_in_executor``. That choice belongs to the caller, which is the
+    only place that knows where blocking work may run.
 
     Note:
         Users should not instantiate StorageNode directly. Use
@@ -96,7 +94,7 @@ class StorageNode:
         parent (StorageNode): Parent directory as StorageNode
         mimetype (str): MIME type based on file extension
 
-    Methods (I/O - support sync/async via @smartasync):
+    Methods (I/O - synchronous and blocking):
         exists(): Check if file/directory exists
         is_file(): Check if node is a file
         is_dir(): Check if node is a directory
@@ -220,7 +218,6 @@ class StorageNode:
         """
         return self._backend.resolved_path(self._path)
 
-    @smartasync
     def exists(self) -> bool:
         """Check if file or directory exists.
 
@@ -243,7 +240,6 @@ class StorageNode:
             return False
         return self._backend.exists(self._path)
 
-    @smartasync
     def is_file(self) -> bool:
         """Check if node points to a file.
 
@@ -260,7 +256,6 @@ class StorageNode:
         """
         return self._backend.is_file(self._path)
 
-    @smartasync
     def is_dir(self) -> bool:
         """Check if node points to a directory.
 
@@ -278,7 +273,6 @@ class StorageNode:
         """
         return self._backend.is_dir(self._path)
 
-    @smartasync
     def size(self) -> int:
         """Get file size in bytes.
 
@@ -298,7 +292,6 @@ class StorageNode:
         """
         return self._backend.size(self._path)
 
-    @smartasync
     def mtime(self) -> float:
         """Get last modification time as Unix timestamp.
 
@@ -483,7 +476,6 @@ class StorageNode:
         file_size = None if is_directory else self.size()
         return self.mtime(), file_size, is_directory
 
-    @smartasync
     def md5hash(self) -> str:
         """Get MD5 hash of file content.
 
@@ -784,7 +776,6 @@ class StorageNode:
         # Normal node
         return self._backend.read_text(self._path, encoding)
 
-    @smartasync
     def read(
         self,
         mode: Annotated[str, "Read mode: 'r' for text, 'rb' for binary"] = "r",
@@ -930,7 +921,6 @@ class StorageNode:
             raise TypeError(f"write_text() requires str, got {type(text).__name__}")
         return self._write_bytes(text.encode(encoding), skip_if_unchanged=skip_if_unchanged)
 
-    @smartasync
     def write(
         self,
         data: Annotated[str | bytes, "Data to write (str for text, bytes for binary)"],
@@ -980,7 +970,6 @@ class StorageNode:
 
     # ==================== Convenience Methods (Pythonic API) ====================
 
-    @smartasync
     def read_text(self, encoding: str = "utf-8") -> str:
         """Read file content as text.
 
@@ -1005,7 +994,6 @@ class StorageNode:
         """
         return self._read_text(encoding)
 
-    @smartasync
     def read_bytes(self) -> bytes:
         """Read file content as bytes.
 
@@ -1026,7 +1014,6 @@ class StorageNode:
         """
         return self._read_bytes()
 
-    @smartasync
     def write_text(
         self, text: str, encoding: str = "utf-8", skip_if_unchanged: bool = False
     ) -> bool:
@@ -1057,7 +1044,6 @@ class StorageNode:
         """
         return self._write_text(text, encoding, skip_if_unchanged)
 
-    @smartasync
     def write_bytes(self, data: bytes, skip_if_unchanged: bool = False) -> bool:
         """Write binary content to file.
 
@@ -1086,7 +1072,6 @@ class StorageNode:
 
     # ==================== File Operations ====================
 
-    @smartasync
     def delete(self) -> None:
         """Delete file or directory.
 
@@ -1321,7 +1306,6 @@ class StorageNode:
 
         return dest
 
-    @smartasync
     def copy_to(
         self,
         dest: StorageNode | str,
@@ -1662,7 +1646,6 @@ class StorageNode:
         """
         return self.__class__(manager, mount_name, path)
 
-    @smartasync
     def children(self) -> Annotated[list["StorageNode"], "List of child nodes in this directory"]:
         """List child nodes (if directory).
 
@@ -1706,7 +1689,6 @@ class StorageNode:
         full_child_path = str(self._posix_path / child_path)
         return self._create_node(self._manager, self._mount_name, full_child_path)
 
-    @smartasync
     def mkdir(
         self,
         parents: Annotated[bool, "Create parent directories if needed"] = False,

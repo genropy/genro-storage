@@ -10,7 +10,7 @@ it adds an intuitive mount-point system and user-friendly API inspired by Unix f
 Features
 --------
 
-* **Async/await support** - Use in FastAPI, asyncio apps with AsyncStorageManager
+* **A synchronous API** - Blocking calls that return values; async callers offload with ``asyncio.to_thread``
 * **Native permission control** - Configure readonly, readwrite, or delete permissions for any backend
 * **Powered by fsspec** - Leverage 20+ battle-tested storage backends
 * **Mount point system** - Organize storage with logical names like ``home:``, ``uploads:``, ``s3:``
@@ -55,27 +55,27 @@ Synchronous Usage
         # Backup to GCS
         node.copy_to(storage.node('backups:avatars/user_123.jpg'))
 
-Async Usage
-~~~~~~~~~~~
+From Async Code
+~~~~~~~~~~~~~~~
+
+The API is synchronous, so an event loop offloads it to a thread. See
+:doc:`guide/async`.
 
 .. code-block:: python
 
-    from genro_storage import AsyncStorageManager
+    import asyncio
+    from genro_storage import StorageManager
 
-    # Configure
-    storage = AsyncStorageManager()
+    storage = StorageManager()
     storage.configure([
         {'name': 'uploads', 'protocol': 's3', 'bucket': 'my-bucket'}
     ])
 
-    # Use in async context
     async def process_file(filepath: str):
         node = storage.node(f'uploads:{filepath}')
 
-        if await node.exists():
-            data = await node.read(mode='rb')
-            size = await node.size()
-            return data
+        if await asyncio.to_thread(node.exists):
+            return await asyncio.to_thread(node.read_bytes)
 
 Installation
 ------------
