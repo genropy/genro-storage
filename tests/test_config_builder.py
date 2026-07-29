@@ -19,7 +19,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from genro_builders.builder import BuilderHandler
 
 from genro_storage import StorageManager
 from genro_storage.backends.local import LocalStorage
@@ -66,7 +65,7 @@ def test_subclass_and_instance_produce_the_same_mounts(tmp_path):
     from_subclass.configure(Config)
 
     page = Config()
-    BuilderHandler().add_builder(page)
+    page.create()
     from_instance = StorageManager()
     from_instance.configure(page)
 
@@ -173,9 +172,8 @@ def test_built_but_empty_config_mounts_nothing():
 def test_unbuilt_instance_raises():
     """``configure(StorageConfig())`` on a never-built instance is misuse, not empty.
 
-    An instance never mounted on a ``BuilderHandler`` has ``handler is None``; an
-    instance is used as ALREADY BUILT, so this raises instead of silently doing
-    nothing.
+    An instance never built has an empty source, and an instance is used as
+    ALREADY BUILT, so this raises instead of silently doing nothing.
     """
     storage = StorageManager()
     with pytest.raises(StorageConfigError, match="has not been built"):

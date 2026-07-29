@@ -6,7 +6,7 @@ protocol, each mount living inside the ``mounts`` collection keyed by ``name``.
 These tests exercise the grammar in isolation (no ``StorageManager``), through
 the same ``_build`` idiom the genro-builders tests use
 (``tests/test_collection_key.py:42``): a throw-away subclass whose ``main``
-recipe is supplied per test, mounted on a fresh ``BuilderHandler``.
+recipe is supplied per test, built with ``create()``.
 
 Validation is the signature's own: a required field (a parameter without a
 default) missing raises ``Validation failed: required attribute ...``; a
@@ -18,7 +18,6 @@ placed outside ``mounts`` violates its ``parent_tags``.
 from __future__ import annotations
 
 import pytest
-from genro_builders.builder import BuilderHandler
 
 from genro_storage.config import StorageConfig
 
@@ -27,8 +26,8 @@ def _build(main):
     """Build a ``StorageConfig`` whose ``mounts`` are populated by ``main(root)``.
 
     Mirrors ``genro-builders`` ``tests/test_collection_key.py:_build``: a fresh
-    subclass gets ``main`` injected, then ``add_builder`` runs ``create()`` which
-    calls it. A grammar error inside the recipe propagates out of ``add_builder``.
+    subclass gets ``main`` injected, then ``create()`` calls it. A grammar error
+    inside the recipe propagates out of ``create()``.
     """
 
     class _H(StorageConfig):
@@ -36,7 +35,7 @@ def _build(main):
 
     _H.main = lambda self, root: main(root)
     page = _H()
-    BuilderHandler().add_builder(page)
+    page.create()
     return page
 
 

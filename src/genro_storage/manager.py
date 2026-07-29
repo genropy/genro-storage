@@ -33,8 +33,6 @@ try:
 except ImportError:
     HAS_YAML = False
 
-from genro_builders.builder import BuilderHandler
-
 from .backends import StorageBackend
 from .backends.base64 import Base64Backend
 from .backends.fsspec import FsspecBackend
@@ -221,7 +219,7 @@ class StorageManager:
         # Parse source
         if isinstance(source, type) and issubclass(source, StorageConfig):
             page = source()
-            BuilderHandler().add_builder(page)
+            page.create()
             config_list = self._mounts_from_builder(page)
         elif isinstance(source, StorageConfig):
             config_list = self._mounts_from_builder(source)
@@ -288,23 +286,23 @@ class StorageManager:
         the unchanged ``_configure_mount``; pointers are resolved once, here.
 
         Args:
-            page: A built ``StorageConfig`` (already mounted on a ``BuilderHandler``)
+            page: A built ``StorageConfig`` (its ``create()`` has run)
 
         Returns:
             list[dict]: One mount configuration dict per declared mount, in order
 
         Raises:
-            StorageConfigError: If ``page`` was never built (its ``handler`` is
-                ``None``) — an instance is expected already built.
+            StorageConfigError: If ``page`` was never built (its source is
+                empty) — an instance is expected already built.
         """
-        # An unbuilt instance has no handler: it was never mounted on a
-        # BuilderHandler, so its grammar never ran. This is misuse, not an
-        # empty configuration — signal it instead of silently mounting nothing.
-        if page.handler is None:
+        # An unbuilt instance has an empty source: its ``main`` never ran. This
+        # is misuse, not an empty configuration — signal it instead of silently
+        # mounting nothing.
+        if not len(page.source):
             raise StorageConfigError(
                 "StorageConfig instance has not been built: pass a StorageConfig "
-                "subclass (built automatically) or an instance already mounted on "
-                "a BuilderHandler via BuilderHandler().add_builder(instance)."
+                "subclass (built automatically) or an instance whose create() "
+                "has already run."
             )
 
         mounts_node = page.source.get_node("mounts")

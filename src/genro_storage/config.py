@@ -57,7 +57,7 @@ class StorageConfig(BuilderBase):
     """Data-only grammar for a storage configuration.
 
     Subclass it and populate ``mounts`` in ``main`` (or seed pointer data in
-    ``setup``); a ``BuilderHandler().add_builder(page)`` builds and resolves it.
+    ``setup``); ``page.create()`` builds and resolves it.
     No renderer or compiler: the configuration is consumed by the adapter, not
     rendered.
     """
