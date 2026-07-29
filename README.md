@@ -4,7 +4,7 @@
 
 # genro-storage
 
-[![Python versions](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
+[![Python versions](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation Status](https://readthedocs.org/projects/genro-storage/badge/?version=latest)](https://genro-storage.readthedocs.io/en/latest/?badge=latest)
 [![Tests](https://github.com/genropy/genro-storage/workflows/Tests/badge.svg)](https://github.com/genropy/genro-storage/actions)
@@ -29,7 +29,7 @@ A modern, elegant Python library that provides a unified interface for accessing
 
 - Core implementation complete
 - 15 storage backends working (local, S3, GCS, Azure, HTTP, Memory, Base64, SMB, SFTP, ZIP, TAR, Git, GitHub, WebDAV, LibArchive)
-- 411 tests (401 passing, 10 skipped) with 85% coverage on Python 3.9-3.12
+- 520 tests (506 passing, 14 skipped) with 86% coverage on Python 3.11-3.13
 - Full documentation on ReadTheDocs
 - Battle-tested code from Genropy (19+ years in production, storage abstraction since 2018)
 - Available on PyPI
@@ -411,7 +411,7 @@ See [TESTING.md](TESTING.md) for detailed testing instructions with MinIO.
 
 - [fsspec](https://filesystem-spec.readthedocs.io/) - Pythonic filesystem abstraction
 - [genro-toolbox](https://github.com/genropy/genro-toolbox) - `@smartasync` for transparent sync/async
-- Modern Python (3.9+) with full type hints
+- Modern Python (3.11+) with full type hints
 - Optional backends: s3fs, gcsfs, adlfs, aiohttp, smbprotocol, paramiko, webdav4, libarchive-c
 
 ## Origins
@@ -426,7 +426,7 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 - Core Implementation Complete
 - FsspecBackend (15 storage backends: local, S3, GCS, Azure, HTTP, Memory, Base64, SMB, SFTP, ZIP, TAR, Git, GitHub, WebDAV, LibArchive)
 - Comprehensive Test Suite (411 tests, 85% coverage)
-- CI/CD with Python 3.9, 3.10, 3.11, 3.12
+- CI/CD with Python 3.11, 3.12, 3.13
 - MD5 hashing and content-based equality
 - Base64 backend with writable mutable paths
 - Intelligent copy skip strategies (exists, size, hash, custom)

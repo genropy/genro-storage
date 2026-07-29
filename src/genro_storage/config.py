@@ -15,21 +15,40 @@ raises ``StorageConfigError`` on today; legacy aliases (``path``/``prefix``/
 ``base_url``/``key``/``secret``) are deliberately dropped — one name per field is
 the point of the change.
 
+The module ships the vocabulary and the dialect as two classes.
+:class:`StorageGrammar` is a plain mixin carrying only the ``@element``
+declarations, so a host document can mount it (``StorageManager.grammar``, whose
+builder class ``get_subbuilder`` fabricates on first use);
+:class:`StorageConfig` composes it with ``BuilderBase`` into the standalone
+dialect ``configure()`` consumes. No element declares ``parent_tags`` — the
+``mounts`` container's ``sub_tags`` is the only containment rule, which is what
+lets one set of elements serve both shapes.
+
 Every mount lives inside the ``mounts`` collection, keyed by ``name``: two
-mounts sharing a name raise ``duplicate collection key``. String fields already
-accept a ``^pointer`` value (a pointer is a string); fields that must stay
-pointer-able but are NOT strings (``port``, ``timeout``, ``anon``,
-``verify_ssl``) are typed wide (``int | str | None`` etc.) so the pointer string
-survives the signature type check — see the plan Notes for the upstream micro-fix
-that will let these tighten.
+mounts sharing a name raise ``duplicate collection key``. Values that come from
+outside the recipe — secrets, endpoints, deployment roots — are declared IN PLACE
+as a ``BagResolver``: the fields that carry them are typed ``... | BagResolver``
+and ``configure()`` resolves each one once, where the value lives, with no
+datastore entry to pair a pointer with.
+
+At-rest encryption is two fields: ``storage_key`` on the ``mounts`` collection
+carries the key material for the whole recipe, ``encrypted`` marks the single
+mount that uses it. Nothing else changes — nodes of an encrypted mount read and
+write plaintext, the bytes on the medium are ciphertext.
 
 Example::
 
+    import os
+
+    from genro_bag.resolver import BagCbResolver
+
     class MyConfig(StorageConfig):
         def main(self, root):
-            m = root.mounts()
+            m = root.mounts(storage_key=BagCbResolver(lambda: os.environ["STORAGE_KEY"]))
             m.local(name="home", base_path="/srv/data")
-            m.s3(name="uploads", bucket="my-bucket", endpoint_url="^env.s3_url")
+            m.local(name="secure", base_path="/srv/secure", encrypted=True)
+            m.s3(name="uploads", bucket="my-bucket",
+                 secret_key=BagCbResolver(lambda: os.environ["S3_SECRET"]))
             m.relative(name="public", path="home:public", permissions="readonly")
 """
 
@@ -37,6 +56,7 @@ from __future__ import annotations
 
 from typing import Callable, Literal
 
+from genro_bag import BagResolver
 from genro_builders.builder import BuilderBase, element
 
 #: Permission level accepted by every mount element. Declared once, reused
@@ -53,44 +73,58 @@ _MOUNT_TAGS = (
 )
 
 
-class StorageConfig(BuilderBase):
-    """Data-only grammar for a storage configuration.
+class StorageGrammar:
+    """The storage vocabulary alone: ``mounts`` plus one element per protocol.
 
-    Subclass it and populate ``mounts`` in ``main`` (or seed pointer data in
-    ``setup``); ``page.create()`` builds and resolves it.
-    No renderer or compiler: the configuration is consumed by the adapter, not
-    rendered.
+    A plain mixin, deliberately not a builder — so it can be either composed
+    into a standalone dialect (:class:`StorageConfig`, below) or mounted inside
+    a host document, where ``get_subbuilder`` fabricates the builder class for
+    it. ``StorageManager.grammar`` exposes it for that second use.
+
+    No element declares ``parent_tags``: containment is governed by the
+    ``mounts`` container's ``sub_tags``, so the same elements are valid under a
+    standalone ``mounts`` root and under a host envelope node.
     """
 
-    _name = "storage_config"
-
     @element(sub_tags=_MOUNT_TAGS, collection_key="name", node_label="mounts")
-    def mounts(self):
-        """Collection of named mount points; each child is keyed by its ``name``."""
+    def mounts(self, *, storage_key: str | BagResolver | None = None):
+        """Collection of named mount points; each child is keyed by its ``name``.
+
+        ``storage_key`` is the at-rest key material shared by the encrypted
+        mounts of the collection: one or more comma-separated Fernet keys with
+        ``MultiFernet`` semantics — the FIRST encrypts, ALL decrypt, which is
+        what makes key rotation a configuration change. It is the one field a
+        recipe should never spell out inline: declare it as a ``BagResolver``.
+        """
 
     # -- local / in-process ----------------------------------------------
-    @element(parent_tags="mounts")
+    @element()
     def local(
         self,
         *,
         name: str,
-        base_path: str | Callable,
+        base_path: str | Callable | BagResolver,
         base_url: str | None = None,
+        encrypted: bool = False,
         permissions: Permissions | None = None,
     ):
-        """Local filesystem mount; ``base_path`` may be a callable resolved at runtime."""
+        """Local filesystem mount; ``base_path`` may be a callable resolved at runtime.
 
-    @element(parent_tags="mounts")
+        ``encrypted`` makes the mount encrypt its content at rest, transparently
+        to every reader and writer; it requires ``storage_key`` on ``mounts``.
+        """
+
+    @element()
     def memory(
         self,
         *,
         name: str,
-        base_path: str | None = None,
+        base_path: str | BagResolver | None = None,
         permissions: Permissions | None = None,
     ):
         """In-memory filesystem, for tests and ephemeral scratch space."""
 
-    @element(parent_tags="mounts")
+    @element()
     def base64(
         self,
         *,
@@ -100,37 +134,37 @@ class StorageConfig(BuilderBase):
         """Inline base64 data mount with writable paths; no configuration."""
 
     # -- cloud object stores ---------------------------------------------
-    @element(parent_tags="mounts")
+    @element()
     def s3(
         self,
         *,
         name: str,
         bucket: str,
-        base_path: str | None = None,
+        base_path: str | BagResolver | None = None,
         region: str | None = None,
-        anon: bool | str | None = None,
-        access_key: str | None = None,
-        secret_key: str | None = None,
-        endpoint_url: str | None = None,
+        anon: bool | str | BagResolver | None = None,
+        access_key: str | BagResolver | None = None,
+        secret_key: str | BagResolver | None = None,
+        endpoint_url: str | BagResolver | None = None,
         permissions: Permissions | None = None,
     ):
         """S3 or S3-compatible bucket; MinIO and friends via ``endpoint_url``."""
 
-    @element(parent_tags="mounts")
+    @element()
     def gcs(
         self,
         *,
         name: str,
         bucket: str,
-        base_path: str | None = None,
-        token: str | None = None,
+        base_path: str | BagResolver | None = None,
+        token: str | BagResolver | None = None,
         project: str | None = None,
-        endpoint_url: str | None = None,
+        endpoint_url: str | BagResolver | None = None,
         permissions: Permissions | None = None,
     ):
         """Google Cloud Storage bucket."""
 
-    @element(parent_tags="mounts")
+    @element()
     def azure(
         self,
         *,
@@ -145,66 +179,66 @@ class StorageConfig(BuilderBase):
         """Azure Blob Storage container; ``account_name`` identifies the account."""
 
     # -- remote protocols ------------------------------------------------
-    @element(parent_tags="mounts")
+    @element()
     def http(
         self,
         *,
         name: str,
-        base_path: str,
+        base_path: str | BagResolver,
         permissions: Permissions | None = None,
     ):
         """Read-only HTTP(S) tree rooted at ``base_path``."""
 
-    @element(parent_tags="mounts")
+    @element()
     def smb(
         self,
         *,
         name: str,
-        host: str,
+        host: str | BagResolver,
         share: str,
-        base_path: str | None = None,
-        username: str | None = None,
-        password: str | None = None,
+        base_path: str | BagResolver | None = None,
+        username: str | BagResolver | None = None,
+        password: str | BagResolver | None = None,
         domain: str | None = None,
-        port: int | str | None = None,
+        port: int | str | BagResolver | None = None,
         permissions: Permissions | None = None,
     ):
         """SMB/CIFS network share on ``host``."""
 
-    @element(parent_tags="mounts")
+    @element()
     def sftp(
         self,
         *,
         name: str,
-        host: str,
-        username: str,
-        base_path: str | None = None,
-        password: str | None = None,
-        port: int | str | None = None,
+        host: str | BagResolver,
+        username: str | BagResolver,
+        base_path: str | BagResolver | None = None,
+        password: str | BagResolver | None = None,
+        port: int | str | BagResolver | None = None,
         key_filename: str | None = None,
-        passphrase: str | None = None,
-        timeout: int | str | None = None,
+        passphrase: str | BagResolver | None = None,
+        timeout: int | str | BagResolver | None = None,
         permissions: Permissions | None = None,
     ):
         """SFTP server accessed over SSH on ``host``."""
 
-    @element(parent_tags="mounts")
+    @element()
     def webdav(
         self,
         *,
         name: str,
-        url: str,
-        username: str | None = None,
-        password: str | None = None,
-        token: str | None = None,
+        url: str | BagResolver,
+        username: str | BagResolver | None = None,
+        password: str | BagResolver | None = None,
+        token: str | BagResolver | None = None,
         cert: str | None = None,
-        verify_ssl: bool | str | None = None,
+        verify_ssl: bool | str | BagResolver | None = None,
         permissions: Permissions | None = None,
     ):
         """WebDAV server (Nextcloud, ownCloud, SharePoint) at ``url``."""
 
     # -- archives --------------------------------------------------------
-    @element(parent_tags="mounts")
+    @element()
     def zip(
         self,
         *,
@@ -217,7 +251,7 @@ class StorageConfig(BuilderBase):
     ):
         """ZIP archive addressed as a filesystem; ``file`` is the archive path."""
 
-    @element(parent_tags="mounts")
+    @element()
     def tar(
         self,
         *,
@@ -230,7 +264,7 @@ class StorageConfig(BuilderBase):
     ):
         """TAR archive addressed as a filesystem; ``file`` is the archive path."""
 
-    @element(parent_tags="mounts")
+    @element()
     def libarchive(
         self,
         *,
@@ -243,19 +277,19 @@ class StorageConfig(BuilderBase):
         """Universal archive (7z, rar, iso, ...) via libarchive; ``file`` is the path."""
 
     # -- version control -------------------------------------------------
-    @element(parent_tags="mounts")
+    @element()
     def git(
         self,
         *,
         name: str,
-        base_path: str,
+        base_path: str | BagResolver,
         ref: str | None = None,
         fo: str | None = None,
         permissions: Permissions | None = None,
     ):
         """Local Git repository; ``base_path`` is the repo, ``ref`` a commit/branch/tag."""
 
-    @element(parent_tags="mounts")
+    @element()
     def github(
         self,
         *,
@@ -263,14 +297,14 @@ class StorageConfig(BuilderBase):
         org: str,
         repo: str,
         sha: str | None = None,
-        username: str | None = None,
-        token: str | None = None,
+        username: str | BagResolver | None = None,
+        token: str | BagResolver | None = None,
         permissions: Permissions | None = None,
     ):
         """Remote GitHub repository via the API (``org``/``repo``)."""
 
     # -- composition -----------------------------------------------------
-    @element(parent_tags="mounts")
+    @element()
     def relative(
         self,
         *,
@@ -279,3 +313,16 @@ class StorageConfig(BuilderBase):
         permissions: Permissions | None = None,
     ):
         """Child mount of an already-declared parent — ``path`` is 'parent:subpath'."""
+
+
+class StorageConfig(BuilderBase, StorageGrammar):
+    """Standalone builder for a storage configuration: the grammar as a dialect.
+
+    Subclass it and populate ``mounts`` in ``main``, passing a ``BagResolver``
+    wherever a value comes from outside the recipe; ``page.create()`` builds and
+    resolves it.
+    No renderer or compiler: the configuration is consumed by the adapter, not
+    rendered.
+    """
+
+    _name = "storage_config"

@@ -6,28 +6,32 @@ environments with test servers.
 """
 
 import pytest
+import socket
 import tempfile
 import zipfile
 import tarfile
+from importlib.util import find_spec
 from pathlib import Path
 
 from genro_storage import StorageManager
 from genro_storage.exceptions import StorageConfigError
 
 # Check for optional dependencies
-try:
-    import smbprotocol
+HAS_SMB = find_spec("smbprotocol") is not None
+HAS_SFTP = find_spec("paramiko") is not None
 
-    HAS_SMB = True
-except ImportError:
-    HAS_SMB = False
 
-try:
-    import paramiko
+def _service_reachable(host, port, timeout=0.5):
+    """Check whether a TCP service is reachable, for skip-if-unreachable guards."""
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
 
-    HAS_SFTP = True
-except ImportError:
-    HAS_SFTP = False
+
+HAS_SMB_SERVICE = _service_reachable("localhost", 445)
+HAS_SFTP_SERVICE = _service_reachable("localhost", 2222)
 
 
 class TestSMBConfiguration:
@@ -48,6 +52,7 @@ class TestSMBConfiguration:
             storage.configure([{"name": "smb_test", "protocol": "smb", "host": "192.168.1.100"}])
 
     @pytest.mark.skipif(not HAS_SMB, reason="smbprotocol not installed")
+    @pytest.mark.skipif(not HAS_SMB_SERVICE, reason="SMB service not reachable at localhost:445")
     @pytest.mark.integration
     def test_smb_configuration_basic(self):
         """Test basic SMB configuration with Docker container."""
@@ -76,6 +81,7 @@ class TestSMBConfiguration:
         assert content == "Hello SMB!"
 
     @pytest.mark.skipif(not HAS_SMB, reason="smbprotocol not installed")
+    @pytest.mark.skipif(not HAS_SMB_SERVICE, reason="SMB service not reachable at localhost:445")
     @pytest.mark.integration
     def test_smb_configuration_with_auth(self):
         """Test SMB configuration with authentication."""
@@ -113,9 +119,12 @@ class TestSFTPConfiguration:
         storage = StorageManager()
 
         with pytest.raises(StorageConfigError, match="missing required field: 'username'"):
-            storage.configure([{"name": "sftp_test", "protocol": "sftp", "host": "server.example.com"}])
+            storage.configure(
+                [{"name": "sftp_test", "protocol": "sftp", "host": "server.example.com"}]
+            )
 
     @pytest.mark.skipif(not HAS_SFTP, reason="paramiko not installed")
+    @pytest.mark.skipif(not HAS_SFTP_SERVICE, reason="SFTP service not reachable at localhost:2222")
     @pytest.mark.integration
     def test_sftp_configuration_basic(self):
         """Test basic SFTP configuration with Docker container."""
@@ -162,6 +171,7 @@ class TestSFTPConfiguration:
         assert content == "Hello SFTP!"
 
     @pytest.mark.skipif(not HAS_SFTP, reason="paramiko not installed")
+    @pytest.mark.skipif(not HAS_SFTP_SERVICE, reason="SFTP service not reachable at localhost:2222")
     @pytest.mark.integration
     def test_sftp_configuration_with_password(self):
         """Test SFTP configuration with password."""
@@ -226,7 +236,9 @@ class TestZIPBackend:
             with zipfile.ZipFile(zip_path, "w") as zf:
                 zf.writestr("test.txt", "Hello ZIP!")
 
-            storage.configure([{"name": "zip_test", "protocol": "zip", "file": zip_path, "mode": "r"}])
+            storage.configure(
+                [{"name": "zip_test", "protocol": "zip", "file": zip_path, "mode": "r"}]
+            )
 
             assert "zip_test" in storage._mounts
 
@@ -251,7 +263,9 @@ class TestZIPBackend:
             zip_path = tmp.name
 
         try:
-            storage.configure([{"name": "zip_write", "protocol": "zip", "file": zip_path, "mode": "w"}])
+            storage.configure(
+                [{"name": "zip_write", "protocol": "zip", "file": zip_path, "mode": "w"}]
+            )
 
             assert "zip_write" in storage._mounts
 
@@ -350,7 +364,7 @@ class TestTARBackend:
 
         try:
             # Create empty TAR
-            with tarfile.open(tar_path, "w") as tf:
+            with tarfile.open(tar_path, "w"):
                 pass
 
             storage.configure([{"name": "tar_test", "protocol": "tar", "file": tar_path}])
@@ -367,6 +381,7 @@ class TestBackendCapabilities:
     """Test backend capabilities are correctly set."""
 
     @pytest.mark.skipif(not HAS_SMB, reason="smbprotocol not installed")
+    @pytest.mark.skipif(not HAS_SMB_SERVICE, reason="SMB service not reachable at localhost:445")
     @pytest.mark.integration
     def test_smb_capabilities(self):
         """Test SMB backend capabilities."""
@@ -395,6 +410,7 @@ class TestBackendCapabilities:
         assert caps.readonly is False
 
     @pytest.mark.skipif(not HAS_SFTP, reason="paramiko not installed")
+    @pytest.mark.skipif(not HAS_SFTP_SERVICE, reason="SFTP service not reachable at localhost:2222")
     @pytest.mark.integration
     def test_sftp_capabilities(self):
         """Test SFTP backend capabilities."""
@@ -454,7 +470,7 @@ class TestBackendCapabilities:
             tar_path = tmp.name
 
         try:
-            with tarfile.open(tar_path, "w") as tf:
+            with tarfile.open(tar_path, "w"):
                 pass
 
             storage.configure([{"name": "tar_test", "protocol": "tar", "file": tar_path}])

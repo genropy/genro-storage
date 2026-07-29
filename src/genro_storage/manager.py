@@ -17,6 +17,40 @@
 
 This module provides the StorageManager class which is the primary interface
 for configuring storage backends and creating StorageNode instances.
+
+At-rest encryption
+------------------
+
+A mount declared ``encrypted`` stores ciphertext: nodes on it read and write
+plaintext through ``read_bytes``/``write_bytes`` and the text wrappers — on
+that surface the encryption happens above the backend and callers stay
+crypto-unaware::
+
+    storage.configure(MyConfig)                     # 'storage_key' in the recipe
+    storage.node('secure:token.json').write_text(payload)
+
+A ``relative`` mount inherits the flag from its parent: the stored bytes are
+the parent's, so reads and writes through the child are transparent on the
+same terms.
+
+The coverage boundary: node paths that expose the stored bytes directly —
+``open()``, ``local_path()`` (and ``call()``/``serve()`` built on it),
+``copy_to()``/``move_to()`` — bypass the cipher and carry the at-rest bytes
+untouched. A copy or move is therefore valid across same-encryption mounts
+only: encrypted → plain delivers ciphertext, plain → encrypted stores bytes
+the mount cannot decrypt.
+
+Key material is one or more comma-separated Fernet keys wrapped in a
+``MultiFernet``: the FIRST key encrypts, ALL keys decrypt, which is how a key
+is rotated. The keys are never exposed; ``encryption_active`` only reports
+whether they are installed.
+
+There is no silent degradation. An encrypted mount with no installed key is
+dormant — reading or writing it raises ``StorageError`` — key material that
+resolves empty is a ``StorageConfigError`` at configuration time, and a payload
+no installed key can decrypt raises ``InvalidToken`` rather than falling back to
+plaintext. Encryption is opt-in: with no encrypted mount the cipher is never
+built and ``cryptography`` is never needed.
 """
 
 from __future__ import annotations
@@ -33,13 +67,20 @@ try:
 except ImportError:
     HAS_YAML = False
 
+try:
+    from cryptography.fernet import Fernet, MultiFernet
+
+    HAS_CRYPTOGRAPHY = True
+except ImportError:
+    HAS_CRYPTOGRAPHY = False
+
 from .backends import StorageBackend
 from .backends.base64 import Base64Backend
 from .backends.fsspec import FsspecBackend
 from .backends.local import LocalStorage
 from .backends.relative import RelativeMountBackend
-from .config import StorageConfig
-from .exceptions import StorageConfigError, StorageNotFoundError
+from .config import StorageConfig, StorageGrammar
+from .exceptions import StorageConfigError, StorageError, StorageNotFoundError
 from .node import StorageNode
 
 
@@ -72,6 +113,12 @@ class StorageManager:
         >>> content = node.read_text()
     """
 
+    #: The storage vocabulary, for a host document that wants to declare mounts
+    #: inline: a host element carrying ``_meta={"subbuilder": "<kwarg>:grammar"}``
+    #: reads this attribute off the manager and ``get_subbuilder`` fabricates the
+    #: builder class from it. Standalone recipes use ``StorageConfig`` instead.
+    grammar = StorageGrammar
+
     def __init__(self):
         """Initialize a new StorageManager with no configured mounts.
 
@@ -84,6 +131,91 @@ class StorageManager:
         """
         # Dictionary mapping mount names to backend instances
         self._mounts: dict[str, Any] = {}
+        # Names of the mounts that encrypt their content at rest, and the
+        # cipher that serves them. Key material is never exposed: only
+        # ``encryption_active`` reports whether it is installed.
+        self._encrypted_mounts: set[str] = set()
+        self._cipher: Any = None
+
+    # ==================== At-rest encryption ====================
+
+    def set_encryption_keys(
+        self, keys: Annotated[str, "One or more comma-separated Fernet keys"]
+    ) -> None:
+        """Install the key material used by the encrypted mounts.
+
+        The keys are wrapped in a ``MultiFernet``: the FIRST key encrypts, ALL
+        keys decrypt, so rotating means prepending the new key and keeping the
+        old one until the content has been rewritten. Calling this again
+        replaces the installed material.
+
+        Args:
+            keys: Comma-separated Fernet key(s), e.g. "<key>" or "<new>,<old>"
+
+        Raises:
+            StorageConfigError: If ``cryptography`` is not installed, or if
+                ``keys`` holds no key — key material that resolves empty is a
+                configuration error, never a silent no-encryption fallback.
+
+        Examples:
+            >>> storage.set_encryption_keys(os.environ['STORAGE_KEY'])
+        """
+        if not HAS_CRYPTOGRAPHY:
+            raise StorageConfigError(
+                "At-rest encryption requires the 'cryptography' package. "
+                "Install it with: pip install genro-storage[encryption]"
+            )
+        parsed = [k.strip() for k in (keys or "").split(",") if k.strip()]
+        if not parsed:
+            raise StorageConfigError(
+                "set_encryption_keys: at least one key is required (got empty key material)"
+            )
+        self._cipher = MultiFernet([Fernet(k) for k in parsed])
+
+    @property
+    def encryption_active(self) -> Annotated[bool, "True when key material is installed"]:
+        """True when key material is installed; the keys themselves stay private."""
+        return self._cipher is not None
+
+    def mount_is_encrypted(
+        self, name: Annotated[str, "Mount point name"]
+    ) -> Annotated[bool, "True if the mount encrypts its content at rest"]:
+        """True if the named mount encrypts its content at rest.
+
+        Examples:
+            >>> storage.mount_is_encrypted('secure')
+            True
+        """
+        return name in self._encrypted_mounts
+
+    def encrypt(self, data: Annotated[bytes, "Plaintext bytes"]) -> bytes:
+        """Encrypt bytes with the installed cipher (the first key encrypts).
+
+        Raises:
+            StorageError: If no key material is installed — an encrypted mount
+                with no key is dormant, and using it is a runtime error.
+        """
+        if self._cipher is None:
+            raise StorageError(
+                "Encrypted mount requires installed key material "
+                "(StorageManager.set_encryption_keys or 'storage_key' in the configuration)"
+            )
+        return self._cipher.encrypt(data)
+
+    def decrypt(self, data: Annotated[bytes, "Ciphertext bytes"]) -> bytes:
+        """Decrypt bytes with the installed cipher (any installed key decrypts).
+
+        Raises:
+            StorageError: If no key material is installed.
+            cryptography.fernet.InvalidToken: On a payload no installed key can
+                decrypt — never a plaintext fallback.
+        """
+        if self._cipher is None:
+            raise StorageError(
+                "Encrypted mount requires installed key material "
+                "(StorageManager.set_encryption_keys or 'storage_key' in the configuration)"
+            )
+        return self._cipher.decrypt(data)
 
     def configure(
         self,
@@ -92,6 +224,10 @@ class StorageManager:
             "Configuration source: a StorageConfig subclass or instance, a path to a "
             "YAML/JSON file, or a list of mount configuration dicts",
         ],
+        storage_key: Annotated[
+            str | None,
+            "At-rest key material for the encrypted mounts: comma-separated Fernet keys",
+        ] = None,
     ) -> None:
         """Configure mount points from various sources.
 
@@ -103,9 +239,13 @@ class StorageManager:
                 - StorageConfig subclass or instance: the pythonic grammar (see
                   ``genro_storage.config``). A subclass is instantiated and built
                   on a fresh handler; an instance is used as already built.
-                  ``^pointer`` values are resolved once, here, at configuration time.
+                  ``BagResolver`` values are resolved once, here, at configuration time.
                 - str: Path to YAML or JSON configuration file
                 - list[dict]: List of mount configurations
+            storage_key: Key material for the mounts declared ``encrypted``, the
+                equivalent of the grammar's ``mounts(storage_key=...)``. Passed
+                straight to ``set_encryption_keys``; a recipe that declares it
+                wins over this parameter, being the more specific source.
 
         Raises:
             FileNotFoundError: If configuration file doesn't exist
@@ -217,12 +357,13 @@ class StorageManager:
             >>> # Now both 'home' and 'uploads' are configured
         """
         # Parse source
+        recipe_key = None
         if isinstance(source, type) and issubclass(source, StorageConfig):
             page = source()
             page.create()
-            config_list = self._mounts_from_builder(page)
+            recipe_key, config_list = self._mounts_from_builder(page)
         elif isinstance(source, StorageConfig):
-            config_list = self._mounts_from_builder(source)
+            recipe_key, config_list = self._mounts_from_builder(source)
         elif isinstance(source, str):
             config_list = self._load_config_file(source)
         elif isinstance(source, list):
@@ -232,6 +373,12 @@ class StorageManager:
                 "source must be a StorageConfig subclass or instance, a str "
                 f"(file path), or list[dict], got {type(source).__name__}"
             )
+
+        # Install key material before the mounts that will use it. The recipe's
+        # own declaration is the more specific source and wins over the argument.
+        key_material = recipe_key if recipe_key is not None else storage_key
+        if key_material is not None:
+            self.set_encryption_keys(key_material)
 
         # Validate and configure each mount
         for config in config_list:
@@ -274,22 +421,28 @@ class StorageManager:
         if name not in self._mounts:
             raise KeyError(f"Mount point '{name}' not found")
         del self._mounts[name]
+        self._encrypted_mounts.discard(name)
 
-    def _mounts_from_builder(self, page: StorageConfig) -> list[dict[str, Any]]:
+    def _mounts_from_builder(self, page: StorageConfig) -> tuple[str | None, list[dict[str, Any]]]:
         """Flatten a built ``StorageConfig`` into the ``list[dict]`` the dict path consumes.
 
         Walks the ``mounts`` collection in bag order — which is declaration order —
-        resolving each node's ``^pointer`` / ``${template}`` values through
-        ``runtime_values`` and tagging the protocol from ``node_tag``. A ``relative``
-        node carries its parent in ``path`` and is routed by ``_configure_mount`` on
-        the ``:`` separator, so it gets no ``protocol`` key. The resulting dicts feed
-        the unchanged ``_configure_mount``; pointers are resolved once, here.
+        resolving each node's ``BagResolver`` values through ``runtime_values`` and
+        tagging the protocol from ``node_tag``. A ``relative`` node carries its parent
+        in ``path`` and is routed by ``_configure_mount`` on the ``:`` separator, so it
+        gets no ``protocol`` key. The resulting dicts feed the unchanged
+        ``_configure_mount``; each resolver is read once, here.
+
+        The collection node carries one attribute of its own, ``storage_key``,
+        resolved the same way and returned apart: it belongs to the manager, not
+        to any single mount.
 
         Args:
             page: A built ``StorageConfig`` (its ``create()`` has run)
 
         Returns:
-            list[dict]: One mount configuration dict per declared mount, in order
+            tuple: The recipe's ``storage_key`` (``None`` if undeclared) and one
+                mount configuration dict per declared mount, in order
 
         Raises:
             StorageConfigError: If ``page`` was never built (its source is
@@ -307,7 +460,10 @@ class StorageManager:
 
         mounts_node = page.source.get_node("mounts")
         if mounts_node is None:
-            return []
+            return None, []
+
+        _value, mounts_attrs = page.runtime_values(mounts_node)
+        storage_key = mounts_attrs.get("storage_key")
 
         config_list: list[dict[str, Any]] = []
         # A ``mounts`` collection with no children has ``value is None`` (not an
@@ -318,7 +474,7 @@ class StorageManager:
             if node.node_tag != "relative":
                 config["protocol"] = node.node_tag
             config_list.append(config)
-        return config_list
+        return storage_key, config_list
 
     def _load_config_file(self, filepath: str) -> list[dict[str, Any]]:
         """Load configuration from YAML or JSON file.
@@ -686,6 +842,21 @@ class StorageManager:
         if "permissions" in config:
             backend = self._apply_permissions(mount_name, backend, config["permissions"])
 
+        # At-rest encryption is a manager-level property of the mount, not a
+        # backend option: the bytes are encrypted above the backend, so every
+        # backend stores them the same way. Reconfiguring a mount replaces the
+        # flag too, hence the explicit discard.
+        if config.get("encrypted"):
+            if not HAS_CRYPTOGRAPHY:
+                raise StorageConfigError(
+                    f"Mount '{mount_name}' is declared encrypted but the 'cryptography' "
+                    "package is not installed. Install it with: "
+                    "pip install genro-storage[encryption]"
+                )
+            self._encrypted_mounts.add(mount_name)
+        else:
+            self._encrypted_mounts.discard(mount_name)
+
         self._mounts[mount_name] = backend
 
     def _configure_relative_mount(self, mount_name: str, config: dict[str, Any]) -> None:
@@ -742,6 +913,15 @@ class StorageManager:
             )
 
         relative_backend = RelativeMountBackend(parent_backend, relative_path, permissions)
+
+        # At-rest encryption follows the stored bytes: a relative mount
+        # delegates storage to its parent, so it carries the parent's flag —
+        # reads and writes through the child see the same plaintext as the
+        # parent. Reconfiguration replaces the flag, hence the discard.
+        if parent_mount_name in self._encrypted_mounts:
+            self._encrypted_mounts.add(mount_name)
+        else:
+            self._encrypted_mounts.discard(mount_name)
 
         self._mounts[mount_name] = relative_backend
 

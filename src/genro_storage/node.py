@@ -17,6 +17,14 @@
 
 This module provides the StorageNode class which is the main interface for
 interacting with files and directories across different storage backends.
+
+On a mount the manager declares encrypted, ``read_bytes``/``write_bytes`` and
+the text wrappers transparently decrypt and encrypt: on that surface the node
+API is unchanged and callers only ever see plaintext. Paths that hand out the
+stored bytes directly — ``open()``, ``local_path()`` (and ``call()``/``serve()``
+built on it), ``copy_to()``/``move_to()`` — bypass the cipher: they carry the
+at-rest bytes untouched, so a copy or move is valid across same-encryption
+mounts only. See ``genro_storage.manager`` for the key material contract.
 """
 
 from __future__ import annotations
@@ -699,6 +707,15 @@ class StorageNode:
         # Accesso normale (latest)
         return self._backend.open(self._path, mode)
 
+    @property
+    def _encrypted(self) -> bool:
+        """True when this node's mount encrypts at rest (the manager decides).
+
+        Virtual nodes have no mount: they materialize their sources, each of
+        which decrypts on its own.
+        """
+        return bool(self._mount_name) and self._manager.mount_is_encrypted(self._mount_name)
+
     def _read_bytes(self) -> bytes:
         """Internal method: Read entire file as bytes.
 
@@ -722,7 +739,8 @@ class StorageNode:
                 return f.read()
 
         # Normal node
-        return self._backend.read_bytes(self._path)
+        data = self._backend.read_bytes(self._path)
+        return self._manager.decrypt(data) if self._encrypted else data
 
     def _read_text(self, encoding: str = "utf-8") -> str:
         """Internal method: Read entire file as string.
@@ -782,6 +800,8 @@ class StorageNode:
             return content
 
         # Normal node
+        if self._encrypted:
+            return self._read_bytes().decode(encoding)
         return self._backend.read_text(self._path, encoding)
 
     @smartasync
@@ -890,8 +910,10 @@ class StorageNode:
                 except Exception:
                     pass  # If we can't read, write anyway
 
-        # Write the data
-        result = self._backend.write_bytes(self._path, data)
+        # Write the data — ciphertext on an encrypted mount, so what reaches
+        # the backend is already what lands on the medium.
+        payload = self._manager.encrypt(data) if self._encrypted else data
+        result = self._backend.write_bytes(self._path, payload)
         # If backend returns a new path (e.g., base64), update it
         if result is not None:
             self._path = result

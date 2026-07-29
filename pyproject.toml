@@ -7,7 +7,7 @@ name = "genro-storage"
 dynamic = ["version"]
 description = "Unified storage abstraction for Genropy framework"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = {text = "Apache-2.0"}
 authors = [
     {name = "Genropy Team", email = "info@genropy.org"}
@@ -17,7 +17,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -29,7 +28,8 @@ dependencies = [
     "fsspec>=2023.1.0",
     "PyYAML>=6.0",
     "genro-toolbox>=0.1.0",
-    "genro-builders>=0.18.0",
+    "genro-builders>=0.22.0",
+    "genro-bag>=0.20.0",
 ]
 
 [project.optional-dependencies]
@@ -60,6 +60,9 @@ libarchive = [
 git = [
     "pygit2>=1.13.0",
 ]
+encryption = [
+    "cryptography>=42.0.0",
+]
 all = [
     "s3fs>=2023.1.0",
     "gcsfs>=2023.1.0",
@@ -70,6 +73,7 @@ all = [
     "webdav4>=0.9.0",
     "libarchive-c>=5.0",
     "pygit2>=1.13.0",
+    "cryptography>=42.0.0",
 ]
 docs = [
     "sphinx>=7.0",
@@ -103,14 +107,14 @@ packages = ["src/genro_storage"]
 
 [tool.black]
 line-length = 100
-target-version = ["py39"]
+target-version = ["py311"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py311"
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true

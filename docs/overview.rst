@@ -238,7 +238,7 @@ Limitations and Gotchas
 
 4. **Backend-specific features**: Advanced features (S3 lifecycle, GCS nearline, etc.) require direct backend access.
 
-5. **Python 3.9+ only**: Uses modern type hints. For older Python, use direct fsspec.
+5. **Python 3.11+ only**: Uses modern type hints. For older Python, use direct fsspec.
 
 **Common gotchas:**
 

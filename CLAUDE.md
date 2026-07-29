@@ -16,7 +16,7 @@ Read the parent document first for:
 - **Development Status**: Beta
 - **Has Implementation Code**: Yes
 - **Version**: 0.4.3
-- **Python Support**: 3.9, 3.10, 3.11, 3.12
+- **Python Support**: 3.11, 3.12, 3.13
 - **Test Coverage**: 85% (411 tests: 401 passing, 10 skipped)
 - **GitHub**: https://github.com/genropy/genro-storage
 

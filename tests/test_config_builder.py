@@ -6,7 +6,7 @@ a ``StorageConfig``).
 ``list[dict]`` path: a ``StorageConfig`` SUBCLASS (instantiated and built on a
 fresh handler) and a ``StorageConfig`` INSTANCE (used as already built). Both are
 flattened by ``_mounts_from_builder`` — walking the ``mounts`` collection in
-declaration order, resolving ``^pointer`` values through ``runtime_values``,
+declaration order, resolving ``BagResolver`` values through ``runtime_values``,
 tagging the protocol from ``node_tag`` — into the ``list[dict]`` the existing
 ``_configure_mount`` consumes unchanged.
 
@@ -19,6 +19,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from genro_bag.resolver import BagCbResolver
 
 from genro_storage import StorageManager
 from genro_storage.backends.local import LocalStorage
@@ -27,17 +28,14 @@ from genro_storage.config import StorageConfig
 from genro_storage.exceptions import StorageConfigError
 
 
-def _config_class(main, setup=None):
-    """A throwaway ``StorageConfig`` subclass with an injected ``main``/``setup``.
+def _config_class(main):
+    """A throwaway ``StorageConfig`` subclass with an injected ``main``.
 
     Mirrors the ``_build`` idiom of ``test_config_grammar`` but keeps the class
     (not just an instance) so it can be handed to ``configure()`` both as a
     subclass and, once built, as an instance.
     """
-    ns = {"main": lambda self, root: main(root)}
-    if setup is not None:
-        ns["setup"] = lambda self, data: setup(data)
-    return type("_TestConfig", (StorageConfig,), ns)
+    return type("_TestConfig", (StorageConfig,), {"main": lambda self, root: main(root)})
 
 
 def _mount_types(storage):
@@ -90,27 +88,31 @@ def test_protocol_comes_from_node_tag(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# Pointer resolution (resolved once, at configuration time)
+# Resolver resolution (read once, at configuration time)
 # ---------------------------------------------------------------------------
 
 
-def test_pointer_is_resolved_at_configuration_time(tmp_path):
-    """A ``^pointer`` seeded in ``setup`` reaches the backend as its resolved value."""
+def test_resolver_is_read_at_configuration_time(tmp_path):
+    """A ``BagResolver`` placed in the recipe reaches the backend as its resolved value."""
     deploy_root = str(tmp_path)
+    calls = []
 
-    def setup(data):
-        data.set_item("deploy.root", deploy_root)
+    def read_root():
+        calls.append(1)
+        return deploy_root
 
     def rec(root):
-        root.mounts().local(name="home", base_path="^deploy.root")
+        root.mounts().local(name="home", base_path=BagCbResolver(read_root))
 
     storage = StorageManager()
-    storage.configure(_config_class(rec, setup=setup))
+    storage.configure(_config_class(rec))
 
     backend = storage._mounts["home"]
     assert isinstance(backend, LocalStorage)
-    # The resolved value, not the raw '^deploy.root' string.
+    # The resolved value, not the resolver object.
     assert str(backend.base_path) == str(Path(deploy_root).resolve())
+    # ``configure()`` consumes each value once, so the resolver is read once.
+    assert len(calls) == 1
 
 
 # ---------------------------------------------------------------------------

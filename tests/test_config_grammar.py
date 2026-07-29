@@ -11,15 +11,22 @@ recipe is supplied per test, built with ``create()``.
 Validation is the signature's own: a required field (a parameter without a
 default) missing raises ``Validation failed: required attribute ...``; a
 ``permissions`` value outside the ``Literal`` raises ``Validation failed``; two
-mounts with the same ``name`` clash on the collection key; a mount element
-placed outside ``mounts`` violates its ``parent_tags``.
+mounts with the same ``name`` clash on the collection key; a tag that is not a
+mount inside ``mounts`` violates its ``sub_tags``.
+
+The boundary is flat: no element declares ``parent_tags``, so the same elements
+build under a standalone ``mounts`` root and under a host envelope that mounts
+``StorageManager.grammar`` — both shapes are exercised at the end of the module.
 """
 
 from __future__ import annotations
 
 import pytest
+from genro_bag.resolver import BagCbResolver
+from genro_builders.builder import BuilderBase, element
 
 from genro_storage.config import StorageConfig
+from genro_storage.manager import StorageManager
 
 
 def _build(main):
@@ -94,19 +101,28 @@ def test_valid_permissions_accepted(value):
 
 
 # ---------------------------------------------------------------------------
-# Pointer-able wide fields (see the plan Notes: pointers are strings, so
-# non-string fields are typed wide to let a ``^pointer`` through the type check)
+# Resolver-capable fields: a ``BagResolver`` sits in the recipe where the value
+# lives, and passes the signature type check on the field that declares it
 # ---------------------------------------------------------------------------
 
 
-def test_pointer_string_accepted_on_wide_typed_field():
-    """A ``^pointer`` on the wide-typed ``port`` passes the signature type check."""
+def test_resolver_accepted_on_resolver_capable_field():
+    """A ``BagResolver`` on a resolver-capable field is stored unresolved by the grammar."""
+    resolver = BagCbResolver(lambda: "s3cr3t")
     mounts = _mounts(
-        _build(
-            lambda root: root.mounts().smb(name="share", host="h", share="s", port="^env.smb_port")
-        )
+        _build(lambda root: root.mounts().s3(name="uploads", bucket="b", secret_key=resolver))
     )
-    assert mounts.get_node("share").attr.get("port") == "^env.smb_port"
+    # The grammar only records it; resolution happens in ``configure()``.
+    assert mounts.get_node("uploads").attr.get("secret_key") is resolver
+
+
+def test_resolver_accepted_on_wide_typed_field():
+    """The wide-typed ``port`` accepts a resolver as well as a native value."""
+    resolver = BagCbResolver(lambda: 445)
+    mounts = _mounts(
+        _build(lambda root: root.mounts().smb(name="share", host="h", share="s", port=resolver))
+    )
+    assert mounts.get_node("share").attr.get("port") is resolver
 
 
 def test_native_int_still_accepted_on_wide_typed_field():
@@ -152,7 +168,55 @@ def test_duplicate_name_raises():
         _build(rec)
 
 
-def test_mount_outside_mounts_raises():
-    """A mount element placed on the root, outside ``mounts``, violates parent_tags."""
+def test_foreign_tag_inside_mounts_raises():
+    """``mounts`` accepts only the mount tags: anything else violates its sub_tags."""
     with pytest.raises(ValueError):
-        _build(lambda root: root.s3(name="x", bucket="b"))
+        _build(lambda root: root.mounts().mounts())
+
+
+# ---------------------------------------------------------------------------
+# Flat boundary: the same elements work standalone and mounted under a host
+# ---------------------------------------------------------------------------
+
+
+def test_mount_outside_mounts_is_allowed():
+    """No element declares parent_tags, so a mount on the root is not a grammar error.
+
+    Containment is the ``mounts`` container's ``sub_tags`` alone — what makes the
+    same elements usable under a host envelope (see the test below).
+    """
+    page = _build(lambda root: root.s3(name="x", bucket="b"))
+    # Outside the ``mounts`` collection nothing keys the node by name, so it
+    # carries the auto-label: the point is only that building it does not raise.
+    node = list(page.source)[0]
+    assert node.node_tag == "s3"
+    assert node.attr.get("name") == "x"
+
+
+def test_grammar_mounts_under_a_host_envelope():
+    """A host dialect mounts ``StorageManager.grammar`` and builds mounts under it.
+
+    The host declares ``_meta={"subbuilder": "app:grammar"}``; the recipe passes
+    the manager as ``app``, ``get_subbuilder`` fabricates the builder class from
+    the mixin, and the envelope's children resolve against the storage grammar.
+    """
+
+    class _Host(BuilderBase):
+        _name = "storage_grammar_host"
+
+        @element(_meta={"subbuilder": "app:grammar"})
+        def storage(self, app=None):
+            """Envelope node whose subtree is governed by ``app.grammar``."""
+
+    class _Page(_Host):
+        def main(self, root):
+            m = root.storage(app=StorageManager).mounts()
+            m.local(name="home", base_path="/srv/data")
+            m.memory(name="scratch")
+
+    page = _Page()
+    page.create()
+    envelope = list(page.source)[0]
+    mounts = envelope.value.get_node("mounts").value
+    assert [n.label for n in mounts] == ["home", "scratch"]
+    assert mounts.get_node("home").node_tag == "local"
