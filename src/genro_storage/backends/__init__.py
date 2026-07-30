@@ -28,12 +28,14 @@ This package contains all storage backend implementations:
 
 from .base import StorageBackend
 from .local import LocalStorage
+from .fsspec import FsspecBackend
 from .base64 import Base64Backend
 from .relative import RelativeMountBackend
 
 __all__ = [
     "StorageBackend",
     "LocalStorage",
+    "FsspecBackend",
     "Base64Backend",
     "RelativeMountBackend",
 ]
