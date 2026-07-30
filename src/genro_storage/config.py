@@ -171,9 +171,9 @@ class StorageGrammar:
         name: str,
         container: str,
         account_name: str,
-        account_key: str | None = None,
-        sas_token: str | None = None,
-        connection_string: str | None = None,
+        account_key: str | BagResolver | None = None,
+        sas_token: str | BagResolver | None = None,
+        connection_string: str | BagResolver | None = None,
         permissions: Permissions | None = None,
     ):
         """Azure Blob Storage container; ``account_name`` identifies the account."""

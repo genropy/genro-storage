@@ -116,6 +116,19 @@ def test_resolver_accepted_on_resolver_capable_field():
     assert mounts.get_node("uploads").attr.get("secret_key") is resolver
 
 
+def test_resolver_accepted_on_azure_secret_field():
+    """The azure secret fields accept a ``BagResolver`` like every other backend."""
+    resolver = BagCbResolver(lambda: "k3y")
+    mounts = _mounts(
+        _build(
+            lambda root: root.mounts().azure(
+                name="blobs", container="c", account_name="acct", account_key=resolver
+            )
+        )
+    )
+    assert mounts.get_node("blobs").attr.get("account_key") is resolver
+
+
 def test_resolver_accepted_on_wide_typed_field():
     """The wide-typed ``port`` accepts a resolver as well as a native value."""
     resolver = BagCbResolver(lambda: 445)
