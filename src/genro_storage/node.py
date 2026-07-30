@@ -602,13 +602,11 @@ class StorageNode:
         Args:
             mode: File mode ('r', 'rb', 'w', 'wb', 'a', 'ab')
             version: Version to open:
+
                 - None: Latest version (default)
                 - str: Specific version_id (e.g., 'abc123...')
-                - int: Version index with negative indexing support:
-                    - -1: Latest version
-                    - -2: Previous version
-                    - 0: Oldest version
-                    - 1: Second oldest version
+                - int: Version index with negative indexing support
+                  (-1 latest, -2 previous, 0 oldest, 1 second oldest)
             as_of: Open file as it was at this datetime
 
         Returns:

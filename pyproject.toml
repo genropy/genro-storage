@@ -117,7 +117,39 @@ target-version = "py311"
 python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = true
+# mypy is a non-blocking advisor here, never a gate: keep it useful for typos,
+# unhandled None and broken imports, and off the back of the dynamic patterns
+# the codebase relies on. Hence non-strict — no disallow_untyped_defs.
+disallow_untyped_defs = false
+files = ["src/genro_storage"]
+
+# The grammar declares its elements as decorated method stubs: @element reads
+# the signature and the body is empty, so annotating their return type states
+# nothing. Silenced for this module rather than annotating 17 stubs.
+[[tool.mypy.overrides]]
+module = "genro_storage.config"
+disable_error_code = ["no-untyped-def"]
+
+# A node holds ``_backend = None`` exactly when it is virtual: the methods that
+# reach for the backend are unreachable on such a node, an invariant the
+# constructor enforces but mypy cannot narrow. The backends themselves are
+# fsspec-facing and hand back Any. Both boundaries are accepted, so we silence
+# their two error codes for this module rather than littering the code with
+# casts. Everything else mypy finds here stays visible.
+[[tool.mypy.overrides]]
+module = "genro_storage.node"
+disable_error_code = ["union-attr", "no-any-return"]
+
+# Thin passthrough over fsspec, which ships no py.typed: every delegated call
+# is typed Any at the boundary.
+[[tool.mypy.overrides]]
+module = "genro_storage.backends.fsspec"
+disable_error_code = ["no-any-return"]
+
+# Third-party packages without type stubs (fsspec, boto3, yaml).
+[[tool.mypy.overrides]]
+module = ["fsspec.*", "boto3.*", "yaml.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

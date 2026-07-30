@@ -236,6 +236,7 @@ class StorageManager:
 
         Args:
             source: Configuration source, can be:
+
                 - StorageConfig subclass or instance: the pythonic grammar (see
                   ``genro_storage.config``). A subclass is instantiated and built
                   on a fresh handler; an instance is used as already built.
@@ -572,7 +573,7 @@ class StorageManager:
                 )
             # LocalStorage supports both string paths and callables
             # Optional base_url for URL generation
-            backend = LocalStorage(path=base_path, base_url=config.get("base_url"))
+            backend: StorageBackend = LocalStorage(path=base_path, base_url=config.get("base_url"))
 
         elif backend_type == "memory":
             backend = FsspecBackend("memory", base_path=config.get("base_path", ""))
