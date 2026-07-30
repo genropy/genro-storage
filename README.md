@@ -29,7 +29,7 @@ A modern, elegant Python library that provides a unified interface for accessing
 
 - Core implementation complete
 - 15 storage backends working (local, S3, GCS, Azure, HTTP, Memory, Base64, SMB, SFTP, ZIP, TAR, Git, GitHub, WebDAV, LibArchive)
-- 520 tests (506 passing, 14 skipped) with 86% coverage on Python 3.11-3.13
+- 521 tests (507 passing, 14 skipped) with 86% coverage on Python 3.11-3.13
 - Full documentation on ReadTheDocs
 - Battle-tested code from Genropy (19+ years in production, storage abstraction since 2018)
 - Available on PyPI
