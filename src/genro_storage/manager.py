@@ -21,41 +21,53 @@ for configuring storage backends and creating StorageNode instances.
 At-rest encryption
 ------------------
 
-A mount declared ``encrypted`` stores ciphertext: nodes on it read and write
-plaintext through ``read_bytes``/``write_bytes`` and the text wrappers — on
-that surface the encryption happens above the backend and callers stay
-crypto-unaware::
+Encryption is per file, declared at the write site: a node's ``write_bytes``,
+``write_text`` and ``write()`` take ``encrypted=True`` (the default domain) or
+``encrypted='<domain>'``, and reads need no declaration at all::
 
     storage.configure(MyConfig)                     # 'storage_key' in the recipe
-    storage.node('secure:token.json').write_text(payload)
+    storage.node('secure:token.json').write_text(payload, encrypted=True)
 
-A ``relative`` mount inherits the flag from its parent: the stored bytes are
-the parent's, so reads and writes through the child are transparent on the
-same terms.
+A mount may carry ``default_encrypted`` — the value that parameter takes when a
+write declares nothing — readable through ``mount_default_encrypted(name)``. It
+is a default and nothing more: an explicit ``encrypted=`` at the write site wins
+in both directions. The default belongs to the mount named in the write and to
+it alone — a ``relative`` mount has one only if it declares one; the parent's
+does not leak through.
 
 The coverage boundary: node paths that expose the stored bytes directly —
 ``open()``, ``local_path()`` (and ``call()``/``serve()`` built on it),
-``copy_to()``/``move_to()`` — bypass the cipher and carry the at-rest bytes
-untouched. A copy or move is therefore valid across same-encryption mounts
-only: encrypted → plain delivers ciphertext, plain → encrypted stores bytes
-the mount cannot decrypt.
+``copy_to()``/``move_to()``, versioned reads, ``size()``/``md5hash()`` — hand
+out or report on the stored bytes as they are. What they deliver for an
+encrypted file is the envelope, so the file stays self-describing wherever it
+lands and a copy or move needs no matching mount.
 
-Key material is one or more comma-separated Fernet keys wrapped in a
-``MultiFernet``: the FIRST key encrypts, ALL keys decrypt, which is how a key
-is rotated. The keys are never exposed; ``encryption_active`` only reports
-whether they are installed.
+Encrypted content is self-describing. Every encrypted payload carries a textual
+envelope — the first line ``#GNRE1:<domain>`` followed by the Fernet token — so
+a read never has to be told what it is looking at: header present means decrypt
+through that domain's keyring, header absent means passthrough. The header is
+routing metadata, not a security boundary (see ``_parse_envelope``).
 
-There is no silent degradation. An encrypted mount with no installed key is
-dormant — reading or writing it raises ``StorageError`` — key material that
+Key material is one or more comma-separated Fernet keys, each optionally
+prefixed with ``<domain>:``. Keys of the same domain group into ONE
+``MultiFernet``: the FIRST key of a domain encrypts, ALL of them decrypt, which
+is how a key is rotated. An unprefixed key belongs to the default (empty)
+domain, so the pre-existing syntax keeps working; the domain of the FIRST
+configured key is the one an unqualified encryption uses. The keys are never
+exposed; ``encryption_active`` only reports whether any are installed.
+
+There is no silent degradation. Encrypting or decrypting for a domain with no
+installed keys raises ``StorageError`` naming that domain, key material that
 resolves empty is a ``StorageConfigError`` at configuration time, and a payload
 no installed key can decrypt raises ``InvalidToken`` rather than falling back to
-plaintext. Encryption is opt-in: with no encrypted mount the cipher is never
-built and ``cryptography`` is never needed.
+plaintext. Encryption is opt-in: with no key material no cipher is ever built
+and ``cryptography`` is never needed.
 """
 
 from __future__ import annotations
 
 import json
+import re
 import warnings
 from pathlib import Path
 from typing import Annotated, Any
@@ -119,6 +131,18 @@ class StorageManager:
     #: builder class from it. Standalone recipes use ``StorageConfig`` instead.
     grammar = StorageGrammar
 
+    #: Envelope header of an encrypted payload: ``#GNRE1:<domain>`` on its own
+    #: first line. Version 1 of the format; the whole envelope stays ASCII.
+    ENVELOPE_PREFIX = b"#GNRE1:"
+
+    #: Upper bound of the header scan. A first line longer than this is not a
+    #: header, so a large binary payload is never searched end to end.
+    ENVELOPE_MAX_HEADER = 128
+
+    #: The charset an encryption domain may use — lowercase, digits, ``_``,
+    #: ``-``; the empty string is the default domain.
+    DOMAIN_PATTERN = re.compile(r"^[a-z0-9_-]{0,64}$")
+
     def __init__(self):
         """Initialize a new StorageManager with no configured mounts.
 
@@ -131,91 +155,181 @@ class StorageManager:
         """
         # Dictionary mapping mount names to backend instances
         self._mounts: dict[str, Any] = {}
-        # Names of the mounts that encrypt their content at rest, and the
-        # cipher that serves them. Key material is never exposed: only
+        # Per-mount default of the ``encrypted`` write parameter, and one
+        # cipher per encryption domain. Key material is never exposed: only
         # ``encryption_active`` reports whether it is installed.
-        self._encrypted_mounts: set[str] = set()
-        self._cipher: Any = None
+        self._default_encrypted: dict[str, bool | str] = {}
+        self._ciphers: dict[str, Any] = {}
+        # Domain of the first configured key: what an unqualified encryption uses.
+        self._default_domain: str = ""
 
     # ==================== At-rest encryption ====================
 
-    def set_encryption_keys(
-        self, keys: Annotated[str, "One or more comma-separated Fernet keys"]
-    ) -> None:
-        """Install the key material used by the encrypted mounts.
-
-        The keys are wrapped in a ``MultiFernet``: the FIRST key encrypts, ALL
-        keys decrypt, so rotating means prepending the new key and keeping the
-        old one until the content has been rewritten. Calling this again
-        replaces the installed material.
-
-        Args:
-            keys: Comma-separated Fernet key(s), e.g. "<key>" or "<new>,<old>"
+    def _validate_domain(
+        self, domain: Annotated[str, "Encryption domain name"]
+    ) -> Annotated[str, "The domain itself, once validated"]:
+        """Check a domain against ``DOMAIN_PATTERN`` and return it.
 
         Raises:
-            StorageConfigError: If ``cryptography`` is not installed, or if
-                ``keys`` holds no key — key material that resolves empty is a
-                configuration error, never a silent no-encryption fallback.
+            StorageConfigError: On a domain outside the charset — a malformed
+                domain is a configuration mistake, never a silent default.
+        """
+        if not self.DOMAIN_PATTERN.match(domain):
+            raise StorageConfigError(
+                f"Invalid encryption domain {domain!r}: expected [a-z0-9_-] up to 64 characters"
+            )
+        return domain
+
+    def set_encryption_keys(
+        self,
+        keys: Annotated[str, "Comma-separated Fernet keys, each optionally '<domain>:' prefixed"],
+    ) -> None:
+        """Install the key material, grouped by encryption domain.
+
+        Each comma-separated entry is either a bare Fernet key — the default
+        (empty) domain — or ``<domain>:<key>``. The split is on the FIRST ``:``
+        and unambiguous by construction: a Fernet key is base64url and holds no
+        colon. Keys of one domain are wrapped in a single ``MultiFernet``, so
+        the FIRST key of a domain encrypts and ALL of them decrypt: rotating
+        means prepending the new key and keeping the old one until the content
+        has been rewritten. The domain of the first entry overall becomes the
+        default write domain. Calling this again replaces everything installed.
+
+        Args:
+            keys: e.g. "<key>", "<new>,<old>", "acme:k1,acme:k2,partner:k3"
+
+        Raises:
+            StorageConfigError: If ``cryptography`` is not installed, if ``keys``
+                holds no key — key material that resolves empty is a
+                configuration error, never a silent no-encryption fallback — or
+                if an entry carries an invalid domain.
 
         Examples:
             >>> storage.set_encryption_keys(os.environ['STORAGE_KEY'])
+            >>> storage.set_encryption_keys('acme:<new>,acme:<old>,partner:<k>')
         """
         if not HAS_CRYPTOGRAPHY:
             raise StorageConfigError(
                 "At-rest encryption requires the 'cryptography' package. "
                 "Install it with: pip install genro-storage[encryption]"
             )
-        parsed = [k.strip() for k in (keys or "").split(",") if k.strip()]
-        if not parsed:
+        entries = [k.strip() for k in (keys or "").split(",") if k.strip()]
+        if not entries:
             raise StorageConfigError(
                 "set_encryption_keys: at least one key is required (got empty key material)"
             )
-        self._cipher = MultiFernet([Fernet(k) for k in parsed])
+        by_domain: dict[str, list[Any]] = {}
+        for entry in entries:
+            domain, sep, key = entry.partition(":")
+            if not sep:
+                domain, key = "", entry
+            domain, key = self._validate_domain(domain.strip()), key.strip()
+            by_domain.setdefault(domain, []).append(Fernet(key))
+        self._ciphers = {domain: MultiFernet(keyring) for domain, keyring in by_domain.items()}
+        self._default_domain = next(iter(by_domain))
 
     @property
     def encryption_active(self) -> Annotated[bool, "True when key material is installed"]:
         """True when key material is installed; the keys themselves stay private."""
-        return self._cipher is not None
+        return bool(self._ciphers)
 
-    def mount_is_encrypted(
-        self, name: Annotated[str, "Mount point name"]
-    ) -> Annotated[bool, "True if the mount encrypts its content at rest"]:
-        """True if the named mount encrypts its content at rest.
+    @property
+    def encryption_domains(self) -> Annotated[list[str], "Domains with installed key material"]:
+        """The configured domain names, in declaration order; the keys stay private."""
+        return list(self._ciphers)
+
+    def mount_default_encrypted(
+        self, name: Annotated[str | None, "Mount point name"]
+    ) -> Annotated[bool | str, "The mount's default for the ``encrypted`` write parameter"]:
+        """The mount's ``default_encrypted``: what a write that declares nothing uses.
+
+        The mount holds a default, never a state — what a given file is, its own
+        header answers. The default belongs to the mount named in the write and
+        to it alone: a ``relative`` mount has one only if it declares one; the
+        parent's does not leak through. An undeclared mount defaults to plain.
 
         Examples:
-            >>> storage.mount_is_encrypted('secure')
+            >>> storage.mount_default_encrypted('secure')
             True
         """
-        return name in self._encrypted_mounts
+        return self._default_encrypted.get(name, False) if name else False
 
-    def encrypt(self, data: Annotated[bytes, "Plaintext bytes"]) -> bytes:
-        """Encrypt bytes with the installed cipher (the first key encrypts).
+    def _build_envelope(
+        self,
+        domain: Annotated[str, "Encryption domain the token belongs to"],
+        token: Annotated[bytes, "The Fernet token"],
+    ) -> Annotated[bytes, "Header line plus token"]:
+        """Wrap a Fernet token in the ``#GNRE1:<domain>`` envelope."""
+        return self.ENVELOPE_PREFIX + domain.encode("ascii") + b"\n" + token
+
+    def _parse_envelope(
+        self, data: Annotated[bytes, "Stored bytes, enveloped or not"]
+    ) -> Annotated[tuple[str | None, bytes], "Domain (None when unenveloped) and payload"]:
+        """Split stored bytes into their domain and payload.
+
+        The scan is bounded — the first ``ENVELOPE_MAX_HEADER`` bytes only — so
+        content that is not an envelope costs a prefix comparison, and a header
+        line longer than the bound is simply not a header.
+
+        The header is NOT authenticated: the Fernet HMAC covers the token alone.
+        Tampering with it misroutes the key lookup and decryption then fails
+        loudly. The domain is routing metadata travelling in cleartext, never a
+        security boundary — do not put a secret in a domain name.
+        """
+        if not data.startswith(self.ENVELOPE_PREFIX):
+            return None, data
+        newline = data.find(b"\n", 0, self.ENVELOPE_MAX_HEADER)
+        if newline < 0:
+            return None, data
+        domain = data[len(self.ENVELOPE_PREFIX) : newline].decode("ascii", errors="replace")
+        if not self.DOMAIN_PATTERN.match(domain):
+            return None, data
+        return domain, data[newline + 1 :]
+
+    def _domain_cipher(
+        self, domain: Annotated[str, "Encryption domain"], action: Annotated[str, "encrypt/decrypt"]
+    ) -> Any:
+        """The keyring of a domain, or a loud error naming the domain."""
+        cipher = self._ciphers.get(domain)
+        if cipher is None:
+            raise StorageError(
+                f"Cannot {action} for encryption domain {domain!r}: it requires installed "
+                "key material (StorageManager.set_encryption_keys or 'storage_key' in the "
+                "configuration)"
+            )
+        return cipher
+
+    def encrypt(
+        self,
+        data: Annotated[bytes, "Plaintext bytes"],
+        domain: Annotated[str | None, "Encryption domain; None uses the default one"] = None,
+    ) -> Annotated[bytes, "Enveloped ciphertext"]:
+        """Encrypt bytes and return them enveloped (the domain's first key encrypts).
 
         Raises:
-            StorageError: If no key material is installed — an encrypted mount
+            StorageConfigError: If ``domain`` is outside the allowed charset.
+            StorageError: If the domain has no installed key material — a domain
                 with no key is dormant, and using it is a runtime error.
         """
-        if self._cipher is None:
-            raise StorageError(
-                "Encrypted mount requires installed key material "
-                "(StorageManager.set_encryption_keys or 'storage_key' in the configuration)"
-            )
-        return self._cipher.encrypt(data)
+        domain = self._default_domain if domain is None else self._validate_domain(domain)
+        return self._build_envelope(domain, self._domain_cipher(domain, "encrypt").encrypt(data))
 
-    def decrypt(self, data: Annotated[bytes, "Ciphertext bytes"]) -> bytes:
-        """Decrypt bytes with the installed cipher (any installed key decrypts).
+    def decrypt(self, data: Annotated[bytes, "Stored bytes, enveloped or not"]) -> bytes:
+        """Return the plaintext of an enveloped payload; pass anything else through.
+
+        The read is deterministic: a ``#GNRE1:`` header routes the payload to
+        that domain's keyring, its absence means the content was never encrypted
+        by this library and is returned untouched. No content sniffing.
 
         Raises:
-            StorageError: If no key material is installed.
-            cryptography.fernet.InvalidToken: On a payload no installed key can
-                decrypt — never a plaintext fallback.
+            StorageError: If the envelope names a domain with no installed keys.
+            cryptography.fernet.InvalidToken: On an enveloped payload no key of
+                its domain can decrypt — never a plaintext fallback.
         """
-        if self._cipher is None:
-            raise StorageError(
-                "Encrypted mount requires installed key material "
-                "(StorageManager.set_encryption_keys or 'storage_key' in the configuration)"
-            )
-        return self._cipher.decrypt(data)
+        domain, payload = self._parse_envelope(data)
+        if domain is None:
+            return payload
+        return self._domain_cipher(domain, "decrypt").decrypt(payload)
 
     def configure(
         self,
@@ -243,7 +357,7 @@ class StorageManager:
                   ``BagResolver`` values are resolved once, here, at configuration time.
                 - str: Path to YAML or JSON configuration file
                 - list[dict]: List of mount configurations
-            storage_key: Key material for the mounts declared ``encrypted``, the
+            storage_key: Key material for the encrypted writes of the recipe, the
                 equivalent of the grammar's ``mounts(storage_key=...)``. Passed
                 straight to ``set_encryption_keys``; a recipe that declares it
                 wins over this parameter, being the more specific source.
@@ -422,7 +536,7 @@ class StorageManager:
         if name not in self._mounts:
             raise KeyError(f"Mount point '{name}' not found")
         del self._mounts[name]
-        self._encrypted_mounts.discard(name)
+        self._default_encrypted.pop(name, None)
 
     def _mounts_from_builder(self, page: StorageConfig) -> tuple[str | None, list[dict[str, Any]]]:
         """Flatten a built ``StorageConfig`` into the ``list[dict]`` the dict path consumes.
@@ -843,22 +957,42 @@ class StorageManager:
         if "permissions" in config:
             backend = self._apply_permissions(mount_name, backend, config["permissions"])
 
-        # At-rest encryption is a manager-level property of the mount, not a
-        # backend option: the bytes are encrypted above the backend, so every
-        # backend stores them the same way. Reconfiguring a mount replaces the
-        # flag too, hence the explicit discard.
-        if config.get("encrypted"):
-            if not HAS_CRYPTOGRAPHY:
-                raise StorageConfigError(
-                    f"Mount '{mount_name}' is declared encrypted but the 'cryptography' "
-                    "package is not installed. Install it with: "
-                    "pip install genro-storage[encryption]"
-                )
-            self._encrypted_mounts.add(mount_name)
+        # ``default_encrypted`` is a manager-level property of the mount, not a
+        # backend option: the bytes are enveloped above the backend, so every
+        # backend stores them the same way. It is only the default of the write
+        # parameter — a write declaring ``encrypted=`` overrides it in both
+        # directions. Reconfiguring a mount replaces the default, hence the pop;
+        # a name reused by a non-relative mount also sheds its old parent link.
+        default_encrypted = config.get("default_encrypted", False)
+        if default_encrypted:
+            self._default_encrypted[mount_name] = self._checked_default_encrypted(
+                mount_name, default_encrypted
+            )
         else:
-            self._encrypted_mounts.discard(mount_name)
+            self._default_encrypted.pop(mount_name, None)
 
         self._mounts[mount_name] = backend
+
+    def _checked_default_encrypted(
+        self,
+        mount_name: Annotated[str, "Mount being configured, for the error message"],
+        value: Annotated[bool | str, "The declared default, already truthy"],
+    ) -> Annotated[bool | str, "The value itself, once checked"]:
+        """Validate a declared ``default_encrypted`` before storing it.
+
+        Raises:
+            StorageConfigError: If ``cryptography`` is missing, or the value
+                names a domain outside the charset.
+        """
+        if not HAS_CRYPTOGRAPHY:
+            raise StorageConfigError(
+                f"Mount '{mount_name}' declares default_encrypted but the 'cryptography' "
+                "package is not installed. Install it with: "
+                "pip install genro-storage[encryption]"
+            )
+        if isinstance(value, str):
+            self._validate_domain(value)
+        return value
 
     def _configure_relative_mount(self, mount_name: str, config: dict[str, Any]) -> None:
         """Configure a relative mount point that references a parent mount.
@@ -915,14 +1049,16 @@ class StorageManager:
 
         relative_backend = RelativeMountBackend(parent_backend, relative_path, permissions)
 
-        # At-rest encryption follows the stored bytes: a relative mount
-        # delegates storage to its parent, so it carries the parent's flag —
-        # reads and writes through the child see the same plaintext as the
-        # parent. Reconfiguration replaces the flag, hence the discard.
-        if parent_mount_name in self._encrypted_mounts:
-            self._encrypted_mounts.add(mount_name)
+        # The write default belongs to the mount named in the write and to it
+        # alone: a relative mount has one only if it declares one — the
+        # parent's does NOT leak through. Reconfiguration replaces the record.
+        own_default = config.get("default_encrypted", False)
+        if own_default:
+            self._default_encrypted[mount_name] = self._checked_default_encrypted(
+                mount_name, own_default
+            )
         else:
-            self._encrypted_mounts.discard(mount_name)
+            self._default_encrypted.pop(mount_name, None)
 
         self._mounts[mount_name] = relative_backend
 

@@ -446,6 +446,7 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 - Extended GCS/Azure integration testing in progress
 
 **Recent Releases:**
+- v0.8.0 (July 2026) - Per-node encryption with a self-describing envelope and encoding domains; `default_encrypted` replaces the mount-level `encrypted`
 - v0.7.0 (July 2026) - Unified sync/async via `@smartasync`, removed AsyncStorageManager; at-rest encryption, StorageConfig grammar, Python 3.11 floor
 - v0.4.2 (October 2025) - Git, GitHub, WebDAV, LibArchive backends
 - v0.4.1 (October 2025) - SMB, SFTP, ZIP, TAR backends

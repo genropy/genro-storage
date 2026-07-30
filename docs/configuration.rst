@@ -211,6 +211,13 @@ Access files on the local filesystem.
 - ``type``: Must be ``"local"``
 - ``path``: Absolute path to base directory
 
+**Optional fields:**
+
+- ``default_encrypted``: default of the per-write ``encrypted`` parameter on
+  this mount — ``True`` for the default domain, a domain name, or ``False``
+  (the default). A ``relative`` mount takes the same option, as its own: the
+  parent's default does not leak through. See :doc:`encryption`.
+
 **Example:**
 
 .. code-block:: yaml

@@ -18,13 +18,17 @@
 This module provides the StorageNode class which is the main interface for
 interacting with files and directories across different storage backends.
 
-On a mount the manager declares encrypted, ``read_bytes``/``write_bytes`` and
-the text wrappers transparently decrypt and encrypt: on that surface the node
-API is unchanged and callers only ever see plaintext. Paths that hand out the
-stored bytes directly — ``open()``, ``local_path()`` (and ``call()``/``serve()``
-built on it), ``copy_to()``/``move_to()`` — bypass the cipher: they carry the
-at-rest bytes untouched, so a copy or move is valid across same-encryption
-mounts only. See ``genro_storage.manager`` for the key material contract.
+Encryption is per file and declared at the write site: ``write_bytes``,
+``write_text`` and ``write()`` take ``encrypted=True`` (the default domain) or
+``encrypted='<domain>'``, and what lands on the medium is a self-describing
+envelope — the first line ``#GNRE1:<domain>``, then the Fernet token. Reads
+need no declaration: an envelope is decrypted through its domain's keyring,
+anything else passes through untouched, so encrypted and plain files coexist in
+the same directory. Paths that hand out or report on the stored bytes directly
+— ``open()``, ``local_path()`` (and ``call()``/``serve()`` built on it),
+``copy_to()``/``move_to()``, versioned reads, ``size()``/``md5hash()`` — see
+the envelope, and carry it verbatim: the file stays self-describing wherever it
+lands. See ``genro_storage.manager`` for the key material contract.
 """
 
 from __future__ import annotations
@@ -696,15 +700,6 @@ class StorageNode:
         # Accesso normale (latest)
         return self._backend.open(self._path, mode)
 
-    @property
-    def _encrypted(self) -> bool:
-        """True when this node's mount encrypts at rest (the manager decides).
-
-        Virtual nodes have no mount: they materialize their sources, each of
-        which decrypts on its own.
-        """
-        return bool(self._mount_name) and self._manager.mount_is_encrypted(self._mount_name)
-
     def _read_bytes(self) -> bytes:
         """Internal method: Read entire file as bytes.
 
@@ -727,9 +722,8 @@ class StorageNode:
             with self.open(mode="rb") as f:
                 return f.read()
 
-        # Normal node
-        data = self._backend.read_bytes(self._path)
-        return self._manager.decrypt(data) if self._encrypted else data
+        # Normal node: an envelope is decrypted, anything else passes through.
+        return self._manager.decrypt(self._backend.read_bytes(self._path))
 
     def _read_text(self, encoding: str = "utf-8") -> str:
         """Internal method: Read entire file as string.
@@ -788,10 +782,9 @@ class StorageNode:
                 return content.decode(encoding)
             return content
 
-        # Normal node
-        if self._encrypted:
-            return self._read_bytes().decode(encoding)
-        return self._backend.read_text(self._path, encoding)
+        # Normal node: the header lives in the bytes, so text reads go through
+        # them — the envelope decides, the caller never declares.
+        return self._read_bytes().decode(encoding)
 
     @smartasync
     def read(
@@ -830,13 +823,38 @@ class StorageNode:
         else:
             raise ValueError(f"Invalid read mode '{mode}'. Use 'r' for text or 'rb' for binary")
 
-    def _write_bytes(self, data: bytes, skip_if_unchanged: bool = False) -> bool:
+    def _encrypt_payload(self, data: bytes, encrypted: bool | str) -> bytes:
+        """Envelope ``data`` for the domain the write parameter names.
+
+        ``True`` means the default domain, a string names one explicitly —
+        ``False`` never reaches here, the caller writes plain instead. The
+        manager validates the domain and raises when it has no installed keys.
+        """
+        return self._manager.encrypt(data, domain=encrypted if isinstance(encrypted, str) else None)
+
+    def _resolve_encrypted(self, encrypted: bool | str | None) -> bool | str:
+        """The effective write parameter: what the call declares, else the mount default.
+
+        ``None`` is the undeclared write — it takes the mount's
+        ``default_encrypted``. An explicit value wins in BOTH directions, so
+        ``encrypted=False`` writes plain on a ``default_encrypted`` mount.
+        """
+        if encrypted is None:
+            return self._manager.mount_default_encrypted(self._mount_name)
+        return encrypted
+
+    def _write_bytes(
+        self, data: bytes, skip_if_unchanged: bool = False, encrypted: bool | str | None = None
+    ) -> bool:
         """Internal method: Write bytes to file.
 
         Args:
             data: Bytes to write
             skip_if_unchanged: If True, skip writing if content identical to current version.
                 Uses MD5 hash comparison with existing file's ETag (S3) or computed hash.
+            encrypted: False writes the bytes as they are; True encrypts them for
+                the default domain; a string encrypts them for that domain; None
+                (default) takes the mount's ``default_encrypted``.
 
         Returns:
             bool: True if written, False if skipped (only when skip_if_unchanged=True)
@@ -899,9 +917,11 @@ class StorageNode:
                 except Exception:
                     pass  # If we can't read, write anyway
 
-        # Write the data — ciphertext on an encrypted mount, so what reaches
-        # the backend is already what lands on the medium.
-        payload = self._manager.encrypt(data) if self._encrypted else data
+        # Write the data — enveloped ciphertext when the write asks for it (its
+        # own parameter, else the mount default), so what reaches the backend is
+        # already what lands on the medium.
+        effective = self._resolve_encrypted(encrypted)
+        payload = data if effective is False else self._encrypt_payload(data, effective)
         result = self._backend.write_bytes(self._path, payload)
         # If backend returns a new path (e.g., base64), update it
         if result is not None:
@@ -911,7 +931,11 @@ class StorageNode:
         return True
 
     def _write_text(
-        self, text: str, encoding: str = "utf-8", skip_if_unchanged: bool = False
+        self,
+        text: str,
+        encoding: str = "utf-8",
+        skip_if_unchanged: bool = False,
+        encrypted: bool | str | None = None,
     ) -> bool:
         """Internal method: Write string to file.
 
@@ -920,6 +944,9 @@ class StorageNode:
             encoding: Text encoding (default: 'utf-8')
             skip_if_unchanged: If True, skip writing if content identical to current version.
                 Uses MD5 hash comparison with existing file's ETag (S3) or computed hash.
+            encrypted: False writes plain text; True encrypts for the default
+                domain; a string encrypts for that domain; None (default) takes
+                the mount's ``default_encrypted``.
 
         Returns:
             bool: True if written, False if skipped (only when skip_if_unchanged=True)
@@ -939,7 +966,9 @@ class StorageNode:
         """
         if not isinstance(text, str):
             raise TypeError(f"write_text() requires str, got {type(text).__name__}")
-        return self._write_bytes(text.encode(encoding), skip_if_unchanged=skip_if_unchanged)
+        return self._write_bytes(
+            text.encode(encoding), skip_if_unchanged=skip_if_unchanged, encrypted=encrypted
+        )
 
     @smartasync
     def write(
@@ -948,6 +977,11 @@ class StorageNode:
         mode: Annotated[str, "Write mode: 'w' for text, 'wb' for binary"] = "w",
         encoding: Annotated[str, "Text encoding (only for text mode)"] = "utf-8",
         skip_if_unchanged: Annotated[bool, "Skip writing if content is identical"] = False,
+        encrypted: Annotated[
+            bool | str | None,
+            "True for the default domain, a domain name, False for plain, "
+            "None for the mount's default",
+        ] = None,
     ) -> Annotated[bool, "True if written, False if skipped"]:
         """Write data to file in text or binary mode.
 
@@ -956,6 +990,9 @@ class StorageNode:
             mode: Write mode - 'w' for text (default), 'wb' for binary
             encoding: Text encoding (used only for text mode)
             skip_if_unchanged: If True, skip writing if content identical
+            encrypted: Encrypt the content at rest - True for the default
+                domain, a string for an explicit one, False for plain, None
+                (default) for the mount's ``default_encrypted``
 
         Returns:
             bool: True if written, False if skipped
@@ -975,17 +1012,21 @@ class StorageNode:
             >>> # Skip if unchanged
             >>> written = node.write('content', skip_if_unchanged=True)
             >>>
+            >>> # Encrypted at rest
+            >>> node.write('secret', encrypted=True)
+            >>> node.write('secret', encrypted='acmespa')
+            >>>
             >>> # Async context
             >>> await node.write('Hello World')
         """
         if mode == "w":
             if not isinstance(data, str):
                 raise TypeError(f"Text mode 'w' requires str, got {type(data).__name__}")
-            return self._write_text(data, encoding, skip_if_unchanged)
+            return self._write_text(data, encoding, skip_if_unchanged, encrypted)
         elif mode == "wb":
             if not isinstance(data, bytes):
                 raise TypeError(f"Binary mode 'wb' requires bytes, got {type(data).__name__}")
-            return self._write_bytes(data, skip_if_unchanged)
+            return self._write_bytes(data, skip_if_unchanged, encrypted)
         else:
             raise ValueError(f"Invalid write mode '{mode}'. Use 'w' for text or 'wb' for binary")
 
@@ -1039,7 +1080,11 @@ class StorageNode:
 
     @smartasync
     def write_text(
-        self, text: str, encoding: str = "utf-8", skip_if_unchanged: bool = False
+        self,
+        text: str,
+        encoding: str = "utf-8",
+        skip_if_unchanged: bool = False,
+        encrypted: bool | str | None = None,
     ) -> bool:
         """Write text content to file.
 
@@ -1050,6 +1095,9 @@ class StorageNode:
             text: Text content to write
             encoding: Text encoding (default: 'utf-8')
             skip_if_unchanged: Skip write if content identical (default: False)
+            encrypted: Encrypt at rest - True for the default domain, a string
+                for an explicit one, False for plain, None (default) for the
+                mount's ``default_encrypted``
 
         Returns:
             bool: True if file was written, False if skipped
@@ -1062,14 +1110,17 @@ class StorageNode:
             >>> node.write_text("Hello World")
             >>> node.write_text("Content", encoding='latin-1')
             >>> written = node.write_text("New", skip_if_unchanged=True)
+            >>> node.write_text("Secret", encrypted=True)
             >>>
             >>> # Async context
             >>> await node.write_text("Hello World")
         """
-        return self._write_text(text, encoding, skip_if_unchanged)
+        return self._write_text(text, encoding, skip_if_unchanged, encrypted)
 
     @smartasync
-    def write_bytes(self, data: bytes, skip_if_unchanged: bool = False) -> bool:
+    def write_bytes(
+        self, data: bytes, skip_if_unchanged: bool = False, encrypted: bool | str | None = None
+    ) -> bool:
         """Write binary content to file.
 
         Convenience method equivalent to write(data, mode='wb', skip_if_unchanged=skip_if_unchanged).
@@ -1078,6 +1129,9 @@ class StorageNode:
         Args:
             data: Binary content to write
             skip_if_unchanged: Skip write if content identical (default: False)
+            encrypted: Encrypt at rest - True for the default domain, a string
+                for an explicit one, False for plain, None (default) for the
+                mount's ``default_encrypted``
 
         Returns:
             bool: True if file was written, False if skipped
@@ -1089,11 +1143,12 @@ class StorageNode:
         Examples:
             >>> node.write_bytes(b"Binary data")
             >>> written = node.write_bytes(data, skip_if_unchanged=True)
+            >>> node.write_bytes(b"Secret", encrypted='acmespa')
             >>>
             >>> # Async context
             >>> await node.write_bytes(b"Binary data")
         """
-        return self._write_bytes(data, skip_if_unchanged)
+        return self._write_bytes(data, skip_if_unchanged, encrypted)
 
     # ==================== File Operations ====================
 

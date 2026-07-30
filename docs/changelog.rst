@@ -6,6 +6,54 @@ All notable changes to genro-storage will be documented here.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
+0.8.0 - July 2026
+-----------------
+
+Added
+~~~~~
+
+- Per-node encryption: ``write_bytes()``, ``write_text()`` and ``write()`` take
+  ``encrypted`` — ``True`` for the default domain, ``'<domain>'`` for an
+  explicit one, ``False`` for plaintext. Encryption is now a property of the
+  file, so encrypted and plain files coexist in the same directory.
+- A self-describing textual envelope: an encrypted payload is the line
+  ``#GNRE1:<domain>`` followed by the Fernet token. Reads are deterministic —
+  header present means decrypt through that domain's keyring, header absent
+  means passthrough — with a bounded 128-byte header scan. The header is
+  routing metadata in cleartext and is not authenticated.
+- Encoding domains: key material accepts a ``<domain>:`` prefix per key
+  (``acme:<k1>,acme:<k2>,partner:<k3>``), grouping into one ``MultiFernet`` per
+  domain so rotation is per domain. Unprefixed keys keep working as the default
+  domain; the first entry overall sets the default write domain.
+  ``encryption_domains`` lists the configured names.
+- ``mount_default_encrypted(name)`` reports a mount's default.
+
+Changed
+~~~~~~~
+
+- **Breaking**: the mount option ``encrypted`` is replaced by
+  ``default_encrypted`` (``bool | str``), which is only the default of the
+  per-write parameter — an explicit ``encrypted=`` at the write site wins in
+  both directions. The default belongs to the mount named in the write and to
+  it alone: a ``relative`` mount has one only if it declares one (grammar,
+  dict or YAML) — the parent's does not leak through.
+- **Breaking**: ``StorageManager.encrypt(data, domain=...)`` returns enveloped
+  bytes and ``decrypt(data)`` routes by header, passing through unenveloped
+  content instead of raising.
+- ``copy_to()``/``move_to()`` carry the envelope verbatim, which removes both
+  0.7.x pathological cases: an encrypted → plain copy now delivers a file that
+  still reads back through the library, and a plain → encrypted-mount copy
+  reads in passthrough instead of failing to decrypt.
+
+Removed
+~~~~~~~
+
+- **Breaking**: ``mount_is_encrypted()`` — the file's header answers for the
+  file; the mount only holds a default.
+- **Breaking**: mount-level transparent encryption. There is no compatibility
+  layer and no legacy bare-token read path: 0.7.x content, written without a
+  header, reads back as ciphertext bytes and must be re-written through 0.8.
+
 0.7.2 - July 2026
 -----------------
 

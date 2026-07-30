@@ -32,9 +32,9 @@ and ``configure()`` resolves each one once, where the value lives, with no
 datastore entry to pair a pointer with.
 
 At-rest encryption is two fields: ``storage_key`` on the ``mounts`` collection
-carries the key material for the whole recipe, ``encrypted`` marks the single
-mount that uses it. Nothing else changes — nodes of an encrypted mount read and
-write plaintext, the bytes on the medium are ciphertext.
+carries the key material for the whole recipe, ``default_encrypted`` gives a
+mount the default of the per-write ``encrypted`` parameter. Encryption itself is
+declared at the write site — the mount holds a default, never a state.
 
 Example::
 
@@ -46,7 +46,7 @@ Example::
         def main(self, root):
             m = root.mounts(storage_key=BagCbResolver(lambda: os.environ["STORAGE_KEY"]))
             m.local(name="home", base_path="/srv/data")
-            m.local(name="secure", base_path="/srv/secure", encrypted=True)
+            m.local(name="secure", base_path="/srv/secure", default_encrypted=True)
             m.s3(name="uploads", bucket="my-bucket",
                  secret_key=BagCbResolver(lambda: os.environ["S3_SECRET"]))
             m.relative(name="public", path="home:public", permissions="readonly")
@@ -105,13 +105,15 @@ class StorageGrammar:
         name: str,
         base_path: str | Callable | BagResolver,
         base_url: str | None = None,
-        encrypted: bool = False,
+        default_encrypted: bool | str = False,
         permissions: Permissions | None = None,
     ):
         """Local filesystem mount; ``base_path`` may be a callable resolved at runtime.
 
-        ``encrypted`` makes the mount encrypt its content at rest, transparently
-        to every reader and writer; it requires ``storage_key`` on ``mounts``.
+        ``default_encrypted`` is the default of the per-write ``encrypted``
+        parameter on this mount — ``True`` for the default encryption domain, a
+        string for a named one — overridable at every write site in both
+        directions; it requires ``storage_key`` on ``mounts``.
         """
 
     @element()
@@ -120,6 +122,7 @@ class StorageGrammar:
         *,
         name: str,
         base_path: str | BagResolver | None = None,
+        default_encrypted: bool | str = False,
         permissions: Permissions | None = None,
     ):
         """In-memory filesystem, for tests and ephemeral scratch space."""
@@ -129,6 +132,7 @@ class StorageGrammar:
         self,
         *,
         name: str,
+        default_encrypted: bool | str = False,
         permissions: Permissions | None = None,
     ):
         """Inline base64 data mount with writable paths; no configuration."""
@@ -146,6 +150,7 @@ class StorageGrammar:
         access_key: str | BagResolver | None = None,
         secret_key: str | BagResolver | None = None,
         endpoint_url: str | BagResolver | None = None,
+        default_encrypted: bool | str = False,
         permissions: Permissions | None = None,
     ):
         """S3 or S3-compatible bucket; MinIO and friends via ``endpoint_url``."""
@@ -160,6 +165,7 @@ class StorageGrammar:
         token: str | BagResolver | None = None,
         project: str | None = None,
         endpoint_url: str | BagResolver | None = None,
+        default_encrypted: bool | str = False,
         permissions: Permissions | None = None,
     ):
         """Google Cloud Storage bucket."""
@@ -174,6 +180,7 @@ class StorageGrammar:
         account_key: str | BagResolver | None = None,
         sas_token: str | BagResolver | None = None,
         connection_string: str | BagResolver | None = None,
+        default_encrypted: bool | str = False,
         permissions: Permissions | None = None,
     ):
         """Azure Blob Storage container; ``account_name`` identifies the account."""
@@ -185,6 +192,7 @@ class StorageGrammar:
         *,
         name: str,
         base_path: str | BagResolver,
+        default_encrypted: bool | str = False,
         permissions: Permissions | None = None,
     ):
         """Read-only HTTP(S) tree rooted at ``base_path``."""
@@ -201,6 +209,7 @@ class StorageGrammar:
         password: str | BagResolver | None = None,
         domain: str | None = None,
         port: int | str | BagResolver | None = None,
+        default_encrypted: bool | str = False,
         permissions: Permissions | None = None,
     ):
         """SMB/CIFS network share on ``host``."""
@@ -218,6 +227,7 @@ class StorageGrammar:
         key_filename: str | None = None,
         passphrase: str | BagResolver | None = None,
         timeout: int | str | BagResolver | None = None,
+        default_encrypted: bool | str = False,
         permissions: Permissions | None = None,
     ):
         """SFTP server accessed over SSH on ``host``."""
@@ -233,6 +243,7 @@ class StorageGrammar:
         token: str | BagResolver | None = None,
         cert: str | None = None,
         verify_ssl: bool | str | BagResolver | None = None,
+        default_encrypted: bool | str = False,
         permissions: Permissions | None = None,
     ):
         """WebDAV server (Nextcloud, ownCloud, SharePoint) at ``url``."""
@@ -247,6 +258,7 @@ class StorageGrammar:
         mode: str | None = None,
         target_protocol: str | None = None,
         target_options: dict | None = None,
+        default_encrypted: bool | str = False,
         permissions: Permissions | None = None,
     ):
         """ZIP archive addressed as a filesystem; ``file`` is the archive path."""
@@ -260,6 +272,7 @@ class StorageGrammar:
         compression: str | None = None,
         target_protocol: str | None = None,
         target_options: dict | None = None,
+        default_encrypted: bool | str = False,
         permissions: Permissions | None = None,
     ):
         """TAR archive addressed as a filesystem; ``file`` is the archive path."""
@@ -272,6 +285,7 @@ class StorageGrammar:
         file: str,
         target_protocol: str | None = None,
         target_options: dict | None = None,
+        default_encrypted: bool | str = False,
         permissions: Permissions | None = None,
     ):
         """Universal archive (7z, rar, iso, ...) via libarchive; ``file`` is the path."""
@@ -285,6 +299,7 @@ class StorageGrammar:
         base_path: str | BagResolver,
         ref: str | None = None,
         fo: str | None = None,
+        default_encrypted: bool | str = False,
         permissions: Permissions | None = None,
     ):
         """Local Git repository; ``base_path`` is the repo, ``ref`` a commit/branch/tag."""
@@ -299,6 +314,7 @@ class StorageGrammar:
         sha: str | None = None,
         username: str | BagResolver | None = None,
         token: str | BagResolver | None = None,
+        default_encrypted: bool | str = False,
         permissions: Permissions | None = None,
     ):
         """Remote GitHub repository via the API (``org``/``repo``)."""
@@ -310,9 +326,14 @@ class StorageGrammar:
         *,
         name: str,
         path: str,
+        default_encrypted: bool | str = False,
         permissions: Permissions | None = None,
     ):
-        """Child mount of an already-declared parent — ``path`` is 'parent:subpath'."""
+        """Child mount of an already-declared parent — ``path`` is 'parent:subpath'.
+
+        ``default_encrypted`` is this mount's own; the parent's default does
+        not leak through.
+        """
 
 
 class StorageConfig(BuilderBase, StorageGrammar):

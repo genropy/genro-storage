@@ -79,6 +79,17 @@ def test_only_provided_fields_are_captured_as_attributes():
     assert attrs == {"name": "uploads", "bucket": "b"}
 
 
+@pytest.mark.parametrize("value", [True, "acmespa"])
+def test_default_encrypted_captured_on_a_local_mount(value):
+    """``default_encrypted`` accepts both shapes of the write parameter it defaults."""
+    mounts = _mounts(
+        _build(
+            lambda root: root.mounts().local(name="v", base_path="/srv", default_encrypted=value)
+        )
+    )
+    assert mounts.get_node("v").attr.get("default_encrypted") == value
+
+
 def test_relative_mount_builds():
     """``relative(name=..., path='parent:sub')`` builds with its permissions."""
 
