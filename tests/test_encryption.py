@@ -24,7 +24,7 @@ from genro_bag.resolver import BagCbResolver
 
 from genro_storage import StorageManager
 from genro_storage import manager as manager_module
-from genro_storage.config import StorageConfig
+from genro_storage.storage_grammar import StorageConfig
 from genro_storage.exceptions import StorageConfigError, StorageError
 
 

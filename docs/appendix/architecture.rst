@@ -323,7 +323,7 @@ File Organization
     ├── __init__.py                  # Public API exports
     ├── manager.py                   # StorageManager
     ├── node.py                      # StorageNode
-    ├── config.py                    # StorageConfig / StorageGrammar
+    ├── storage_grammar.py           # StorageConfig / StorageGrammar
     ├── backends/
     │   ├── __init__.py
     │   ├── base.py                  # StorageBackend abstract class
@@ -338,7 +338,7 @@ File Organization
 
 - **manager.py**: Entry point, configuration, mount management, encryption keys
 - **node.py**: Core file operations, copy strategies, virtual nodes
-- **config.py**: The builder grammar accepted by ``configure()``
+- **storage_grammar.py**: The builder grammar accepted by ``configure()``
 - **backends/fsspec.py**: Wraps fsspec for 15+ protocols (S3, GCS, Azure, HTTP, etc.)
 
 ---

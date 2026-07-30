@@ -79,9 +79,9 @@ from .backends.base64 import Base64Backend
 from .backends.fsspec import FsspecBackend
 from .backends.local import LocalStorage
 from .backends.relative import RelativeMountBackend
-from .config import StorageConfig, StorageGrammar
 from .exceptions import StorageConfigError, StorageError, StorageNotFoundError
 from .node import StorageNode
+from .storage_grammar import StorageConfig, StorageGrammar
 
 
 class StorageManager:
@@ -238,7 +238,7 @@ class StorageManager:
             source: Configuration source, can be:
 
                 - StorageConfig subclass or instance: the pythonic grammar (see
-                  ``genro_storage.config``). A subclass is instantiated and built
+                  ``genro_storage.storage_grammar``). A subclass is instantiated and built
                   on a fresh handler; an instance is used as already built.
                   ``BagResolver`` values are resolved once, here, at configuration time.
                 - str: Path to YAML or JSON configuration file

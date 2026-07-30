@@ -1,5 +1,5 @@
 # Copyright 2025 Softwell S.r.l. - SPDX-License-Identifier: Apache-2.0
-"""Tests for the ``StorageConfig`` grammar (``genro_storage.config``).
+"""Tests for the ``StorageConfig`` grammar (``genro_storage.storage_grammar``).
 
 The grammar is a data-only ``genro-builders`` dialect: one ``@element`` per
 protocol, each mount living inside the ``mounts`` collection keyed by ``name``.
@@ -25,7 +25,7 @@ import pytest
 from genro_bag.resolver import BagCbResolver
 from genro_builders.builder import BuilderBase, element
 
-from genro_storage.config import StorageConfig
+from genro_storage.storage_grammar import StorageConfig
 from genro_storage.manager import StorageManager
 
 

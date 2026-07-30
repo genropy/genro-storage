@@ -127,7 +127,7 @@ files = ["src/genro_storage"]
 # the signature and the body is empty, so annotating their return type states
 # nothing. Silenced for this module rather than annotating 17 stubs.
 [[tool.mypy.overrides]]
-module = "genro_storage.config"
+module = "genro_storage.storage_grammar"
 disable_error_code = ["no-untyped-def"]
 
 # A node holds ``_backend = None`` exactly when it is virtual: the methods that

@@ -15,7 +15,7 @@ Read the parent document first for:
 ### Current Status
 - **Development Status**: Beta
 - **Has Implementation Code**: Yes
-- **Version**: 0.7.0
+- **Version**: 0.7.2
 - **Python Support**: 3.11, 3.12, 3.13
 - **Test Coverage**: 86% (521 tests: 507 passing, 14 skipped)
 - **GitHub**: https://github.com/genropy/genro-storage
@@ -34,7 +34,7 @@ genro-storage/
 │   ├── node.py            # StorageNode - file/directory abstraction
 │   ├── capabilities.py    # Backend capability system
 │   ├── exceptions.py      # Custom exceptions
-│   ├── config.py          # StorageConfig / StorageGrammar builder grammar
+│   ├── storage_grammar.py # StorageConfig / StorageGrammar builder grammar
 │   └── backends/          # Storage backend implementations
 │       ├── base.py        # Abstract backend interface
 │       └── fsspec_backend.py  # Unified fsspec-based backend

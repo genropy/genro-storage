@@ -61,17 +61,17 @@ For more information, see the documentation at:
 https://genro-storage.readthedocs.io
 """
 
-__version__ = "0.7.1"
+__version__ = "0.7.2"
 
 from .manager import StorageManager
 from .node import StorageNode, SkipStrategy
-from .config import StorageConfig
 from .exceptions import (
     StorageError,
     StorageNotFoundError,
     StoragePermissionError,
     StorageConfigError,
 )
+from .storage_grammar import StorageConfig
 
 __all__ = [
     # Version

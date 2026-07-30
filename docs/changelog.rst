@@ -6,6 +6,18 @@ All notable changes to genro-storage will be documented here.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
+0.7.2 - July 2026
+-----------------
+
+Changed
+~~~~~~~
+
+- **Breaking (module path only)**: the grammar module ``genro_storage.config``
+  is renamed ``genro_storage.storage_grammar`` — ``config`` is conventionally
+  the name of a *configuration file*, while this module holds the grammar
+  classes. The public import ``from genro_storage import StorageConfig`` is
+  unchanged; only the direct module path moves.
+
 0.7.1 - July 2026
 -----------------
 
