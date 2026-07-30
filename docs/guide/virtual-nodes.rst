@@ -185,7 +185,7 @@ IterNode Properties
 
 .. test: test_virtual_nodes.py::TestIterNode::test_iternode_write_raises_error
 
-Virtual nodes have special properties. Examples from `test_virtual_nodes.py <https://github.com/genropy/genro-storage/blob/main/tests/test_virtual_nodes.py#L146-L160>`_:
+Virtual nodes have special properties. Examples from `test_virtual_nodes.py <https://github.com/genropy/genro-storage/blob/main/tests/test_virtual_nodes.py#L146-L160>`__:
 
 .. code-block:: python
 
@@ -327,7 +327,7 @@ DiffNode Properties
 
 .. test: test_virtual_nodes.py::TestDiffNode::test_diffnode_binary_raises_error
 
-DiffNode limitations. Examples from `test_virtual_nodes.py <https://github.com/genropy/genro-storage/blob/main/tests/test_virtual_nodes.py#L255-L291>`_:
+DiffNode limitations. Examples from `test_virtual_nodes.py <https://github.com/genropy/genro-storage/blob/main/tests/test_virtual_nodes.py#L255-L291>`__:
 
 .. code-block:: python
 

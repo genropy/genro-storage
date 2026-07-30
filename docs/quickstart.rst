@@ -123,12 +123,12 @@ Here's a complete working example:
 
     # Create and write a file
     report = storage.node('data:reports/2024-q4.txt')
-    report.write_text("""
-Q4 2024 Sales Report
----------------------
-Total Sales: $1,234,567
-Growth: +15%
-""")
+    report.write_text(
+        "Q4 2024 Sales Report\n"
+        "--------------------\n"
+        "Total Sales: $1,234,567\n"
+        "Growth: +15%\n"
+    )
 
     # Read and process
     content = report.read_text()
