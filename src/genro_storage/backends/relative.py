@@ -28,7 +28,6 @@ from .base import StorageBackend
 from ..capabilities import BackendCapabilities
 from ..exceptions import StoragePermissionError
 
-
 PermissionLevel = Literal["readonly", "readwrite", "delete"]
 
 
