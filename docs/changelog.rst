@@ -6,8 +6,8 @@ All notable changes to genro-storage will be documented here.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
-Unreleased
-----------
+0.7.0 - July 2026
+-----------------
 
 Added
 ~~~~~
@@ -50,7 +50,8 @@ Dependencies
 
 - ``genro-builders`` floor raised to 0.22.0 (resolver-aware ``runtime_values``,
   sub-builder by reference).
-- ``genro-bag>=0.20.0`` added as a direct dependency.
+- ``genro-bag>=0.20.1`` added as a direct dependency (0.20.0 imports
+  ``typing_extensions`` without declaring it, so a clean install fails).
 
 0.4.2 - October 2025
 --------------------
