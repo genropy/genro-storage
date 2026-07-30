@@ -61,10 +61,11 @@ For more information, see the documentation at:
 https://genro-storage.readthedocs.io
 """
 
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 from .manager import StorageManager
 from .node import StorageNode, SkipStrategy
+from .config import StorageConfig
 from .exceptions import (
     StorageError,
     StorageNotFoundError,
@@ -79,6 +80,8 @@ __all__ = [
     "StorageManager",
     "StorageNode",
     "SkipStrategy",
+    # Configuration grammar (the mixin stays reachable as StorageManager.grammar)
+    "StorageConfig",
     # Exceptions
     "StorageError",
     "StorageNotFoundError",

@@ -6,6 +6,18 @@ All notable changes to genro-storage will be documented here.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
+0.7.1 - July 2026
+-----------------
+
+Added
+~~~~~
+
+- ``StorageConfig`` is now exported from the package: ``from genro_storage
+  import StorageConfig``. It is the grammar ``configure()`` accepts as a
+  source, so it belongs on the public surface next to ``StorageManager``;
+  0.7.0 only exposed it as ``genro_storage.config.StorageConfig``. The
+  grammar mixin itself stays reachable as ``StorageManager.grammar``.
+
 0.7.0 - July 2026
 -----------------
 
