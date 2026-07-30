@@ -109,6 +109,94 @@ Alternative to YAML:
     storage = StorageManager()
     storage.configure('./config/storage.json')
 
+From a Builder Grammar
+~~~~~~~~~~~~~~~~~~~~~~
+
+Configuration can also be written as Python, using the ``StorageConfig``
+grammar built on `genro-builders
+<https://github.com/genropy/genro-builders>`_. Each mount is an element with a
+closed signature, so a misspelled or unsupported attribute is rejected at the
+line that writes it rather than at configuration time:
+
+.. code-block:: python
+
+    from genro_storage import StorageConfig, StorageManager
+
+    class AppStorage(StorageConfig):
+        def main(self, root):
+            m = root.mounts()
+            self.local_mounts(m)
+            self.cloud_mounts(m)
+
+        def local_mounts(self, m):
+            m.local(name='home', base_path='/srv/data')
+            m.relative(name='public', path='home:public', permissions='readonly')
+
+        def cloud_mounts(self, m):
+            m.s3(name='uploads', base_path='prod-app-uploads')
+
+    storage = StorageManager()
+    storage.configure(AppStorage)
+
+``configure()`` accepts the class or an instance. Splitting the recipe into one
+method per section is a convention rather than a requirement, and it pays off
+in inheritance: a base recipe defines the common mounts and a deployment
+subclasses it, overriding a single method without touching ``main``.
+
+Values from the environment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fields whose value comes from outside — credentials, endpoints, deploy-time
+paths — accept a ``BagResolver`` in place of a literal. The recipe states
+*which* variable feeds *which* field, and the value is read when
+``configure()`` consumes it:
+
+.. code-block:: python
+
+    import os
+
+    from genro_bag.resolver import BagCbResolver
+
+    class AppStorage(StorageConfig):
+        def main(self, root):
+            m = root.mounts()
+            m.s3(name='uploads', base_path='prod-app-uploads',
+                 secret_key=BagCbResolver(lambda: os.environ['S3_SECRET']))
+
+Every field that may legitimately come from the environment is
+resolver-capable: ``base_path``, ``access_key``, ``secret_key``,
+``endpoint_url``, ``token``, ``username``, ``password``, connection hosts, and
+the mount-level ``storage_key`` (see :doc:`encryption`). The Azure secret
+fields — ``account_key``, ``sas_token``, ``connection_string`` — accept
+resolvers as well.
+
+Mounting the grammar in a host document
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``@element`` declarations live in a plain mixin, ``StorageGrammar``, which
+``StorageConfig`` combines with the builder base. A host dialect — an
+application's own configuration document, for instance — can therefore govern
+a ``storage`` section with this grammar, referencing it through
+``StorageManager.grammar``:
+
+.. code-block:: python
+
+    from genro_builders import BuilderBase, element
+    from genro_storage import StorageManager
+
+    class SiteConfig(BuilderBase):
+        @element(_meta={'subbuilder': 'app:grammar'})
+        def storage(self, app=None):
+            """Envelope node whose subtree is governed by ``app.grammar``."""
+
+    class MySite(SiteConfig):
+        def main(self, root):
+            m = root.storage(app=StorageManager).mounts()
+            m.local(name='home', base_path='/srv/data')
+
+The attribute is inherited through the MRO, so a ``StorageManager`` subclass
+carries — or specializes — its own grammar for free.
+
 Storage Backend Types
 ---------------------
 

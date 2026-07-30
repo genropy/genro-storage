@@ -116,6 +116,7 @@ Documentation Contents
 
    configuration
    backends
+   encryption
    guide/operations
    guide/copy-strategies
    guide/virtual-nodes

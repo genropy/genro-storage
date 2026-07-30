@@ -739,7 +739,6 @@ Planned Features
 2. **Caching Layer**: Optional caching for read-heavy workloads
 3. **Retry Logic**: Automatic retry with exponential backoff
 4. **Compression**: Transparent compression for large files
-5. **Encryption**: Client-side encryption layer
 
 Under Consideration
 ~~~~~~~~~~~~~~~~~~~

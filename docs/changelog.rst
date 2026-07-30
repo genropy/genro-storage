@@ -9,7 +9,48 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 Unreleased
 ----------
 
-In development for next release.
+Added
+~~~~~
+
+- At-rest encryption: a mount declared ``encrypted`` stores ciphertext, with
+  transparent encrypt/decrypt on the node read/write surface. Key material is
+  comma-separated Fernet keys with ``MultiFernet`` semantics (first key
+  encrypts, all keys decrypt) supplied as ``storage_key`` or via
+  ``set_encryption_keys()``; ``encryption_active`` and
+  ``mount_is_encrypted()`` report the state. Requires the new optional extra
+  ``genro-storage[encryption]``. See :doc:`encryption`, including the coverage
+  boundary — ``open()``, ``local_path()``, ``call()``, ``serve()`` and
+  ``copy_to()``/``move_to()`` carry the stored bytes untouched.
+- Pythonic configuration through the ``StorageConfig`` builder grammar, with
+  closed element signatures validated at the recipe line.
+- ``StorageGrammar``, the grammar mixin, exposed as ``StorageManager.grammar``
+  so a host dialect can govern a storage section by reference.
+- Resolver support on every field whose value may come from the environment:
+  a ``BagResolver`` can be passed in place of a literal and is read when
+  ``configure()`` consumes it.
+
+Changed
+~~~~~~~
+
+- Service-backed SMB and SFTP tests now skip when the service is unreachable
+  instead of failing, so a bare ``pytest`` is green with no Docker services
+  running.
+
+Removed
+~~~~~~~
+
+- **Breaking**: Python 3.10 is no longer supported. The floor is 3.11,
+  matching genro-bag and genro-toolbox.
+- **Breaking**: the ``^pointer`` / ``${template}`` idiom in the builder
+  adapter. Pass a ``BagResolver`` as the value instead — no seeding step and
+  no name to keep in sync.
+
+Dependencies
+~~~~~~~~~~~~
+
+- ``genro-builders`` floor raised to 0.22.0 (resolver-aware ``runtime_values``,
+  sub-builder by reference).
+- ``genro-bag>=0.20.0`` added as a direct dependency.
 
 0.4.2 - October 2025
 --------------------
