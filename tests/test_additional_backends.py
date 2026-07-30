@@ -29,6 +29,33 @@ def is_service_available(host, port, timeout=1):
         return False
 
 
+def is_github_api_available(timeout=2):
+    """Check if the GitHub API is reachable and not rate-limited.
+
+    Probes https://api.github.com/rate_limit (which does not count against
+    the rate limit) and verifies the core quota still has remaining calls.
+
+    Args:
+        timeout: Request timeout in seconds
+
+    Returns:
+        bool: True if the API is reachable with quota remaining, False otherwise
+    """
+    try:
+        request = urllib.request.Request(
+            "https://api.github.com/rate_limit",
+            headers={"Accept": "application/vnd.github+json"},
+        )
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            data = json.loads(response.read())
+        return data["resources"]["core"]["remaining"] > 0
+    except Exception:
+        return False
+
+
+HAS_GITHUB_API = is_github_api_available()
+
+
 # Check for optional dependencies
 try:
     import pygit2
@@ -184,6 +211,7 @@ class TestGitBackend:
 class TestGitHubBackend:
     """Tests for GitHub backend."""
 
+    @pytest.mark.skipif(not HAS_GITHUB_API, reason="GitHub API not reachable or rate-limited")
     def test_github_configuration_basic(self):
         """Test basic GitHub configuration."""
         storage = StorageManager()
@@ -194,6 +222,7 @@ class TestGitHubBackend:
         backend = storage._mounts["gh_test"]
         assert backend is not None
 
+    @pytest.mark.skipif(not HAS_GITHUB_API, reason="GitHub API not reachable or rate-limited")
     def test_github_configuration_with_ref(self):
         """Test GitHub configuration with ref (branch/tag/commit)."""
         storage = StorageManager()
@@ -210,6 +239,7 @@ class TestGitHubBackend:
         )
         assert "gh_test" in storage._mounts
 
+    @pytest.mark.skipif(not HAS_GITHUB_API, reason="GitHub API not reachable or rate-limited")
     def test_github_configuration_with_token(self):
         """Test GitHub configuration with authentication token."""
         storage = StorageManager()
@@ -227,18 +257,21 @@ class TestGitHubBackend:
         )
         assert "gh_test" in storage._mounts
 
+    @pytest.mark.skipif(not HAS_GITHUB_API, reason="GitHub API not reachable or rate-limited")
     def test_github_configuration_missing_org(self):
         """Test GitHub configuration with missing org raises error."""
         storage = StorageManager()
         with pytest.raises(StorageConfigError, match="missing required field: 'org'"):
             storage.configure([{"name": "gh_test", "protocol": "github", "repo": "genro-storage"}])
 
+    @pytest.mark.skipif(not HAS_GITHUB_API, reason="GitHub API not reachable or rate-limited")
     def test_github_configuration_missing_repo(self):
         """Test GitHub configuration with missing repo raises error."""
         storage = StorageManager()
         with pytest.raises(StorageConfigError, match="missing required field: 'repo'"):
             storage.configure([{"name": "gh_test", "protocol": "github", "org": "genropy"}])
 
+    @pytest.mark.skipif(not HAS_GITHUB_API, reason="GitHub API not reachable or rate-limited")
     def test_github_capabilities(self):
         """Test GitHub backend capabilities."""
         storage = StorageManager()
