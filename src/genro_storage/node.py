@@ -95,15 +95,6 @@ class StorageNode:
             ...     content = await node.read_text()
             ...     await node.write_text("Hello World")
 
-    Attributes:
-        fullpath (str): Full path including mount point (e.g., "home:documents/file.txt")
-        path (str): Relative path within mount (e.g., "documents/file.txt")
-        basename (str): Filename with extension
-        stem (str): Filename without extension
-        suffix (str): File extension including dot
-        parent (StorageNode): Parent directory as StorageNode
-        mimetype (str): MIME type based on file extension
-
     Methods (I/O - support sync/async via @smartasync):
         exists(): Check if file/directory exists
         is_file(): Check if node is a file
