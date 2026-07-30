@@ -34,7 +34,7 @@ genro-storage/
 │   ├── node.py            # StorageNode - file/directory abstraction
 │   ├── capabilities.py    # Backend capability system
 │   ├── exceptions.py      # Custom exceptions
-│   ├── asyncer_wrapper.py # Async support wrapper
+│   ├── config.py          # StorageConfig / StorageGrammar builder grammar
 │   └── backends/          # Storage backend implementations
 │       ├── base.py        # Abstract backend interface
 │       └── fsspec_backend.py  # Unified fsspec-based backend
@@ -71,7 +71,7 @@ genro-storage/
 5. **Base64 Backend**: Embed data inline with writable paths
 6. **Cloud Metadata**: Get/set custom metadata on S3, GCS, Azure
 7. **Callable Paths**: Dynamic path resolution at runtime
-8. **Async Support**: AsyncStorageManager available
+8. **Async Support**: the same StorageManager is awaitable from async code via `@smartasync`
 
 ### Architecture Notes
 
@@ -143,7 +143,7 @@ mypy genro_storage/
 
 - `fsspec>=2023.1.0` - Core backend support
 - `PyYAML>=6.0` - Configuration file support
-- Optional: `s3fs`, `gcsfs`, `adlfs`, `aiohttp`, `smbprotocol`, `paramiko`, `webdav4`, `libarchive-c`, `asyncer`
+- Optional: `s3fs`, `gcsfs`, `adlfs`, `aiohttp`, `smbprotocol`, `paramiko`, `webdav4`, `libarchive-c`, `cryptography`
 
 ### Related Documentation
 

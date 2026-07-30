@@ -10,7 +10,7 @@ it adds an intuitive mount-point system and user-friendly API inspired by Unix f
 Features
 --------
 
-* **Async/await support** - Use in FastAPI, asyncio apps with AsyncStorageManager
+* **Async/await support** - The same ``StorageManager`` is awaitable from async code via ``@smartasync``
 * **Native permission control** - Configure readonly, readwrite, or delete permissions for any backend
 * **Powered by fsspec** - Leverage 20+ battle-tested storage backends
 * **Mount point system** - Organize storage with logical names like ``home:``, ``uploads:``, ``s3:``
@@ -58,22 +58,23 @@ Synchronous Usage
 Async Usage
 ~~~~~~~~~~~
 
+The same ``StorageManager`` works in both contexts: every I/O method carries
+``@smartasync``, so it is awaitable when called from async code.
+
 .. code-block:: python
 
-    from genro_storage import AsyncStorageManager
+    from genro_storage import StorageManager
 
-    # Configure
-    storage = AsyncStorageManager()
+    storage = StorageManager()
     storage.configure([
         {'name': 'uploads', 'protocol': 's3', 'bucket': 'my-bucket'}
     ])
 
-    # Use in async context
     async def process_file(filepath: str):
         node = storage.node(f'uploads:{filepath}')
 
         if await node.exists():
-            data = await node.read(mode='rb')
+            data = await node.read_bytes()
             size = await node.size()
             return data
 
@@ -94,10 +95,10 @@ Installation
     pip install genro-storage[smb]     # SMB/CIFS (Windows shares)
     pip install genro-storage[sftp]    # SFTP/SSH
 
-    # With async support
-    pip install genro-storage[async]   # Async support
+    # With at-rest encryption
+    pip install genro-storage[encryption]
 
-    # All backends + async
+    # All backends
     pip install genro-storage[all]     # Everything
 
 Documentation Contents

@@ -35,8 +35,7 @@ Architecture Overview
        subgraph UserAPI[User API Layer]
            SM[StorageManager]
            SN[StorageNode]
-           ASM[AsyncStorageManager]
-           ASN[AsyncStorageNode]
+           SC[StorageConfig grammar]
        end
 
        subgraph BackendLayer[Backend Layer]
@@ -88,10 +87,10 @@ The architecture consists of three main layers:
 
 **Key Points**:
 
-1. **User API Layer** provides both sync and async interfaces with identical method signatures
+1. **User API Layer** serves sync and async callers through the same classes:
+   every I/O method carries ``@smartasync``, so it is awaitable from async code
 2. **Backend Layer** implements storage-specific operations for different protocols
-3. **Provider Layer** (new in v0.3.0) enables fully async operations without blocking
-4. **Capabilities System** allows runtime feature detection and backend selection
+3. **Capabilities System** allows runtime feature detection and backend selection
 
 ---
 
@@ -322,10 +321,9 @@ File Organization
 
     genro_storage/
     ├── __init__.py                  # Public API exports
-    ├── manager.py                   # StorageManager (sync)
-    ├── node.py                      # StorageNode (sync)
-    ├── async_storage_manager.py    # AsyncStorageManager
-    ├── async_storage_node.py       # AsyncStorageNode
+    ├── manager.py                   # StorageManager
+    ├── node.py                      # StorageNode
+    ├── config.py                    # StorageConfig / StorageGrammar
     ├── backends/
     │   ├── __init__.py
     │   ├── base.py                  # StorageBackend abstract class
@@ -333,23 +331,15 @@ File Organization
     │   ├── fsspec.py                # Generic fsspec wrapper (15+ protocols)
     │   ├── base64.py                # In-memory base64 backend
     │   └── relative.py              # Permission wrapper backend
-    ├── providers/                   # Async provider architecture
-    │   ├── __init__.py
-    │   ├── registry.py              # ProviderRegistry
-    │   ├── base.py                  # BaseProvider abstract
-    │   ├── custom_provider.py       # CustomProvider
-    │   └── fsspec_provider.py       # FsspecProvider
     ├── capabilities.py              # BackendCapabilities dataclass
-    ├── exceptions.py                # Custom exceptions
-    ├── decorators.py                # API decorators (@with_backend, etc.)
-    └── utils.py                     # Utility functions
+    └── exceptions.py                # Custom exceptions
 
 **Key Modules**:
 
-- **manager.py** (994 lines): Entry point, configuration, mount management
-- **node.py** (2339 lines): Core file operations, copy strategies, virtual nodes
-- **backends/fsspec.py** (1048 lines): Wraps fsspec for 15+ protocols (S3, GCS, Azure, HTTP, etc.)
-- **providers/** (new in v0.3.0): Fully async architecture
+- **manager.py**: Entry point, configuration, mount management, encryption keys
+- **node.py**: Core file operations, copy strategies, virtual nodes
+- **config.py**: The builder grammar accepted by ``configure()``
+- **backends/fsspec.py**: Wraps fsspec for 15+ protocols (S3, GCS, Azure, HTTP, etc.)
 
 ---
 
@@ -446,20 +436,24 @@ BackendCapabilities
 Key Design Decisions
 --------------------
 
-Decision 1: Sync/Async Separation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Decision 1: One API for Sync and Async
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Problem**: Supporting both sync and async without complexity
 
-**Solution**: Separate classes for sync (StorageManager/StorageNode) and async (AsyncStorageManager/AsyncStorageNode)
+**Solution**: One set of classes. I/O methods carry ``@smartasync`` (from
+genro-toolbox), which detects the calling context: the same call returns a
+value from sync code and is awaitable from async code. Earlier versions
+shipped separate ``AsyncStorageManager``/``AsyncStorageNode`` classes; they
+were removed when the public API became synchronous-first.
 
 **Benefits**:
 
-- Clear, predictable behavior (no mixed mode confusion)
-- Optimal implementation for each pattern
-- Type safety (no Union[sync, async] return types)
+- One class to learn, one to document, no duplicated implementation
+- A store contract written once works for both kinds of caller
 
-**Trade-off**: Some code duplication, but cleaner API
+**Trade-off**: the awaitable-or-not duality lives inside the decorator rather
+than in the type signature
 
 Decision 2: Mount Point System
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

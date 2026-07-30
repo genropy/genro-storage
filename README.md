@@ -375,8 +375,8 @@ pip install genro-storage[libarchive]  # RAR, 7z, ISO, and 20+ formats
 # Git and GitHub are built-in to fsspec (no extra install needed)
 
 # Other
-pip install genro-storage[async]       # Async support
-pip install genro-storage[all]         # All backends + async
+pip install genro-storage[encryption]  # At-rest encryption
+pip install genro-storage[all]         # All backends + encryption
 ```
 
 **Built-in backends** (no extra dependencies):
@@ -446,7 +446,7 @@ genro-storage is extracted and modernized from [Genropy](https://github.com/genr
 - Extended GCS/Azure integration testing in progress
 
 **Recent Releases:**
-- v0.7.0 (January 2026) - Unified sync/async via `@smartasync`, removed AsyncStorageManager
+- v0.7.0 (July 2026) - Unified sync/async via `@smartasync`, removed AsyncStorageManager; at-rest encryption, StorageConfig grammar, Python 3.11 floor
 - v0.4.2 (October 2025) - Git, GitHub, WebDAV, LibArchive backends
 - v0.4.1 (October 2025) - SMB, SFTP, ZIP, TAR backends
 - v0.4.0 (October 2025) - Relative mounts with permissions, unified read/write API

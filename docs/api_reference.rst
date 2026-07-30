@@ -666,4 +666,4 @@ Implementation Notes
 - In sync context: methods execute directly
 - In async context: methods use ``asyncio.to_thread()`` for non-blocking I/O
 - Same ``StorageManager`` and ``StorageNode`` classes for both contexts
-- No separate ``AsyncStorageManager`` needed (removed in v0.6.0)
+- No separate ``AsyncStorageManager`` needed (removed in v0.7.0)
