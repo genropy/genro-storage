@@ -156,14 +156,12 @@ The same in a builder recipe (see :doc:`configuration` for the grammar):
 
 .. code-block:: python
 
-   import os
-
-   from genro_bag.resolver import BagCbResolver
+   from genro_bag.resolvers import EnvResolver
    from genro_storage import StorageConfig
 
    class MyConfig(StorageConfig):
        def main(self, root):
-           m = root.mounts(storage_key=BagCbResolver(lambda: os.environ['STORAGE_KEY']))
+           m = root.mounts(storage_key=EnvResolver('STORAGE_KEY'))
            m.local(name='home', base_path='/srv/data')
            m.local(name='secure', base_path='/srv/secure', default_encrypted=True)
 

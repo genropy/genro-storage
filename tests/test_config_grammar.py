@@ -149,6 +149,36 @@ def test_resolver_accepted_on_wide_typed_field():
     assert mounts.get_node("share").attr.get("port") is resolver
 
 
+def test_env_resolver_is_the_documented_idiom_for_environment_values(tmp_path, monkeypatch):
+    """``EnvResolver('VAR')`` — the docs' idiom — feeds a field from the environment.
+
+    Unlike a callback resolver it carries only the variable NAME, so it
+    serializes with the recipe and the dumped configuration round-trips.
+    """
+    from genro_bag.resolvers import EnvResolver
+
+    from genro_storage import StorageManager
+    from genro_storage.storage_grammar import StorageConfig
+
+    monkeypatch.setenv("TEST_BASE_PATH", str(tmp_path))
+    recipe = type(
+        "_EnvConfig",
+        (StorageConfig,),
+        {
+            "main": lambda self, root: root.mounts().local(
+                name="home", base_path=EnvResolver("TEST_BASE_PATH")
+            )
+        },
+    )
+
+    storage = StorageManager()
+    storage.configure(recipe)
+
+    node = storage.node("home:probe.txt")
+    node.write_text("via EnvResolver")
+    assert (tmp_path / "probe.txt").read_text() == "via EnvResolver"
+
+
 def test_native_int_still_accepted_on_wide_typed_field():
     """The wide type keeps the native value valid too."""
     mounts = _mounts(

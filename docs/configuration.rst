@@ -153,15 +153,19 @@ paths — accept a ``BagResolver`` in place of a literal. The recipe states
 
 .. code-block:: python
 
-    import os
-
-    from genro_bag.resolver import BagCbResolver
+    from genro_bag.resolvers import EnvResolver
 
     class AppStorage(StorageConfig):
         def main(self, root):
             m = root.mounts()
             m.s3(name='uploads', base_path='prod-app-uploads',
-                 secret_key=BagCbResolver(lambda: os.environ['S3_SECRET']))
+                 secret_key=EnvResolver('S3_SECRET'))
+
+``EnvResolver`` serializes with the recipe (it carries the variable *name*,
+never the value), so a dumped configuration round-trips. For sources other
+than the environment, subclass ``BagResolver`` the same way — a resolver
+built on a ``lambda`` cannot be serialized and turns the recipe into
+something that can no longer be dumped.
 
 Every field that may legitimately come from the environment is
 resolver-capable: ``base_path``, ``access_key``, ``secret_key``,

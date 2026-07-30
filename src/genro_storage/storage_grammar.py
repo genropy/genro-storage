@@ -38,17 +38,15 @@ declared at the write site — the mount holds a default, never a state.
 
 Example::
 
-    import os
-
-    from genro_bag.resolver import BagCbResolver
+    from genro_bag.resolvers import EnvResolver
 
     class MyConfig(StorageConfig):
         def main(self, root):
-            m = root.mounts(storage_key=BagCbResolver(lambda: os.environ["STORAGE_KEY"]))
+            m = root.mounts(storage_key=EnvResolver("STORAGE_KEY"))
             m.local(name="home", base_path="/srv/data")
             m.local(name="secure", base_path="/srv/secure", default_encrypted=True)
             m.s3(name="uploads", bucket="my-bucket",
-                 secret_key=BagCbResolver(lambda: os.environ["S3_SECRET"]))
+                 secret_key=EnvResolver("S3_SECRET"))
             m.relative(name="public", path="home:public", permissions="readonly")
 """
 
