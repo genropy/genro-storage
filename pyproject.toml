@@ -29,7 +29,7 @@ dependencies = [
     "PyYAML>=6.0",
     "genro-toolbox>=0.1.0",
     "genro-builders>=0.22.0",
-    "genro-bag>=0.20.0",
+    "genro-bag>=0.20.1",
 ]
 
 [project.optional-dependencies]
