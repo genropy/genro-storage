@@ -487,6 +487,10 @@ class FsspecBackend(StorageBackend):
 
         info = self.fs.info(full_path)
 
+        return self._mtime_from_info(info)
+
+    @staticmethod
+    def _mtime_from_info(info: dict) -> float:
         # fsspec may return 'mtime' or 'LastModified' depending on backend
         if "mtime" in info:
             return info["mtime"]
@@ -502,6 +506,19 @@ class FsspecBackend(StorageBackend):
         import time
 
         return time.time()
+
+    def ext_attributes(self, path: str) -> tuple[float | None, int | None, bool]:
+        """Read one metadata snapshot, without retaining a new client cache."""
+        try:
+            info = self.fs.info(self._full_path(path))
+        except FileNotFoundError:
+            return None, None, False
+        is_directory = info["type"] == "directory"
+        # An S3 prefix has no modification timestamp. Match the legacy tuple
+        # instead of manufacturing a different timestamp on every call.
+        mtime = None if self.protocol == "s3" and is_directory else self._mtime_from_info(info)
+        size = None if is_directory else info.get("size", 0)
+        return mtime, size, is_directory
 
     def open(self, path: str, mode: str = "rb") -> BinaryIO | TextIO:
         """Open file and return file-like object."""

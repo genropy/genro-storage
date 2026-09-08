@@ -288,6 +288,18 @@ class StorageBackend(ABC):
         """
         pass
 
+    def ext_attributes(self, path: str) -> tuple[float | None, int | None, bool]:
+        """Return modification time, file size and directory status together.
+
+        Backends may override this to fetch one metadata snapshot. The default
+        preserves compatibility with backends implementing separate methods.
+        """
+        if not self.exists(path):
+            return None, None, False
+        is_directory = self.is_dir(path)
+        size = None if is_directory else self.size(path)
+        return self.mtime(path), size, is_directory
+
     @abstractmethod
     def open(self, path: str, mode: str = "rb") -> BinaryIO | TextIO:
         """Open a file and return file-like object.

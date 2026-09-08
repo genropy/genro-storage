@@ -1,0 +1,90 @@
+{
+  "passed": 18,
+  "failed": 0,
+  "duration_seconds": 17.58,
+  "evidence": "Risultato della verifica eseguita durante la preparazione della suite: 18 passed in 17.58s. Questa generazione HTML non riesegue i benchmark né i test di integrazione.",
+  "command": "BENCH_TEST_ENDPOINT=http://127.0.0.1:29000 BENCH_LEGACY_ROOT=<checkout-legacy> python -m pytest benchmarks/tests -q -o addopts='' -p no:cacheprovider",
+  "groups": [
+    {
+      "label": "Statistiche: esclusione di warmup e campioni falliti",
+      "count": 1,
+      "kind": "Unitario"
+    },
+    {
+      "label": "Nessuna velocità dichiarata se tutti i campioni falliscono",
+      "count": 1,
+      "kind": "Unitario"
+    },
+    {
+      "label": "Conteggio richieste HTTP, retry e azzeramento",
+      "count": 1,
+      "kind": "Unitario"
+    },
+    {
+      "label": "Rifiuto di un listing incompleto",
+      "count": 1,
+      "kind": "Unitario"
+    },
+    {
+      "label": "Rifiuto di contenuti alterati",
+      "count": 1,
+      "kind": "Unitario"
+    },
+    {
+      "label": "Pulizia: rifiuto di prefissi non validi o non circoscritti",
+      "count": 6,
+      "kind": "Unitario"
+    },
+    {
+      "label": "Report: errori conservati, tempi non validi esclusi",
+      "count": 1,
+      "kind": "Unitario"
+    },
+    {
+      "label": "Hetzner richiede una configurazione esplicita",
+      "count": 1,
+      "kind": "Unitario"
+    },
+    {
+      "label": "Il target MinIO non può usare un endpoint remoto",
+      "count": 1,
+      "kind": "Unitario"
+    },
+    {
+      "label": "Credenziali escluse dalla rappresentazione del target",
+      "count": 1,
+      "kind": "Unitario"
+    },
+    {
+      "label": "Pulizia reale: preserva gli oggetti di un’altra prova",
+      "count": 1,
+      "kind": "MinIO reale"
+    },
+    {
+      "label": "Contatore valido anche dopo il rinnovo reale del client legacy",
+      "count": 1,
+      "kind": "MinIO reale"
+    },
+    {
+      "label": "1.001 file: listing legacy incompleto scartato, nuovo completo",
+      "count": 1,
+      "kind": "MinIO reale"
+    }
+  ],
+  "latest": {
+    "passed": 584,
+    "skipped": 14,
+    "failed": 0,
+    "duration_seconds": 18.3,
+    "command": "MINIO_ENDPOINT=http://127.0.0.1:29000 BENCH_TEST_ENDPOINT=http://127.0.0.1:29000 BENCH_LEGACY_ROOT=<checkout-legacy> python -m pytest tests benchmarks/tests -q -ra -o addopts='' --disable-warnings",
+    "differential_before": {
+      "passed": 10,
+      "failed": 4
+    },
+    "differential_after": {
+      "passed": 14,
+      "failed": 0
+    },
+    "skipped_note": "Servizi opzionali o configurazioni assenti, casi già esclusi e bug preesistente S3 set_metadata."
+  }
+}

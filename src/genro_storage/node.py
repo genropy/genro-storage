@@ -479,12 +479,9 @@ class StorageNode:
             >>> size = node.size()
             >>> isdir = node.is_dir()
         """
-        if not self.exists():
+        if self._is_virtual:
             return None, None, False
-
-        is_directory = self.is_dir()
-        file_size = None if is_directory else self.size()
-        return self.mtime(), file_size, is_directory
+        return self._backend.ext_attributes(self._path)
 
     @smartasync
     def md5hash(self) -> str:

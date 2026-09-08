@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="description" content="Prove comparative dello storage Genropy legacy e Genro Storage su MinIO: metodo, risultati, richieste HTTP e test di correttezza.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'">
+<title>Genro Storage — report dei benchmark S3</title>
+<style>
+:root{--paper:#f5f4ef;--card:#fff;--ink:#172c35;--muted:#52656e;--line:#d9e0df;--teal:#087f76;--purple:#7356a8;--gold:#d2a147;--pale:#e8f3ef;--radius:18px}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:86px}body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:16px;line-height:1.65}a{color:var(--teal);text-underline-offset:4px}button,select{font:inherit}button,a,select{-webkit-tap-highlight-color:transparent}button{cursor:pointer}button:focus-visible,a:focus-visible,select:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid #c48b15;outline-offset:4px}h1,h2,h3,p,figure{margin:0}h1,h2,h3{line-height:1.16;letter-spacing:-.035em}p+p{margin-top:14px}h2{font-size:clamp(28px,4vw,42px);max-width:840px}h3{font-size:21px}small{font-size:13px}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.88em;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:20px;background:#eef2f1;border-radius:12px;line-height:1.55;font-size:14px}.wrap{width:min(1160px,calc(100% - 64px));margin:auto}.eyebrow{font-size:12px;font-weight:750;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);margin-bottom:14px}.muted{color:var(--muted)}.lede{max-width:820px;font-size:18px;color:var(--muted);margin-top:20px}.section{padding-top:76px}.section-heading{margin-bottom:28px}.grid{display:grid;gap:22px}.three{grid-template-columns:repeat(3,minmax(0,1fr))}.two{grid-template-columns:repeat(2,minmax(0,1fr))}.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px}.card p{margin-top:14px}.card h3+p{color:var(--muted)}.tag{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.04em;padding:5px 10px;border:1px solid var(--line);border-radius:30px}.status{color:#08705b;background:#e7f3ee;border-color:#c7e2d4}.note{border-left:3px solid var(--gold);padding:15px 20px;background:#fbf7e9;color:#655431;margin-top:24px;font-size:14px}.small-note{font-size:14px;color:var(--muted);margin-top:16px}.legend{display:flex;gap:24px;flex-wrap:wrap;font-size:14px;margin:22px 0}.legend span{display:flex;align-items:center;gap:8px}.dot{width:11px;height:11px;border-radius:50%;background:var(--teal);display:inline-block}.dot.old{background:var(--purple)}
+.hero{background:var(--ink);color:#fff;padding:36px 0 56px;position:relative;overflow:hidden}.hero .eyebrow{color:#9ed6ce}.brand{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:52px;font-size:13px;letter-spacing:.1em}.brand strong{font-weight:750}.brand span{color:#c3d6d8;font-size:12px}.hero h1{font-size:clamp(40px,6.5vw,74px);font-weight:700;max-width:820px;line-height:1.03}.hero h1 em{font-style:normal;color:#a4dfd4}.hero .lede{color:#c2d3d6;max-width:740px}.hero-bottom{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:32px}.hero .tag{border-color:#56717c;color:#d7e7e9}.hero-line{width:64px;height:4px;background:var(--gold);margin:26px 0}
+nav{position:sticky;top:0;background:rgba(245,244,239,.97);border-bottom:1px solid var(--line);z-index:10;backdrop-filter:blur(12px)}.nav-inner{display:flex;gap:24px;align-items:center;overflow:auto;scrollbar-width:thin}.nav-inner a{display:block;flex-shrink:0;padding:17px 0;text-decoration:none;color:var(--ink);font-size:14px;font-weight:650}.nav-inner a:hover{color:var(--teal)}.nav-inner .print{margin-left:auto;flex-shrink:0}.btn{border:1px solid #b9c8c9;background:white;padding:10px 16px;border-radius:9px;line-height:1.3;font-size:14px;font-weight:600;min-height:44px;color:var(--ink)}.btn:hover{background:var(--pale)}.btn.primary{background:var(--teal);color:white;border-color:var(--teal)}.actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:22px}
+.kpis{margin-top:32px}.kpi{border-left:2px solid #b4cac6;padding-left:20px}.kpi strong{display:block;font-size:40px;letter-spacing:-.045em;line-height:1.2}.kpi span{display:block;color:var(--muted);font-size:14px;margin-top:5px}.statement{display:grid;grid-template-columns:.7fr 1.3fr;gap:40px;margin-top:36px;padding:32px;background:var(--pale);border-radius:var(--radius)}.statement h3{font-size:25px;line-height:1.25}.statement p{font-size:16px;line-height:1.75}.index{display:block;font-family:ui-monospace,monospace;color:var(--teal);font-size:13px;margin-bottom:25px}.run-card{background:white;border:1px solid var(--line);border-radius:var(--radius);padding:25px}.run-sizes{font-size:25px;font-weight:650;margin:15px 0 20px;letter-spacing:-.025em}dl{margin:0}dl div{display:flex;justify-content:space-between;gap:15px;padding:7px 0;border-bottom:1px solid #e9eeee;font-size:14px}dt{color:var(--muted)}dd{margin:0;text-align:right;font-weight:600}.run-id{display:block;overflow-wrap:anywhere;line-height:1.5;color:var(--muted);font-size:11px;margin-top:20px}.mini-chart{border:1px solid var(--line);border-radius:var(--radius);padding:24px;background:white;min-width:0}.mini-chart figcaption{font-size:16px;font-weight:700;margin-bottom:25px}.bar-row{margin-top:18px}.bar-label{display:flex;align-items:baseline;justify-content:space-between;gap:10px;line-height:1.4;font-size:14px;margin-bottom:8px}.bar-label strong{white-space:nowrap;font-variant-numeric:tabular-nums;font-size:15px;font-weight:650}.bar-label strong small{font-size:12px;font-weight:450;color:var(--muted)}.bar-track{background:#edf1f0;height:13px;border-radius:3px;overflow:hidden}.bar-fill{height:100%;background:#70828b;border-radius:3px}.bar-fill.legacy{background:var(--purple)}.bar-fill.genro{background:var(--teal)}.bar-fill.genro-unversioned{background:#58a897}.bar-fill.s3fs{background:#4c76a2}.bar-fill.boto3{background:#b18435}.bar-fill.backend{background:#8797a1}.bar-fill.smart-open{background:#95696b}.scale{display:flex;justify-content:space-between;margin-top:18px;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;border-top:1px solid var(--line);padding-top:6px}
+.table-scroll{max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:14px;background:white;margin-top:22px;scrollbar-width:thin}table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.45;font-variant-numeric:tabular-nums}caption{text-align:left;font-size:12px;color:var(--muted);padding:17px 18px;background:#fafbf9;caption-side:top}th,td{text-align:right;padding:14px 18px;border-top:1px solid #e3e8e7;vertical-align:top}thead th{font-size:12px;font-weight:650;color:var(--muted);background:#f4f7f5;white-space:nowrap}th:first-child{text-align:left;min-width:150px}tbody th{font-weight:550}tbody tr:hover{background:#f5f9f7}tbody tr.emphasis{background:#eaf5f0}.table-hint{display:none;font-size:12px;margin-top:8px;color:var(--muted)}.dual-copy{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:22px}.dual-copy h3{font-size:18px}.dual-copy p{font-size:15px;color:var(--muted);margin-top:10px}
+.explorer{background:#fff;border:1px solid var(--line);border-radius:20px;padding:30px;margin-top:28px}.controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px;padding-bottom:25px;border-bottom:1px solid var(--line)}label{display:grid;gap:7px;font-size:12px;color:var(--muted);font-weight:650;min-width:0}select{width:100%;min-width:0;background:white;color:var(--ink);border:1px solid #aebfc1;border-radius:8px;padding:11px 28px 11px 11px;font-size:14px;min-height:46px}.explorer-head{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-top:26px}.explorer-head h3{font-size:22px}.metric-label{width:220px}.explorer-plot{max-width:840px;margin:24px auto}.explorer-plot .bar-row{margin:17px 0}.explorer-plot .bar-track{height:15px}.explorer-plot .bar-label{font-size:14px}.chart-caption{font-size:13px;color:var(--muted);margin-top:14px;line-height:1.6}.case-line{margin-top:14px;font-size:13px;color:var(--muted)}.export-note{font-size:12px;color:var(--muted);max-width:530px}.nojs{padding:15px;background:#fbf7e9;border:1px solid #dfcc98;border-radius:8px;margin-top:20px}body:not(.js) .js-only{display:none}
+.tests-banner{display:flex;align-items:center;gap:22px;margin:24px 0;padding:25px 28px;background:var(--pale);border-radius:16px}.tests-banner strong{font-size:48px;letter-spacing:-.05em;line-height:1}.tests-banner p{color:var(--muted);font-size:14px}.method-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:25px;margin-top:28px}.method-grid article{padding-top:18px;border-top:2px solid #b7c9c6}.method-grid h3{font-size:18px}.method-grid p{margin-top:12px;font-size:15px;color:var(--muted)}details{margin-top:14px;background:white;border:1px solid var(--line);border-radius:12px;overflow:hidden}summary{padding:17px 20px;cursor:pointer;font-weight:650;font-size:14px}details>p,details>div,details>dl,details>pre{margin:0 20px 20px}details .table-scroll{margin:0 20px 20px;max-width:calc(100% - 40px)}.hashes div{display:block;padding:9px 0}.hashes dd{text-align:left;overflow-wrap:anywhere;font-weight:450;font-size:12px}.hashes dt{font-size:12px;margin-bottom:4px}.limitations{margin-top:30px;padding:28px;background:#f0eee5;border-radius:16px}.limitations h3{font-size:20px}.limitations ul{padding-left:20px;margin-bottom:0}.limitations li{padding:5px 0;font-size:14px;color:#4d5c60}.footer{margin-top:70px;padding:28px 0 40px;border-top:1px solid var(--line);display:flex;gap:20px;justify-content:space-between;font-size:12px;color:var(--muted)}.footer a{color:var(--ink)}
+@media(max-width:850px){.three{grid-template-columns:1fr}.run-cards{grid-template-columns:repeat(3,minmax(0,1fr))}.run-cards .run-card{padding:18px}.run-cards dl div{display:block}.run-cards dd{text-align:left}.charts{grid-template-columns:1fr}.mini-chart .bar-row{margin-top:15px}.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.statement{grid-template-columns:1fr;gap:20px}.mini-chart{padding:24px}.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.nav-inner{gap:19px}.brand{padding-bottom:38px}.table-hint{display:block}}
+@media(max-width:560px){.wrap{width:calc(100% - 36px)}.hero{padding:23px 0 36px}.brand{padding-bottom:34px;align-items:flex-start}.brand span{max-width:125px;text-align:right;line-height:1.4;letter-spacing:.03em}.hero h1{font-size:44px}.hero .lede{font-size:16px}.hero-bottom{gap:8px;margin-top:25px}.hero .tag{font-size:11px}.nav-inner{gap:20px}.nav-inner a{font-size:13px;padding:16px 0}.nav-inner .print{display:none}.section{padding-top:50px}.section-heading{margin-bottom:22px}.lede{font-size:16px;margin-top:16px}.kpi{padding-left:11px}.kpi strong{font-size:32px}.kpi span{font-size:12px;line-height:1.45}.kpis{gap:10px}.statement{padding:22px;gap:17px}.statement h3{font-size:23px}.run-cards{grid-template-columns:1fr}.run-cards .run-card{padding:23px}.run-cards dl div{display:flex}.run-cards dd{text-align:right}.run-card .index{margin-bottom:15px}.run-id{font-size:12px}.mini-chart{padding:21px}.dual-copy,.method-grid,.two{grid-template-columns:1fr}.explorer{padding:18px;border-radius:15px}.controls{gap:12px}.controls label:first-child,.controls label:nth-child(2){grid-column:1/-1}.explorer-head{display:block}.metric-label{width:100%;margin-top:18px}.explorer-head h3{font-size:21px}.bar-label{font-size:13px}.explorer-plot .bar-label{font-size:13px}.bar-label strong{font-size:14px}.explorer-plot .bar-label span{max-width:62%}.explorer .table-scroll{margin-left:-1px;margin-right:-1px}.table-scroll table{min-width:570px}th,td{padding:12px 14px}.note{padding:14px 16px}.tests-banner{align-items:flex-start;padding:22px;gap:17px}.tests-banner strong{font-size:42px}.method-grid{gap:20px}.limitations{padding:22px}.footer{display:block;margin-top:50px}.footer p+p{margin-top:10px}.actions .btn{flex:1 1 145px}.section:target h2{color:var(--teal)}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{body{background:white;font-size:11pt;color:#172c35}.wrap{width:100%}.hero{padding:20px 0;background:white;color:var(--ink)}.hero h1{font-size:34pt}.hero h1 em,.hero .eyebrow,.hero .lede{color:var(--ink)}.brand{padding-bottom:22px}.brand span{color:var(--muted)}.hero-bottom,.hero-line,nav,.controls,.metric-label,.actions,.table-hint,.btn{display:none!important}.section{padding-top:28px}.section-heading{margin-bottom:15px}.lede{font-size:12pt}.card,.mini-chart,.run-card,.statement,.tests-banner,.limitations{break-inside:avoid}.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.statement{grid-template-columns:1fr}.explorer{border:0;padding:0}.table-scroll{overflow:visible;border-radius:0}.table-scroll table{min-width:0;font-size:9pt}th,td{padding:8px}.bar-track{print-color-adjust:exact;-webkit-print-color-adjust:exact}.bar-fill{print-color-adjust:exact;-webkit-print-color-adjust:exact}.method-grid{grid-template-columns:1fr 1fr}.run-id{font-size:8pt}h2{font-size:24pt}h3{font-size:15pt}.kpi strong{font-size:26pt}.footer{margin-top:25px}a{color:inherit}details{break-inside:avoid}caption{font-size:9pt}}
+</style>
+</head>
+<body>
+<header class="hero" id="inizio"><div class="wrap">
+<div class="brand"><strong>GENRO / STORAGE LAB</strong><span>REPORT TECNICO<br>MINIO · DOCKER LOCALE</span></div>
+<p class="eyebrow">Benchmark comparativo S3</p>
+<h1>Quanto costa<br><em>l’astrazione?</em></h1>
+<div class="hero-line"></div>
+<p class="lede">Genropy legacy, Genro Storage e client diretti alla prova. Tempi, richieste HTTP e controlli di correttezza per capire dove nasce la differenza.</p>
+<div class="hero-bottom"><span class="tag">5 raccolte concluse</span><span class="tag">7 percorsi confrontati</span><span class="tag">Dati locali · esplorativi</span></div>
+</div></header>
+<nav aria-label="Indice del report"><div class="wrap nav-inner"><a href="#sintesi">Sintesi</a><a href="#prove">Prove</a><a href="#risultati">Risultati</a><a href="#esplora">Esplora i dati</a><a href="#test">Test</a><a href="#metodo">Metodo</a><button type="button" class="btn print js-only" id="print-report">Stampa / PDF</button></div></nav>
+<main class="wrap">
+<div class="note"><strong>Report aggiornato con la prima ottimizzazione.</strong> Sintesi e grafici principali mostrano la raccolta più recente. I sette percorsi originali restano consultabili nelle raccolte iniziali: non sono stati rimisurati dopo la modifica.</div>
+<section class="section" id="sintesi">
+<p class="eyebrow">01 / Cosa emerge</p><h2>Il risultato cambia con l’operazione.</h2>
+<p class="lede">Intervenendo soltanto su Genro Storage, gli attributi del file passano da 6,70 a 1,52 ms, contro 3,27 ms del legacy nella raccolta finale. Copia e spostamento restano più lenti e non sono stati ottimizzati.</p>
+<div class="grid three kpis"><div class="kpi"><strong>@@BATCH_COUNT@@</strong><span>campioni misurati<br>esclusi warmup e avvio</span></div><div class="kpi"><strong>@@TEST_COUNT@@</strong><span>test superati nella verifica finale<br>14 saltati, nessun fallimento</span></div><div class="kpi"><strong>0</strong><span>campioni falliti<br>nelle cinque raccolte incluse</span></div></div>
+<div class="statement"><h3>Il numero di richieste aiuta a spiegare i tempi.</h3><p>Per gli attributi del file: <strong>da 4 a 1 richiesta nel nuovo, 2 nel legacy</strong>. Per un albero di otto file: <strong>1 richiesta nel nuovo, 18 nel legacy</strong>. Sono due comportamenti diversi dello stesso sistema, misurati a un worker con cache dei metadati svuotata.</p></div>
+<p class="small-note">Le prove riguardano S3 su MinIO locale. Nessuna misura su Hetzner, SFTP o WebDAV è inclusa. La suite è già configurabile per un successivo confronto sull’object store Hetzner.</p>
+</section>
+<section class="section" id="prove"><div class="section-heading"><p class="eyebrow">02 / Le raccolte</p><h2>Stessi dati, percorsi diversi.</h2><p class="lede">Le tre raccolte iniziali hanno tre ripetizioni; le due raccolte prima/dopo ne hanno nove. Ogni caso ha un round di warmup, mentre l’avvio è osservato una sola volta per client. Ordine dei casi rimescolato con seed registrato; dati sintetici deterministici e verifica del risultato fuori dal tratto cronometrato.</p></div>
+<div class="grid three run-cards">@@RUN_CARDS@@</div>
+<p class="small-note">Un campione è un batch con una chiamata per worker: @@BATCH_COUNT@@ batch corrispondono a @@CALL_COUNT@@ operazioni. Sono conservati a parte @@WARMUP_COUNT@@ batch di warmup e @@STARTUP_COUNT@@ osservazioni di inizializzazione. La terza raccolta confronta quattro client, le prime due tutti e sette. Le ultime due confrontano legacy e Genro Storage, prima e dopo la modifica.</p>
+<details><summary>I sette percorsi di esecuzione</summary><div class="table-scroll"><table><caption>Che cosa viene realmente invocato</caption><thead><tr><th scope="col">Percorso</th><th scope="col">Implementazione</th></tr></thead><tbody>
+<tr><th scope="row">Genropy legacy</th><td>StorageNode e servizio aws_s3 reali, con un contesto minimo al posto dell’intero sito.</td></tr>
+<tr><th scope="row">Genro Storage</th><td>API pubblica StorageManager / StorageNode del checkout misurato.</td></tr>
+<tr><th scope="row">Genro · versioni disattivate</th><td>Stesso percorso, con version_aware=False sul client s3fs creato, solo per diagnosi.</td></tr>
+<tr><th scope="row">FsspecBackend</th><td>Backend del repository chiamato direttamente, senza manager e node.</td></tr>
+<tr><th scope="row">s3fs diretto</th><td>S3FileSystem con version awareness attiva, come nel nuovo storage.</td></tr>
+<tr><th scope="row">boto3 diretto</th><td>API per oggetti S3; download gestito per il file temporaneo locale.</td></tr>
+<tr><th scope="row">smart_open diretto</th><td>smart_open per lettura e scrittura; boto3 per le altre operazioni.</td></tr>
+</tbody></table></div></details>
+</section>
+<section class="section" id="risultati"><div class="section-heading"><p class="eyebrow">03 / Risultati selezionati</p><h2>Il confronto, operazione per operazione.</h2><p class="lede">Dati dopo l’ottimizzazione: nove ripetizioni, un worker e cache dei metadati fredda. Nei grafici dei tempi, una barra più corta indica una durata minore.</p></div>
+<div class="legend"><span><i class="dot old" aria-hidden="true"></i>Genropy legacy</span><span><i class="dot" aria-hidden="true"></i>Genro Storage</span></div>
+<div class="grid three charts">@@SMALL_CHARTS@@</div>
+<p class="small-note">Ogni grafico usa una propria scala lineare che parte da zero. File da 1 KiB; l’albero contiene otto file da 12 byte.</p>
+@@SMALL_TABLE@@<p class="table-hint">Le tabelle ampie scorrono orizzontalmente.</p>
+<div class="dual-copy"><article><h3>Attributi del singolo file</h3><p>Il nuovo node richiede una tupla di metadati al backend, che usa una sola info(). Il percorso precedente chiedeva separatamente esistenza, tipo, dimensione e modifica: quattro HEAD sullo stesso file.</p></article><article><h3>Albero con attributi</h3><p>Il listing riempie la cache dei metadati di s3fs. Le successive letture degli attributi possono riusarla anche se la cache era vuota all’inizio del batch.</p></article></div>
+<details><summary>Dietro il grafico: quali richieste HTTP sono state inviate?</summary>@@REQUEST_TABLE@@<p class="small-note">Medie di richieste per operazione; setup e verifiche esclusi. HEAD = HeadObject, LIST corrente = ListObjectsV2, LIST versioni = ListObjectVersions.</p></details>
+<div style="margin-top:42px"><h3>Trasferimenti da 32 MiB</h3><p class="small-note">Qui intervengono anche buffering e modalità di trasferimento. Una singola lettura completa non rappresenta tutti i possibili carichi S3.</p>@@TRANSFER_TABLE@@</div>
+<div style="margin-top:36px"><h3>Version awareness · raccolta iniziale, prima della modifica</h3><p class="small-note">Con cinque versioni per chiave il listing risulta più rapido nella variante disattivata, mentre gli attributi del singolo file non migliorano. Questo piccolo carico non misura la crescita del costo su un bucket con molta storia.</p>@@VERSION_TABLE@@</div>
+<div style="margin-top:36px"><h3>Confronto completo prima/dopo</h3>@@COMPARISON_TABLE@@</div>
+<div class="note"><strong>Le raccolte prima/dopo sono sequenziali.</strong> Entrambe includono legacy e Genro, con nove ripetizioni e senza test concorrenti. Le variazioni nelle operazioni non modificate non dimostrano un effetto dell’ottimizzazione. I dati iniziali dei client diretti non vanno confrontati come se appartenessero alla nuova raccolta.</div>
+</section>
+<section class="section" id="esplora"><p class="eyebrow">04 / Tutta la matrice</p><h2>Esplora le misure.</h2><p class="lede">Seleziona una combinazione realmente eseguita e confronta tutti i client disponibili. La selezione iniziale mostra il codice ottimizzato. Le raccolte iniziali mantengono i dati storici dei client diretti. I controlli aggiornano sia il grafico sia la tabella.</p>
+<noscript><p class="nojs">JavaScript è disattivato: grafici e tabelle di sintesi rimangono leggibili. Per esplorare tutta la matrice, apri il documento in un browser con JavaScript attivo.</p></noscript>
+<div class="explorer js-only">
+<div class="controls"><label>Raccolta<select id="run-select" aria-label="Raccolta"></select></label><label>Operazione<select id="op-select" aria-label="Operazione"></select></label><label>Dimensione del file<select id="size-select" aria-label="Dimensione del file"></select></label><label>Concorrenza<select id="worker-select" aria-label="Concorrenza"></select></label><label>Cache dei metadati<select id="cache-select" aria-label="Cache dei metadati"></select></label></div>
+<div class="explorer-head"><h3 id="chart-title">Confronto dei client</h3><label class="metric-label">Misura rappresentata<select id="metric-select" aria-label="Misura rappresentata"><option value="median_ms">Tempo mediano · ms</option><option value="p95_ms">95° percentile · ms</option><option value="http_per_op">Richieste HTTP / operazione</option><option value="ops_s">Operazioni / secondo</option><option value="logical_mib_s">Throughput logico · MiB/s</option></select></label></div>
+<p class="case-line" id="case-line" aria-live="polite"></p>
+<div class="explorer-plot" id="explorer-plot" role="img" aria-label="Grafico comparativo"></div>
+<p class="chart-caption" id="chart-caption"></p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Tabella della combinazione selezionata"><table><caption id="explorer-caption">Misure della combinazione selezionata</caption><thead><tr><th scope="col">Client</th><th scope="col">Campioni</th><th scope="col">Mediana ms</th><th scope="col">p95 ms</th><th scope="col">Ops/s</th><th scope="col">HTTP/op</th><th scope="col">MiB/s logici</th></tr></thead><tbody id="explorer-body"></tbody></table></div>
+<p class="table-hint">Scorri la tabella per vedere tutte le metriche.</p></div>
+<div class="actions js-only"><button type="button" class="btn primary" id="download-csv">Scarica tutte le tabelle · CSV</button><button type="button" class="btn" id="download-json">Scarica i dati · JSON</button><p class="export-note">Include anche warmup e avvio nel JSON; il CSV contiene le sintesi. Nessuna credenziale o percorso privato della macchina.</p></div>
+</section>
+<section class="section" id="test"><div class="section-heading"><p class="eyebrow">05 / Correttezza prima della velocità</p><h2>I test che rendono leggibili i tempi.</h2><p class="lede">Un risultato incompleto non deve sembrare più veloce. La suite verifica dati, spostamenti e listing prima di accettare i campioni.</p></div>
+<div class="tests-banner"><strong>584</strong><div><span class="tag status">VERIFICA SUPERATA</span><p>Test passati nella suite completa; 14 saltati, nessun fallimento.<br>Verifica finale: 18,30 secondi.</p></div></div>
+<div class="table-scroll"><table><caption>Test prima e dopo la modifica</caption><thead><tr><th scope="col">Verifica</th><th scope="col">Passati</th><th scope="col">Falliti</th><th scope="col">Saltati</th></tr></thead><tbody>
+<tr><th scope="row">Contratti differenziali · sorgente originale</th><td>10</td><td>4 attesi</td><td>0</td></tr>
+<tr><th scope="row">Stessi contratti · sorgente modificato</th><td>14</td><td>0</td><td>0</td></tr>
+<tr><th scope="row">Suite completa finale, inclusi i contratti</th><td>584</td><td>0</td><td>14</td></tr>
+</tbody></table></div>
+<p class="small-note">I quattro fallimenti sul sorgente originale dimostrano le discrepanze: data inventata per directory S3 e quattro HEAD per gli attributi, entrambi con e senza versioning. I 14 casi differenziali sono inclusi nei 584, non aggiuntivi. Coprono file vuoti, binari, nomi Unicode, letture, file temporanei, assenza, directory implicite, sovrascritture, copia, spostamento e cancellazione. Non certificano tutta l’API legacy.</p>
+<p class="small-note">I 14 salti comprendono servizi opzionali o configurazioni assenti, casi già esclusi e il bug preesistente S3 set_metadata. I salti non sono successi.</p>
+<details><summary>I test originari del benchmark</summary>@@TEST_TABLE@@</details>
+<div class="grid two" style="margin-top:24px"><article class="card"><h3>La prova dei 1.001 file</h3><p>Il legacy restituisce un elenco incompleto oltre la capacità della sua singola pagina. Il test passa perché il controllo <strong>rifiuta quel risultato</strong> e accetta il listing completo del nuovo storage. Non significa che il limite del legacy sia stato corretto.</p></article><article class="card"><h3>Il rinnovo del client</h3><p>La prima raccolta lunga di sviluppo è stata interrotta: il contatore perdeva il collegamento al rinnovo del client legacy. La strumentazione è stata corretta e verificata con un rinnovo reale. Quella raccolta interrotta è esclusa da questo documento. È esclusa anche la baseline preliminare 33e21eba, eseguita in parte insieme ai test; il confronto usa la successiva baseline senza test concorrenti.</p></article></div>
+<p class="small-note">Questi esiti appartengono alla verifica già eseguita durante la preparazione della suite. La generazione del documento non riesegue benchmark o test di integrazione.</p>
+</section>
+<section class="section" id="metodo"><div class="section-heading"><p class="eyebrow">06 / Metodo e riproducibilità</p><h2>Che cosa misuriamo, esattamente.</h2></div>
+<div class="method-grid"><article><h3>Un risultato equivalente</h3><p>Letture consumate interamente; scritture completate; copie verificate tramite rilettura e SHA-256; spostamenti verificati anche sull’assenza della sorgente. I listing devono contenere tutti i nomi attesi.</p></article><article><h3>Confini del cronometro</h3><p>La costruzione del node è inclusa nelle operazioni legacy e nuove. Preparazione dei dati, hash e controlli successivi sono esclusi. L’inizializzazione del client è registrata a parte, una volta per client.</p></article><article><h3>Cache fredda e calda</h3><p>“Fredda” svuota la cache dei metadati del client prima del batch. Connessioni e cache di server e sistema operativo non vengono azzerate. “Calda” conserva la cache, senza garantire che ogni richiesta trovi un dato già disponibile.</p></article><article><h3>Concorrenza e throughput</h3><p>Le API sincrone vengono chiamate da pool di thread. La latenza parte dentro il worker; il throughput include l’attesa del batch. Non è un confronto di API asyncio native. Per copie e spostamenti i MiB/s sono byte logici degli oggetti, non traffico di rete.</p></article><article><h3>Contare le richieste</h3><p>Gli eventi HTTP botocore/aiobotocore contano anche i retry. Le richieste del client di controllo, usato per setup e verifica, sono escluse. Non vengono registrati URL firmati, header o credenziali.</p></article><article><h3>Client e servizi reali</h3><p>Il legacy usa il proprio servizio S3 e StorageNode con un contesto minimo, senza avviare il sito o il database. Gli adapter s3fs possiedono client distinti. Ogni raccolta usa un prefisso casuale dedicato nello stesso bucket.</p></article></div>
+<details><summary>Le definizioni delle operazioni e delle statistiche</summary><div><p><code>attrs</code> restituisce modifica, dimensione e tipo. <code>tree_attrs</code> elenca la directory e raccoglie gli attributi di ogni file. <code>local_path</code> ottiene un file locale temporaneo, lo legge interamente e ne include la pulizia.</p><p>La mediana e il p95 usano le latenze delle singole chiamate nei batch validi. Il p95 segue il metodo nearest-rank. Ops/s e throughput dividono il lavoro totale per la somma dei tempi di batch: non derivano dall’inverso della mediana. Un batch errato è escluso per intero dalle statistiche.</p><p>Il numero di byte selezionato non descrive il payload del listing: per le prove di directory i file contengono 12 byte ciascuno. L’avvio client ha una sola osservazione; il suo p95 non è statisticamente informativo.</p></div></details>
+<details><summary>Ambiente, versioni e configurazione effettiva</summary>@@VERSION_INFO@@<p class="small-note"><strong>Sorgente e metadati di distribuzione differiscono.</strong> Il codice misurato è il checkout Genro Storage <strong>0.8.0</strong>, mentre i metadati della distribuzione installata riportano <strong>@@PACKAGE_META_VERSION@@</strong>. Il percorso del sorgente registrato punta a <code>src/genro_storage</code> del checkout; commit e hash identificano il codice effettivamente misurato.</p><p class="small-note">I client s3fs registrano blocchi da 50 MiB, cache <code>readahead</code> e cache dei listing attiva. La version awareness è attiva salvo nella variante diagnostica. Le prime due raccolte e le due raccolte prima/dopo usano un bucket non versionato; la terza un bucket versionato con cinque versioni per chiave. Gli hash distinguono il sorgente originale da quello ottimizzato, anche a parità di versione nominale.</p></details>
+@@PROVENANCE@@
+<details><summary>Ripetere le prove</summary><div><p>Dalla radice del repository, dopo aver installato le dipendenze del benchmark e del legacy:</p><pre><code>python -m pip install -e '.[benchmark,dev]'
+export BENCH_LEGACY_ROOT=/percorso/al/checkout/genropy
+python -m pip install -e "$BENCH_LEGACY_ROOT/gnrpy"
+
+docker compose -p genro-storage-bench \
+  -f benchmarks/compose.yaml up -d --wait
+
+# 1. File piccoli
+python -m benchmarks --smoke --create-bucket
+
+# 2. Trasferimenti da 1 e 32 MiB
+python -m benchmarks --sizes 1048576 33554432 \
+  --operations read write copy move local_path \
+  --workers 1 4 --list-count 8 --repeats 3 --caches cold
+
+# 3. Cinque versioni per chiave
+python -m benchmarks --smoke --enable-versioning --history 5 \
+  --adapters legacy genro genro-unversioned s3fs \
+  --operations attrs listing tree_attrs --workers 1 --sizes 1024
+
+# 4–5. Matrice prima/dopo, su bucket non versionato
+# Eseguire sul sorgente originale e su quello ottimizzato, senza test concorrenti.
+BENCH_S3_BUCKET=genro-storage-before-after python -m benchmarks --create-bucket \
+  --adapters legacy genro --sizes 1024 33554432 \
+  --workers 1 --repeats 9 --list-count 8 --caches cold
+
+# Test della suite sul servizio reale
+MINIO_ENDPOINT=http://127.0.0.1:29000 BENCH_TEST_ENDPOINT=http://127.0.0.1:29000 \
+  python -m pytest tests benchmarks/tests -q -o addopts='' -p no:cacheprovider</code></pre><p>Per Hetzner: impostare <code>BENCH_S3_ENDPOINT</code>, <code>BENCH_S3_BUCKET</code>, <code>BENCH_S3_REGION</code>, <code>BENCH_S3_ACCESS_KEY</code> e <code>BENCH_S3_SECRET_KEY</code> nell’ambiente, poi usare <code>python -m benchmarks --target hetzner --smoke</code>. Le credenziali non devono essere inserite in questo documento.</p></div></details>
+<div class="limitations"><h3>Come usare questi risultati</h3><ul><li>Ripetere i casi rilevanti più volte su una macchina il più possibile libera da altri carichi: tre o nove round non bastano a stabilizzare il p95.</li><li>MinIO locale non riproduce rete, TLS, banda e implementazione del servizio Hetzner. Il confronto remoto resta da eseguire; non è stata iniettata latenza controllata.</li><li>Le prove isolano le operazioni storage. Non misurano l’intero sito Genropy, il suo handler, la cifratura o altri protocolli.</li><li>I JSON identificano le raccolte tramite UUID, senza timestamp di avvio. Limiti di CPU e memoria Docker non sono stati registrati automaticamente.</li><li>Gli oggetti di prova sono stati ripuliti e il Docker temporaneo rimosso. La suite documenta il recupero manuale per upload multipart interrotti; la pulizia ordinaria riguarda gli oggetti del prefisso della singola prova.</li></ul></div>
+</section>
+<footer class="footer"><p><strong>Genro Storage · Benchmark S3</strong><br>Documento autonomo, senza risorse esterne. Generato il @@BUILD_DATE@@.</p><p><a href="#inizio">Torna all’inizio ↑</a><br>Cinque raccolte concluse · dati e tabelle incorporati</p></footer>
+</main>
+<script type="application/json" id="report-data">@@DATA@@</script>
+<script>
+'use strict';
+document.body.classList.add('js');
+const report=JSON.parse(document.getElementById('report-data').textContent);
+const ids=['run-select','op-select','size-select','worker-select','cache-select'];
+const controls=ids.map(id=>document.getElementById(id));
+const metric=document.getElementById('metric-select');
+const fmt=(v,d=2)=>v===undefined||v===null?'—':Number(v).toLocaleString('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d});
+const bytes=v=>Number(v)>=1048576?`${Number(v)/1048576} MiB`:`${Number(v)/1024} KiB`;
+const clientOrder=['legacy','genro','genro-unversioned','backend','s3fs','boto3','smart-open'];
+const labels={cold:'Fredda',warm:'Calda',fresh:'Client nuovo'};
+const fields=['operation','size_bytes','workers','cache'];
+const selectOptions=(select,values,label,preferred)=>{const old=preferred??select.value;select.replaceChildren();values.forEach(value=>{const option=document.createElement('option');option.value=String(value);option.textContent=label(value);select.append(option)});if(values.some(v=>String(v)===String(old)))select.value=String(old)};
+selectOptions(controls[0],report.runs.map((_,i)=>i),i=>report.runs[i].label,4);
+function update(changed=0){
+ const run=report.runs[Number(controls[0].value)];let rows=run.summary;
+ const formatters=[v=>report.operations[v]||v,bytes,v=>`${v} worker`,v=>labels[v]||v];
+ for(let i=0;i<fields.length;i++){
+  const values=[...new Set(rows.map(row=>row[fields[i]]))];
+  if(i===0)values.sort((a,b)=>a==='client_start_and_exists'?1:b==='client_start_and_exists'?-1:0);
+  else if(i<3)values.sort((a,b)=>Number(a)-Number(b));
+  const preferred=i===0&&changed===-1?'attrs':undefined;
+  selectOptions(controls[i+1],values,formatters[i],preferred);
+  rows=rows.filter(row=>String(row[fields[i]])===controls[i+1].value);
+ }
+ const throughput=metric.querySelector('[value="logical_mib_s"]');
+ throughput.disabled=!rows.some(row=>row.logical_mib_s!==undefined);
+ if(throughput.disabled&&metric.value==='logical_mib_s')metric.value='median_ms';
+ draw(rows,run);
+}
+function draw(rows,run){
+ rows=[...rows].sort((a,b)=>clientOrder.indexOf(a.adapter)-clientOrder.indexOf(b.adapter));
+ const field=metric.value;
+ const units={median_ms:'ms',p95_ms:'ms',http_per_op:'HTTP/op',ops_s:'ops/s',logical_mib_s:'MiB/s'};
+ const bigger=field==='ops_s'||field==='logical_mib_s';
+ const max=Math.max(...rows.map(row=>Number(row[field])||0))*1.12||1;
+ const plot=document.getElementById('explorer-plot');plot.replaceChildren();
+ const info=[];
+ rows.forEach(row=>{
+  const wrap=document.createElement('div');wrap.className='bar-row';
+  const label=document.createElement('div');label.className='bar-label';
+  const name=document.createElement('span');name.textContent=report.clients[row.adapter]||row.adapter;
+  const value=document.createElement('strong');value.textContent=fmt(row[field])+' ';
+  const unit=document.createElement('small');unit.textContent=units[field];value.append(unit);
+  label.append(name,value);
+  const track=document.createElement('div');track.className='bar-track';track.setAttribute('aria-hidden','true');
+  const fill=document.createElement('div');fill.className='bar-fill '+row.adapter;fill.style.width=(100*(row[field]||0)/max)+'%';track.append(fill);
+  wrap.append(label,track);plot.append(wrap);info.push(name.textContent+': '+value.textContent);
+ });
+ const scale=document.createElement('div');scale.className='scale';
+ const zero=document.createElement('span');zero.textContent='0 '+units[field];
+ const high=document.createElement('span');high.textContent=fmt(max,1)+' '+units[field];scale.append(zero,high);plot.append(scale);
+ plot.setAttribute('aria-label',info.join('; '));
+ document.getElementById('chart-title').textContent=metric.selectedOptions[0].textContent;
+ const repeats=run.metadata.parameters.repeats;
+ const first=rows[0], startup=first.operation==='client_start_and_exists';
+ const listing=['listing','tree_attrs'].includes(first.operation);
+ const context=listing?`${run.metadata.parameters.list_count} file da 12 byte`:bytes(first.size_bytes);
+ document.getElementById('case-line').textContent=`${run.label} · ${report.operations[first.operation]} · ${context} · ${first.workers} worker · cache ${labels[first.cache].toLowerCase()}`;
+ document.getElementById('chart-caption').textContent=(bigger?'Barra più lunga = maggiore throughput. ':field==='http_per_op'?'Barra più corta = meno richieste HTTP. ':'Barra più corta = minore durata. ')+(startup?'Una sola osservazione per client: p95 non informativo.':`${repeats} batch per client; ${repeats*first.workers} chiamate per client con questa concorrenza. `)+(field==='logical_mib_s'?'Per copia e spostamento si tratta di byte logici, non traffico di rete.':field==='p95_ms'?'Con pochi campioni il p95 è molto instabile.':'');
+ const tbody=document.getElementById('explorer-body');tbody.replaceChildren();
+ rows.forEach(row=>{
+  const tr=document.createElement('tr');if(row.adapter==='genro')tr.className='emphasis';
+  const values=[report.clients[row.adapter],row.samples,fmt(row.median_ms),fmt(row.p95_ms),fmt(row.ops_s),fmt(row.http_per_op),fmt(row.logical_mib_s)];
+  values.forEach((text,i)=>{const cell=document.createElement(i===0?'th':'td');if(i===0)cell.scope='row';cell.textContent=String(text);tr.append(cell)});tbody.append(tr);
+ });
+ document.getElementById('explorer-caption').textContent=`${rows.length} client · ${startup?'avvio singolo':'warmup escluso'} · tutte le metriche della selezione`;
+}
+controls.forEach((control,i)=>control.addEventListener('change',()=>update(i)));
+metric.addEventListener('change',()=>update());
+function download(name,type,content){const url=URL.createObjectURL(new Blob([content],{type}));const link=document.createElement('a');link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000)}
+document.getElementById('download-csv').addEventListener('click',()=>download('genro-storage-benchmark.csv','text/csv;charset=utf-8','\uFEFF'+report.csv));
+document.getElementById('download-json').addEventListener('click',()=>download('genro-storage-benchmark.json','application/json',JSON.stringify({runs:report.runs,verification:report.verification},null,2)));
+document.getElementById('print-report').addEventListener('click',()=>window.print());
+update(-1);
+</script>
+</body>
+</html>

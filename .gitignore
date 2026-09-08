@@ -148,3 +148,7 @@ Thumbs.db
 # Temporary files
 temp/*
 !temp/.gitignore
+
+# Benchmark measurements and private environment files
+/benchmarks/results/
+/benchmarks/.env*

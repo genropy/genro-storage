@@ -126,6 +126,10 @@ class RelativeMountBackend(StorageBackend):
 
     # Read operations (allowed for all permission levels)
 
+    def ext_attributes(self, path: str) -> tuple[float | None, int | None, bool]:
+        """Keep the parent backend's metadata snapshot and path scoping."""
+        return self.parent.ext_attributes(self._full_path(path))
+
     def exists(self, path: str) -> bool:
         """Check if file or directory exists."""
         return self.parent.exists(self._full_path(path))

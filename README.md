@@ -407,6 +407,11 @@ pytest tests/ -v --cov=genro_storage
 
 See [TESTING.md](TESTING.md) for detailed testing instructions with MinIO.
 
+For comparative S3 performance measurements against Genropy legacy, s3fs,
+boto3 and smart_open, see the [benchmark suite](benchmarks/README.md).
+It supports a dedicated local MinIO instance and an existing Hetzner bucket,
+with correctness checks, HTTP request counts and JSON/CSV/Markdown reports.
+
 ## Built With
 
 - [fsspec](https://filesystem-spec.readthedocs.io/) - Pythonic filesystem abstraction
